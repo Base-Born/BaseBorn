@@ -85,3 +85,5 @@ export type MultiplayerSnapshot = {
   invites: NetworkTeamInvite[];
   actionError: string;
 };
+
+export type TeamSpawn = { x: number; y: number; stationId: string | null };

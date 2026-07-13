@@ -1271,6 +1271,13 @@ html, body, #root, .app, .gameShell, .gameCanvas {
 .teamHubSection article strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .teamHubSection article small, .teamHubEmpty { color: #8099aa; font-size: 11px; }
 .teamHubAccept { color: #8fffc1 !important; border-color: rgba(75, 218, 139, .4) !important; }
+.teamHubLeave { color: #ffb4a8 !important; border-color: rgba(236, 88, 117, .3) !important; }
+.teamHubMembers { display: grid; gap: 5px; }
+.teamHubMembers article { padding: 7px 8px; }
+.teamHubMembers article button { min-height: 27px; width: 27px; padding: 0; }
+.teamHubLeaderIcon { color: #ffd56a; }
+.teamHubSpawnChoice { display: flex; align-items: center; gap: 7px; color: #9db8c9; font-size: 11px; }
+.teamHubSpawnChoice input { accent-color: #52c7f3; }
 .teamHubError {
   margin: 0 0 12px;
   padding: 9px 11px;

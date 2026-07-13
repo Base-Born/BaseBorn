@@ -454,10 +454,13 @@ function GameScreen({
       <Leaderboard rows={snapshot.leaderboard.slice(0, 10)} />
       <TeamHub
         multiplayer={snapshot.multiplayer}
-        onJoin={(teamId) => game?.joinTeam(teamId)}
+        onJoin={(teamId, spawnAtBase) => game?.joinTeam(teamId, spawnAtBase)}
         onInvite={(playerId) => game?.invitePlayer(playerId)}
-        onAccept={(inviteId) => game?.acceptTeamInvite(inviteId)}
+        onAccept={(inviteId, spawnAtBase) => game?.acceptTeamInvite(inviteId, spawnAtBase)}
         onDecline={(inviteId) => game?.declineTeamInvite(inviteId)}
+        onLeave={() => game?.leaveTeam()}
+        onRemove={(playerId) => game?.removeTeamMember(playerId)}
+        onTransfer={(playerId) => game?.transferTeamLeadership(playerId)}
       />
       <GameplayHUD
         snapshot={snapshot}

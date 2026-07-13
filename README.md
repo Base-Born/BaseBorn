@@ -233,6 +233,8 @@ Future booster upgrades can increase `boosterLevel`; hyperdrive remains the inte
 
 Station command tabs currently include overview, storage, repair, defenses, crafting, loadout, landing pads, team, and hyperdrive.
 
+Team Hub supports leader-only invitations, leadership transfer, member removal, leaving a team, and an optional spawn-near-base choice when joining or accepting an invitation.
+
 ## Station Scanner
 
 Before claiming a station, the objective tracker shows the nearest broken station name, bearing, and distance. Press `R` while undocked to trigger a station scanner pulse. The pulse temporarily marks station signals and shows scanner feedback in the HUD. While docked, `R` is reserved for quick station repair.

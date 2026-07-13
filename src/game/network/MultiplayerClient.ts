@@ -11,6 +11,7 @@ import type {
   NetworkTeam,
   NetworkTeamInvite,
   RemotePlayerState,
+  TeamSpawn,
 } from "./protocol";
 
 type LocalState = Omit<NetworkPlayerState, "id" | "name" | "customization" | "updatedAt">;
@@ -31,6 +32,7 @@ export class MultiplayerClient {
   private invites: NetworkTeamInvite[] = [];
   private lootAwards: LootAward[] = [];
   private respawnSpawn: { x: number; y: number } | null = null;
+  private teamSpawn: TeamSpawn | null = null;
   private status: MultiplayerStatus = "offline";
   private message = "Offline";
   private actionError = "";
@@ -85,6 +87,7 @@ export class MultiplayerClient {
   isOnline() { return this.status === "online" && Boolean(this.playerId); }
   consumeLootAwards() { return this.lootAwards.splice(0); }
   consumeRespawnSpawn() { const spawn = this.respawnSpawn; this.respawnSpawn = null; return spawn; }
+  consumeTeamSpawn() { const spawn = this.teamSpawn; this.teamSpawn = null; return spawn; }
 
   getSnapshot(): MultiplayerSnapshot {
     return {
@@ -108,10 +111,13 @@ export class MultiplayerClient {
   }
   claimStation(stationId: string) { this.send({ type: "claim_station", stationId }); }
   renameStation(stationId: string, name: string) { this.send({ type: "rename_station", stationId, name }); }
-  joinTeam(teamId: string) { this.send({ type: "join_team", teamId }); }
+  joinTeam(teamId: string, spawnAtBase = true) { this.send({ type: "join_team", teamId, spawnAtBase }); }
   invitePlayer(playerId: string) { this.send({ type: "invite_player", playerId }); }
-  acceptInvite(inviteId: string) { this.send({ type: "accept_invite", inviteId }); }
+  acceptInvite(inviteId: string, spawnAtBase = true) { this.send({ type: "accept_invite", inviteId, spawnAtBase }); }
   declineInvite(inviteId: string) { this.send({ type: "decline_invite", inviteId }); }
+  leaveTeam() { this.send({ type: "leave_team" }); }
+  removeMember(playerId: string) { this.send({ type: "remove_member", playerId }); }
+  transferLeadership(playerId: string) { this.send({ type: "transfer_leader", playerId }); }
 
   destroy() {
     this.destroyed = true;
@@ -134,6 +140,7 @@ export class MultiplayerClient {
       worldSeed?: number;
       spawn?: { x?: number; y?: number };
       respawn?: { x?: number; y?: number };
+      stationId?: string | null;
       players?: NetworkPlayerState[];
       stations?: NetworkStationState[];
       drops?: NetworkEtherDropState[];
@@ -158,6 +165,14 @@ export class MultiplayerClient {
     }
     if (message.type === "respawn" && Number.isFinite(message.respawn?.x) && Number.isFinite(message.respawn?.y)) {
       this.respawnSpawn = { x: message.respawn?.x as number, y: message.respawn?.y as number };
+      return;
+    }
+    if (message.type === "team_spawn" && Number.isFinite(message.spawn?.x) && Number.isFinite(message.spawn?.y)) {
+      this.teamSpawn = { x: message.spawn?.x as number, y: message.spawn?.y as number, stationId: message.stationId ?? null };
+      return;
+    }
+    if (message.type === "team_changed") {
+      this.teamId = typeof message.teamId === "string" ? message.teamId : null;
       return;
     }
     if (message.type === "error") { this.setStatus("error", message.message || "Multiplayer error"); return; }

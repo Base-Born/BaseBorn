@@ -221,10 +221,13 @@ export class Game {
     if (station) this.multiplayer.renameStation(station.id, name);
   }
 
-  joinTeam(teamId: string) { this.multiplayer.joinTeam(teamId); }
+  joinTeam(teamId: string, spawnAtBase = true) { this.multiplayer.joinTeam(teamId, spawnAtBase); }
   invitePlayer(playerId: string) { this.multiplayer.invitePlayer(playerId); }
-  acceptTeamInvite(inviteId: string) { this.multiplayer.acceptInvite(inviteId); }
+  acceptTeamInvite(inviteId: string, spawnAtBase = true) { this.multiplayer.acceptInvite(inviteId, spawnAtBase); }
   declineTeamInvite(inviteId: string) { this.multiplayer.declineInvite(inviteId); }
+  leaveTeam() { this.multiplayer.leaveTeam(); }
+  removeTeamMember(playerId: string) { this.multiplayer.removeMember(playerId); }
+  transferTeamLeadership(playerId: string) { this.multiplayer.transferLeadership(playerId); }
 
   performStationPrimaryAction() {
     const interaction = this.stations.getNearestInteraction(this.player);
@@ -389,6 +392,15 @@ export class Game {
       this.player.pos = clampToWorld(respawnSpawn, 500);
       this.player.vel = { x: 0, y: 0 };
       this.player.resetSpawnProtection();
+      this.camera.x = this.player.pos.x;
+      this.camera.y = this.player.pos.y;
+    }
+    const teamSpawn = this.multiplayer.consumeTeamSpawn();
+    if (teamSpawn && this.mode === "playing" && this.player.dockingState === "free") {
+      this.player.pos = clampToWorld(teamSpawn, 500);
+      this.player.vel = { x: 0, y: 0 };
+      this.player.resetSpawnProtection();
+      this.asteroids = this.asteroidSystem.update(0, this.player.pos, performance.now());
       this.camera.x = this.player.pos.x;
       this.camera.y = this.player.pos.y;
     }
