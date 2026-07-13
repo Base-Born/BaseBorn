@@ -1102,6 +1102,9 @@ h1 {
   pointer-events: none;
 }
 
+.minimapAxisLabelColumn { text-anchor: middle !important; }
+.minimapAxisLabelRow { text-anchor: end !important; }
+
 .minimapAxisLabels text:nth-child(n+11) {
   text-anchor: start;
 }

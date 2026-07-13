@@ -126,8 +126,8 @@ export function Minimap({ snapshot }: { snapshot: GameSnapshot }) {
             })}
           </g>
           <g className="minimapAxisLabels">
-            {columns.map((column, index) => <text key={column} x={innerRect.x + index * cellWidth + cellWidth / 2} y={MINIMAP_CONFIG.labelPadding}>{column}</text>)}
-            {rows.map((row, index) => <text key={row} x={MINIMAP_CONFIG.labelPadding * 0.5} y={innerRect.y + index * cellHeight + cellHeight / 2 + 3}>{row}</text>)}
+            {columns.map((column, index) => <text className="minimapAxisLabelColumn" key={column} x={innerRect.x + index * cellWidth + cellWidth / 2} y={innerRect.y - 7}>{column}</text>)}
+            {rows.map((row, index) => <text className="minimapAxisLabelRow" key={row} x={innerRect.x - 7} y={innerRect.y + index * cellHeight + cellHeight / 2 + 3}>{row}</text>)}
           </g>
         </>}
         <g className="minimapPlanets">
@@ -207,15 +207,15 @@ export function Minimap({ snapshot }: { snapshot: GameSnapshot }) {
               {horizontalLines.map(({ y, index }) => <line key={`zoom-h-${index}`} x1={innerRect.x} y1={y} x2={innerRect.x + innerRect.width} y2={y} />)}
             </g>
             <g className="minimapAxisLabels minimapZoomAxisLabels">
-              {verticalLines.map(({ x, index }) => <text key={`zoom-label-x-${index}`} x={x} y={MINIMAP_CONFIG.labelPadding}>{columns[index]}</text>)}
-              {horizontalLines.map(({ y, index }) => <text key={`zoom-label-y-${index}`} x={MINIMAP_CONFIG.labelPadding * 0.5} y={y + 3}>{index + 1}</text>)}
+              {verticalLines.map(({ x, index }) => <text className="minimapAxisLabelColumn" key={`zoom-label-x-${index}`} x={x} y={innerRect.y - 7}>{columns[index]}</text>)}
+              {horizontalLines.map(({ y, index }) => <text className="minimapAxisLabelRow" key={`zoom-label-y-${index}`} x={innerRect.x - 7} y={y + 3}>{index + 1}</text>)}
             </g>
           </>;
         })()}
         </g>
       </svg>
       <div className="minimapReadout">
-        <b>{youLabel}</b>
+        <b>Sector: {youLabel}</b>
         <span>{zoomLabel} · M</span>
       </div>
     </aside>
