@@ -109,25 +109,27 @@ export function Minimap({ snapshot }: { snapshot: GameSnapshot }) {
             );
           })}
         </g>
-        <g className="minimapCurrentCell minimapCurrentSector">
-          <rect x={currentRect.x} y={currentRect.y} width={currentRect.width} height={currentRect.height} rx="2" />
-        </g>
-        <g className="minimapGrid">
-          {columns.slice(1).map((_, index) => {
-            if (index + 1 === 5) return null;
-            const x = innerRect.x + (index + 1) * cellWidth;
-            return <line key={`v-${index}`} x1={x} y1={innerRect.y} x2={x} y2={innerRect.y + innerRect.height} />;
-          })}
-          {rows.slice(1).map((_, index) => {
-            if (index + 1 === 5) return null;
-            const y = innerRect.y + (index + 1) * cellHeight;
-            return <line key={`h-${index}`} x1={innerRect.x} y1={y} x2={innerRect.x + innerRect.width} y2={y} />;
-          })}
-        </g>
-        <g className="minimapAxisLabels">
-          {columns.map((column, index) => <text key={column} x={innerRect.x + index * cellWidth + cellWidth / 2} y={MINIMAP_CONFIG.labelPadding}>{column}</text>)}
-          {rows.map((row, index) => <text key={row} x={MINIMAP_CONFIG.labelPadding * 0.5} y={innerRect.y + index * cellHeight + cellHeight / 2 + 3}>{row}</text>)}
-        </g>
+        {zoom === 1 && <>
+          <g className="minimapCurrentCell minimapCurrentSector">
+            <rect x={currentRect.x} y={currentRect.y} width={currentRect.width} height={currentRect.height} rx="2" />
+          </g>
+          <g className="minimapGrid">
+            {columns.slice(1).map((_, index) => {
+              if (index + 1 === 5) return null;
+              const x = innerRect.x + (index + 1) * cellWidth;
+              return <line key={`v-${index}`} x1={x} y1={innerRect.y} x2={x} y2={innerRect.y + innerRect.height} />;
+            })}
+            {rows.slice(1).map((_, index) => {
+              if (index + 1 === 5) return null;
+              const y = innerRect.y + (index + 1) * cellHeight;
+              return <line key={`h-${index}`} x1={innerRect.x} y1={y} x2={innerRect.x + innerRect.width} y2={y} />;
+            })}
+          </g>
+          <g className="minimapAxisLabels">
+            {columns.map((column, index) => <text key={column} x={innerRect.x + index * cellWidth + cellWidth / 2} y={MINIMAP_CONFIG.labelPadding}>{column}</text>)}
+            {rows.map((row, index) => <text key={row} x={MINIMAP_CONFIG.labelPadding * 0.5} y={innerRect.y + index * cellHeight + cellHeight / 2 + 3}>{row}</text>)}
+          </g>
+        </>}
         <g className="minimapPlanets">
           {snapshot.minimap.planets.map((planet) => {
             const p = minimapPoint(planet.pos.x, planet.pos.y, layout);
@@ -189,6 +191,27 @@ export function Minimap({ snapshot }: { snapshot: GameSnapshot }) {
           <polygon points={coreChamberPoints} className="minimapCoreChamber" />
         </g>
         </g>
+        {zoom !== 1 && (() => {
+          const worldScale = innerRect.width / MAP_CONFIG.worldWidth * zoom;
+          const toZoomedScreenX = (worldX: number) => center + (worldX - snapshot.minimap.player.x) * worldScale;
+          const toZoomedScreenY = (worldY: number) => center + (worldY - snapshot.minimap.player.y) * worldScale;
+          const verticalLines = Array.from({ length: MINIMAP_CONFIG.gridColumns + 1 }, (_, index) => MAP_CONFIG.halfWidth * -1 + (MAP_CONFIG.worldWidth / MINIMAP_CONFIG.gridColumns) * index)
+            .map((worldX, index) => ({ worldX, x: toZoomedScreenX(worldX), index }))
+            .filter(({ x }) => x >= innerRect.x && x <= innerRect.x + innerRect.width);
+          const horizontalLines = Array.from({ length: MINIMAP_CONFIG.gridRows + 1 }, (_, index) => MAP_CONFIG.halfHeight * -1 + (MAP_CONFIG.worldHeight / MINIMAP_CONFIG.gridRows) * index)
+            .map((worldY, index) => ({ worldY, y: toZoomedScreenY(worldY), index }))
+            .filter(({ y }) => y >= innerRect.y && y <= innerRect.y + innerRect.height);
+          return <>
+            <g className="minimapGrid minimapZoomGrid">
+              {verticalLines.map(({ x, index }) => <line key={`zoom-v-${index}`} x1={x} y1={innerRect.y} x2={x} y2={innerRect.y + innerRect.height} />)}
+              {horizontalLines.map(({ y, index }) => <line key={`zoom-h-${index}`} x1={innerRect.x} y1={y} x2={innerRect.x + innerRect.width} y2={y} />)}
+            </g>
+            <g className="minimapAxisLabels minimapZoomAxisLabels">
+              {verticalLines.map(({ x, index }) => <text key={`zoom-label-x-${index}`} x={x} y={MINIMAP_CONFIG.labelPadding}>{columns[index]}</text>)}
+              {horizontalLines.map(({ y, index }) => <text key={`zoom-label-y-${index}`} x={MINIMAP_CONFIG.labelPadding * 0.5} y={y + 3}>{index + 1}</text>)}
+            </g>
+          </>;
+        })()}
         </g>
       </svg>
       <div className="minimapReadout">
