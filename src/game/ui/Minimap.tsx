@@ -57,7 +57,7 @@ export function Minimap({ snapshot }: { snapshot: GameSnapshot }) {
   const zoom = [1, 1.8, 3][zoomLevel];
   const zoomLabel = ["Sector", "Local", "Close"][zoomLevel];
   const playerPoint = minimapPoint(snapshot.minimap.player.x, snapshot.minimap.player.y, layout);
-  const zoomTransform = `translate(${center} ${center}) scale(${zoom}) translate(${-playerPoint.x} ${-playerPoint.y})`;
+  const zoomTransform = zoom === 1 ? undefined : `translate(${center} ${center}) scale(${zoom}) translate(${-playerPoint.x} ${-playerPoint.y})`;
 
   return (
     <aside className="minimap" style={{ width: size, height: size + statusHeight, "--minimap-status-height": `${statusHeight}px` } as CSSProperties}>
