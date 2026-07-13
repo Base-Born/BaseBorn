@@ -183,6 +183,7 @@ There is no fixed win screen yet. The current goal is to grow from a weak ship a
 | F | Claim station / dock / undock |
 | R | Pulse station scanner while undocked; repair next station stage while docked |
 | V | Show an arrow waypoint to the nearest broken station or your team station |
+| M | Toggle minimap zoom between sector and local view |
 | U | Open station command only while docked; otherwise toggles ship panel |
 | Y | Open ship upgrades |
 | H | Toggle cargo pickup |

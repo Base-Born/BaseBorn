@@ -1,4 +1,4 @@
-export type ControlAction = "thrust" | "reverse" | "left" | "right" | "boost" | "primaryFire" | "secondaryFire" | "autoFire" | "autoThrottle" | "scanner" | "interact" | "command" | "dropCargo" | "cargoPickup" | "navigation" | "close";
+export type ControlAction = "thrust" | "reverse" | "left" | "right" | "boost" | "primaryFire" | "secondaryFire" | "autoFire" | "autoThrottle" | "scanner" | "interact" | "command" | "dropCargo" | "cargoPickup" | "navigation" | "mapZoom" | "close";
 
 export const CONTROL_BINDINGS: Record<ControlAction, { label: string; primary: string; alternate?: string; mouse?: string }> = {
   thrust: { label: "Forward thrust", primary: "W", alternate: "ArrowUp" },
@@ -16,6 +16,7 @@ export const CONTROL_BINDINGS: Record<ControlAction, { label: string; primary: s
   dropCargo: { label: "Eject cargo", primary: "G" },
   cargoPickup: { label: "Toggle cargo pickup", primary: "H" },
   navigation: { label: "Cycle waypoint", primary: "V" },
+  mapZoom: { label: "Toggle minimap zoom", primary: "M" },
   close: { label: "Close overlay", primary: "Escape" },
 };
 

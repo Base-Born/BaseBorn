@@ -2,13 +2,24 @@ import { MAP_CONFIG, MINIMAP_CONFIG } from "../data/mapConfig";
 import { createMinimapLayout, getMinimapPlayerInfo, getSectorRect, minimapPoint } from "../systems/MinimapSystem";
 import { formatLocationCallout } from "../systems/MapSectorSystem";
 import { LOOT_REGION_CONFIG, LOOT_REGION_ORDER } from "../data/lootRegionConfig";
-import type { CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import type { GameSnapshot } from "../types";
 
 const columns = Array.from("ABCDEFGHIJ");
 const rows = Array.from({ length: MINIMAP_CONFIG.gridRows }, (_, index) => String(index + 1));
 
 export function Minimap({ snapshot }: { snapshot: GameSnapshot }) {
+  const [zoomLevel, setZoomLevel] = useState(0);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== "m") return;
+      const target = event.target as HTMLElement | null;
+      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
+      setZoomLevel((current) => (current + 1) % 3);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
   const size = typeof window !== "undefined" && window.innerWidth <= 720
     ? MINIMAP_CONFIG.mobileSize
     : typeof window !== "undefined" && window.innerWidth >= 1600
@@ -43,12 +54,20 @@ export function Minimap({ snapshot }: { snapshot: GameSnapshot }) {
   ].map(([x, y]) => `${x},${y}`).join(" ");
   const maxWorldRadius = Math.hypot(MAP_CONFIG.halfWidth, MAP_CONFIG.halfHeight);
   const minimapRadius = Math.hypot(innerRect.width / 2, innerRect.height / 2);
+  const zoom = [1, 1.8, 3][zoomLevel];
+  const zoomLabel = ["Sector", "Local", "Close"][zoomLevel];
+  const playerPoint = minimapPoint(snapshot.minimap.player.x, snapshot.minimap.player.y, layout);
+  const zoomTransform = `translate(${center} ${center}) scale(${zoom}) translate(${-playerPoint.x} ${-playerPoint.y})`;
 
   return (
     <aside className="minimap" style={{ width: size, height: size + statusHeight, "--minimap-status-height": `${statusHeight}px` } as CSSProperties}>
       <svg viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`Sector minimap. You are in ${youLabel}`}>
+        <defs>
+          <clipPath id="minimapMapClip"><rect x={innerRect.x} y={innerRect.y} width={innerRect.width} height={innerRect.height} rx="7" /></clipPath>
+        </defs>
         <rect className="minimapPanel" x="1" y="1" width={size - 2} height={size - 2} rx="10" />
         <rect className="minimapInnerMap" x={innerRect.x} y={innerRect.y} width={innerRect.width} height={innerRect.height} rx="7" />
+        <g clipPath="url(#minimapMapClip)" transform={zoomTransform}>
         <g className="minimapLootZones">
           {[...LOOT_REGION_ORDER].reverse().map((region) => {
             const config = LOOT_REGION_CONFIG[region];
@@ -168,10 +187,11 @@ export function Minimap({ snapshot }: { snapshot: GameSnapshot }) {
           <polygon points={coreHexPoints} className="minimapCoreShell" />
           <polygon points={coreChamberPoints} className="minimapCoreChamber" />
         </g>
+        </g>
       </svg>
       <div className="minimapReadout">
         <b>{youLabel}</b>
-        <span>Belts</span>
+        <span>{zoomLabel} · M</span>
       </div>
     </aside>
   );
