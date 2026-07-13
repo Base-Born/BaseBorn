@@ -29,7 +29,7 @@ import { addEtherToCombinedCargo, dropLowestQualityCargoFromStorage, getNextCarg
 import { ObjectiveSystem } from "./systems/ObjectiveSystem";
 import { completeRespawn, startRespawnCountdown, type PlayerDeathState } from "./systems/RespawnSystem";
 import { clearPlayerCargo, getDeathCargoDropSummary } from "./systems/DeathDropSystem";
-import { getStationDirectionIndicator, getStationHealthWarning, shouldShowStationFinder } from "./systems/StationSystem";
+import { getStationDirectionIndicator, getStationHealthWarning } from "./systems/StationSystem";
 import { createStationInteractionSnapshot } from "./systems/StationInteractionSystem";
 import { getEffectiveModuleStats } from "./systems/ModuleStatApplicationSystem";
 import { getAvailableUpgradePoints, getShipUpgradeLockReason } from "./systems/ShipUpgradeSystem";
@@ -98,6 +98,7 @@ export class Game {
   private zoneNotificationUntil = 0;
   private stationScannerActiveUntil = 0;
   private stationScannerCooldownUntil = 0;
+  private stationWaypointActiveUntil = 0;
   onUiShortcut: ((key: "u" | "y") => void) | null = null;
 
   constructor(private canvas: HTMLCanvasElement, customization: Customization, private onSnapshot: (snapshot: GameSnapshot) => void, respawnProgress?: RespawnProgress) {
@@ -505,6 +506,12 @@ export class Game {
     if (this.input.consume("r")) {
       if (this.player.dockingState === "docked") this.repairStation();
       else this.scanForStations();
+    }
+    if (this.input.consume("v")) {
+      this.stationWaypointActiveUntil = performance.now() + 30_000;
+      this.zoneNotificationText = this.stations.claimedStation ? "Waypoint locked: team station" : "Waypoint locked: nearest broken station";
+      this.zoneNotificationUntil = performance.now() + 1800;
+      this.emitSnapshot();
     }
     if (this.input.consume("g")) this.dropLowestCargo();
     if (this.input.consume("h")) this.toggleCargoPickup();
@@ -943,19 +950,21 @@ export class Game {
   private getStationFinderSnapshot() {
     const now = performance.now();
     const scannerActive = now < this.stationScannerActiveUntil;
-    const nearest = this.stations.getNearestUnclaimedStation(this.player);
-    const indicator = getStationDirectionIndicator(this.player, nearest?.station);
-    const visible = shouldShowStationFinder(this.player, this.stations.stations, this.stations.claimedStation);
+    const claimedStation = this.stations.claimedStation;
+    const nearest = claimedStation ? null : this.stations.getNearestUnclaimedStation(this.player);
+    const target = claimedStation ?? nearest?.station ?? null;
+    const indicator = getStationDirectionIndicator(this.player, target);
+    const visible = now < this.stationWaypointActiveUntil && Boolean(target && indicator);
     return {
-      visible: visible && Boolean(nearest && indicator),
-      stationId: nearest?.station.id ?? null,
-      stationName: nearest?.station.name ?? "",
+      visible,
+      stationId: target?.id ?? null,
+      stationName: target?.name ?? "",
       distance: indicator?.distance ?? 0,
       direction: indicator?.direction ?? { x: 0, y: 0 },
       bearingLabel: indicator?.bearingLabel ?? "",
       scannerActive,
       pulseReady: now >= this.stationScannerCooldownUntil,
-      hint: scannerActive ? "Scanner pulse active. Station markers are visible." : "Press R to pulse the station scanner.",
+      hint: visible ? "Arrow locked. Press V to refresh the waypoint." : "Press V to locate your station waypoint.",
     };
   }
 }

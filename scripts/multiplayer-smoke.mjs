@@ -58,6 +58,7 @@ try {
   beta.socket.send(JSON.stringify({ type:"accept_invite", inviteId:invite.id, spawnAtBase:true }));
   const teamSpawn = await waitForMessage(beta, (message) => message.type === "team_spawn");
   const stationBase = claimedSnapshot.stations.find((station) => station.id===alphaStation.id);
+  assert.equal(stationBase.name, "Alpha");
   assert(distance(teamSpawn.spawn, stationBase) <= 1600);
   await waitForSnapshot(beta, (message) => message.teamId===alphaTeam.id&&message.teams.some((team) => team.id===alphaTeam.id&&team.memberIds.includes(alpha.id)&&team.memberIds.includes(beta.id)));
   alpha.socket.send(JSON.stringify({ type:"transfer_leader", playerId:beta.id }));

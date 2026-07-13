@@ -182,6 +182,7 @@ There is no fixed win screen yet. The current goal is to grow from a weak ship a
 | Q | Toggle auto throttle |
 | F | Claim station / dock / undock |
 | R | Pulse station scanner while undocked; repair next station stage while docked |
+| V | Show an arrow waypoint to the nearest broken station or your team station |
 | U | Open station command only while docked; otherwise toggles ship panel |
 | Y | Open ship upgrades |
 | H | Toggle cargo pickup |

@@ -242,7 +242,7 @@ websocketServer.on("connection",(websocket)=>{
     if(message?.type==="claim_station"){
       const station=room.stations.get(String(message.stationId||""));const team=teamForPlayer(room,playerId);
       if(!station||!team||station.claimState!=="unclaimed"||team.stationId||distance(websocket.playerState,station)>2200){sendError(websocket,"This station is unavailable or already claimed.");return;}
-      station.claimState="claimed";station.ownerTeamId=team.id;station.ownerPlayerId=playerId;station.name=`${websocket.identity.customization.name}'s Station`;station.reservedForPlayerId=null;team.stationId=station.id;broadcastRoom(room.id);return;
+      station.claimState="claimed";station.ownerTeamId=team.id;station.ownerPlayerId=playerId;station.name=websocket.identity.customization.name;station.reservedForPlayerId=null;team.stationId=station.id;broadcastRoom(room.id);return;
     }
     if(message?.type==="rename_station"){
       const station=room.stations.get(String(message.stationId||""));const team=teamForPlayer(room,playerId);

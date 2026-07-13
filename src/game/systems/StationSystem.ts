@@ -456,6 +456,7 @@ export class StationSystem {
     if (this.team.stationId) return false;
     station.ownerTeamId = this.team.id;
     station.ownerPlayerId = player.id;
+    station.name = player.name;
     station.claimState = "claimed";
     station.health = Math.max(station.health, station.maxHealth * 0.22);
     station.movementLockReason = getStationMovementLockReason(station, player);
