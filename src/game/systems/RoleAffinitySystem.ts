@@ -1,0 +1,1 @@
+import type { BuildIdentitySnapshot,BuildRole } from "../data/buildIdentity";export function getRankedRoles(build:BuildIdentitySnapshot){return (Object.entries(build.roleAffinities) as Array<[BuildRole,number]>).sort((a,b)=>b[1]-a[1]);}

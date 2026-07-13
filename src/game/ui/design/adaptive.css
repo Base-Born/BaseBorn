@@ -1,0 +1,1310 @@
+:root {
+  --bb-safe-top: max(10px, env(safe-area-inset-top));
+  --bb-safe-right: max(10px, env(safe-area-inset-right));
+  --bb-safe-bottom: max(10px, env(safe-area-inset-bottom));
+  --bb-safe-left: max(10px, env(safe-area-inset-left));
+  --bb-stage-width: 1920px;
+  --bb-stage-gutter: max(18px, calc((100vw - min(100vw, var(--bb-stage-width))) / 2 + 18px));
+}
+
+html, body, #root, .app, .gameShell, .gameCanvas {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.app, .gameShell {
+  overflow: clip;
+}
+
+.gameCanvas {
+  display: block;
+  object-fit: cover;
+}
+
+.gameUiLayer {
+  inset: 0;
+  padding:
+    var(--bb-safe-top)
+    var(--bb-safe-right)
+    var(--bb-safe-bottom)
+    var(--bb-safe-left);
+  overflow: clip;
+}
+
+.pilotHud,
+.missionHud,
+.vehicleHudSlot {
+  left: max(var(--bb-stage-gutter), var(--bb-safe-left));
+}
+
+.mapHud,
+.cargoCompact,
+.stationCompact {
+  right: max(var(--bb-stage-gutter), var(--bb-safe-right));
+}
+
+.pilotHud,
+.mapHud,
+.waypointHud {
+  top: var(--bb-safe-top);
+}
+
+.vehicleHudSlot,
+.cargoCompact,
+.combatBar {
+  bottom: var(--bb-safe-bottom);
+}
+
+.stationCompact {
+  bottom: calc(var(--bb-safe-bottom) + 103px);
+}
+
+.missionHud {
+  top: calc(var(--bb-safe-top) + 95px);
+}
+
+.pilotHud,
+.missionHud,
+.vehicleHudSlot,
+.cargoCompact,
+.stationCompact,
+.mapHud {
+  max-width: calc(100vw - var(--bb-safe-left) - var(--bb-safe-right));
+}
+
+.loginScreen,
+.gameLoadingScreen,
+.connectionError {
+  width: 100vw;
+  height: 100dvh;
+  min-height: 0;
+  padding:
+    var(--bb-safe-top)
+    var(--bb-safe-right)
+    var(--bb-safe-bottom)
+    var(--bb-safe-left);
+}
+
+.loginCard {
+  width: min(430px, calc(100vw - var(--bb-safe-left) - var(--bb-safe-right)));
+  max-height: calc(100dvh - var(--bb-safe-top) - var(--bb-safe-bottom));
+  padding: clamp(20px, 3.2vmin, 30px);
+  gap: clamp(12px, 2.2vmin, 18px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.loginScreen__ambient {
+  max-width: 900px;
+  max-height: 760px;
+}
+
+.stationCommandBackdrop {
+  padding:
+    var(--bb-safe-top)
+    var(--bb-safe-right)
+    var(--bb-safe-bottom)
+    var(--bb-safe-left);
+}
+
+.stationCommandPanel {
+  width: min(1120px, calc(100vw - var(--bb-safe-left) - var(--bb-safe-right)));
+  max-height: min(780px, calc(100dvh - var(--bb-safe-top) - var(--bb-safe-bottom))) !important;
+}
+
+.cargoManagementPanel,
+.overlayPanel,
+.bottomLeftUpgradeDock {
+  max-height: calc(100dvh - var(--bb-safe-top) - var(--bb-safe-bottom));
+  overscroll-behavior: contain;
+}
+
+.bottomLeftUpgradeDock {
+  left: max(var(--bb-stage-gutter), var(--bb-safe-left));
+  bottom: calc(var(--bb-safe-bottom) + 62px);
+}
+
+@media (max-width: 1100px) {
+  :root {
+    --bb-stage-gutter: max(12px, env(safe-area-inset-left));
+  }
+
+  .pilotHud,
+  .missionHud {
+    width: clamp(220px, 29vw, 250px);
+  }
+
+  .vehicleHudSlot {
+    width: clamp(230px, 30vw, 260px);
+  }
+
+  .mapHud {
+    width: 216px;
+  }
+
+  .mapHud .minimap {
+    width: 200px !important;
+    height: 240px !important;
+  }
+
+  .cargoCompact,
+  .stationCompact {
+    width: 200px;
+  }
+
+  .combatSlot {
+    width: 44px;
+    min-width: 44px;
+  }
+
+  .combatSlot span,
+  .combatSlot .uiKeyHint {
+    display: none;
+  }
+
+  .gameShell:has(.stationInteraction) .vehicleHudSlot {
+    display: none;
+  }
+
+  .stationCommandGrid,
+  .stationCardGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stationDefenseSummary,
+  .stationSlotGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --bb-stage-gutter: var(--bb-safe-left);
+  }
+
+  .pilotHud {
+    left: var(--bb-safe-left);
+    top: var(--bb-safe-top);
+    width: clamp(158px, 42vw, 218px);
+    min-height: 0;
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .pilotHud > .uiStatus {
+    display: none;
+  }
+
+  .missionHud {
+    left: var(--bb-safe-left);
+    top: calc(var(--bb-safe-top) + 95px);
+    width: clamp(158px, 42vw, 218px);
+  }
+
+  .missionHud p {
+    display: none;
+  }
+
+  .mapHud {
+    right: var(--bb-safe-right);
+    top: var(--bb-safe-top);
+    width: 194px;
+  }
+
+  .mapHud .minimap {
+    width: 176px !important;
+    height: 210px !important;
+  }
+
+  .mapHud__header b {
+    display: none;
+  }
+
+  .waypointHud {
+    top: auto;
+    bottom: calc(var(--bb-safe-bottom) + 140px);
+    min-width: min(190px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+  }
+
+  .vehicleHudSlot {
+    left: var(--bb-safe-left);
+    bottom: var(--bb-safe-bottom);
+    width: min(210px, calc(56vw - var(--bb-safe-left)));
+  }
+
+  .vehicleHud header > .uiStatus,
+  .vehicleMeter span b {
+    display: none;
+  }
+
+  .cargoCompact {
+    right: var(--bb-safe-right);
+    bottom: var(--bb-safe-bottom);
+    width: min(165px, calc(42vw - var(--bb-safe-right)));
+  }
+
+  .stationCompact {
+    right: var(--bb-safe-right);
+    bottom: calc(var(--bb-safe-bottom) + 88px);
+    width: min(165px, calc(42vw - var(--bb-safe-right)));
+  }
+
+  .combatBar {
+    bottom: calc(var(--bb-safe-bottom) + 85px);
+  }
+
+  .combatSlot {
+    width: 44px;
+    min-width: 44px;
+  }
+
+  .combatSlot span,
+  .combatSlot .uiKeyHint {
+    display: none;
+  }
+
+  .stationInteraction {
+    width: calc(100vw - var(--bb-safe-left) - var(--bb-safe-right)) !important;
+    max-width: 620px !important;
+  }
+
+  .stationCommandBackdrop {
+    padding: 0;
+  }
+
+  .stationCommandPanel,
+  .cargoManagementPanel {
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  .stationCommandHeader {
+    padding:
+      max(10px, env(safe-area-inset-top))
+      max(10px, env(safe-area-inset-right))
+      10px
+      max(10px, env(safe-area-inset-left));
+  }
+
+  .stationCommandBody main,
+  .cargoManagementPanel {
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+  }
+
+  .bottomLeftUpgradeDock,
+  .overlayPanel {
+    left: var(--bb-safe-left);
+    right: var(--bb-safe-right);
+    width: auto;
+    max-width: none;
+    transform: none;
+  }
+
+  .overlayPanel {
+    top: var(--bb-safe-top);
+    bottom: var(--bb-safe-bottom);
+    max-height: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .pilotHud {
+    width: clamp(136px, 43vw, 160px);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pilotHud__level {
+    display: none;
+  }
+
+  .missionHud {
+    width: clamp(136px, 43vw, 160px);
+    top: calc(var(--bb-safe-top) + 95px);
+  }
+
+  .missionHud header b,
+  .missionHud small {
+    display: none;
+  }
+
+  .mapHud {
+    width: min(194px, 52vw);
+  }
+
+  .mapHud .minimap {
+    width: calc(100% - 16px) !important;
+    height: calc((100vw * .52 - 16px) * 1.193) !important;
+    max-height: 210px;
+  }
+
+  .vehicleHudSlot {
+    width: min(178px, calc(52vw - var(--bb-safe-left)));
+  }
+
+  .vehicleMeter:nth-of-type(2) {
+    display: none;
+  }
+
+  .cargoCompact,
+  .stationCompact {
+    display: none;
+  }
+
+  .combatBar {
+    left: auto;
+    right: var(--bb-safe-right);
+    bottom: var(--bb-safe-bottom);
+    transform: none;
+  }
+
+  .combatSlot:nth-child(n+4) {
+    display: none;
+  }
+
+  .gameShell:has(.stationInteraction) .vehicleHudSlot,
+  .gameShell:has(.stationInteraction) .combatBar {
+    display: none;
+  }
+
+  .gameShell:has(.stationInteraction) .waypointHud {
+    bottom: calc(var(--bb-safe-bottom) + 160px);
+  }
+
+  .stationInteraction {
+    bottom: var(--bb-safe-bottom) !important;
+  }
+
+  .stationInteraction__cargo {
+    grid-template-columns: 1fr;
+    max-height: 150px;
+    overflow: auto;
+  }
+
+  .stationCommandHeader {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .stationCommandHeader__stats {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .stationTabs {
+    padding: 8px;
+  }
+
+  .stationTabs button {
+    min-height: 36px;
+    padding: 0 8px;
+  }
+
+  .stationCommandBody main {
+    padding: 10px;
+  }
+
+  .stationCommandGrid,
+  .stationCardGrid,
+  .stationStorageColumns,
+  .stationRepairTrack,
+  .stationDefenseSummary,
+  .stationSlotGrid,
+  .stationRequirementList {
+    grid-template-columns: 1fr;
+  }
+
+  .loginActions {
+    grid-template-columns: 1fr;
+  }
+
+  .loginCard footer {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 360px) {
+  .pilotHud,
+  .missionHud {
+    width: 132px;
+  }
+
+  .mapHud {
+    width: 158px;
+  }
+
+  .mapHud .minimap {
+    width: 142px !important;
+    height: 176px !important;
+  }
+
+  .missionHud strong {
+    font-size: 12px;
+  }
+
+  .vehicleHudSlot {
+    width: 154px;
+  }
+
+  .combatBar {
+    padding: 4px;
+  }
+
+  .combatSlot {
+    width: 40px;
+    min-width: 40px;
+  }
+
+  .waypointHud {
+    min-width: 174px;
+  }
+
+  .stationInteraction {
+    padding: 9px;
+  }
+
+  .stationInteraction__main {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .stationInteraction__icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .stationInteraction__meta {
+    font-size: 10px;
+  }
+
+  .stationActionButton,
+  .stationInteraction__primary {
+    min-height: 32px;
+    padding-inline: 8px;
+  }
+}
+
+@media (max-height: 600px) and (min-width: 721px) {
+  :root {
+    --bb-safe-top: max(8px, env(safe-area-inset-top));
+    --bb-safe-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  .pilotHud {
+    width: 220px;
+    padding: 8px;
+  }
+
+  .missionHud {
+    top: calc(var(--bb-safe-top) + 91px);
+    width: 220px;
+    padding: 9px;
+  }
+
+  .missionHud p,
+  .missionHud small {
+    display: none;
+  }
+
+  .mapHud {
+    width: 176px;
+  }
+
+  .mapHud .minimap {
+    width: 158px !important;
+    height: 194px !important;
+  }
+
+  .mapHud__header b {
+    display: none;
+  }
+
+  .vehicleHudSlot {
+    width: 230px;
+  }
+
+  .vehicleHud {
+    padding: 9px;
+    gap: 6px;
+  }
+
+  .vehicleMeter:nth-of-type(2),
+  .vehicleHud footer {
+    display: none;
+  }
+
+  .cargoCompact {
+    width: 180px;
+  }
+
+  .stationCompact {
+    width: 180px;
+    bottom: calc(var(--bb-safe-bottom) + 82px);
+  }
+
+  .combatSlot {
+    min-width: 44px;
+    width: 44px;
+  }
+
+  .combatSlot span,
+  .combatSlot .uiKeyHint {
+    display: none;
+  }
+
+  .gameShell:has(.stationInteraction) .combatBar,
+  .gameShell:has(.stationInteraction) .vehicleHudSlot,
+  .gameShell:has(.stationInteraction) .cargoCompact,
+  .gameShell:has(.stationInteraction) .stationCompact {
+    display: none;
+  }
+
+  .gameShell:has(.stationInteraction) .stationInteraction {
+    bottom: var(--bb-safe-bottom);
+  }
+
+  .stationInteraction {
+    max-height: calc(100dvh - var(--bb-safe-top) - var(--bb-safe-bottom));
+    overflow: auto;
+  }
+
+  .stationCommandHeader {
+    padding-block: 8px;
+  }
+
+  .stationCommandBody main {
+    padding: 9px;
+  }
+}
+
+@media (max-height: 430px) and (min-width: 600px) {
+  .missionHud,
+  .cargoCompact,
+  .stationCompact {
+    display: none;
+  }
+
+  .mapHud {
+    width: 150px;
+  }
+
+  .mapHud .minimap {
+    width: 132px !important;
+    height: 164px !important;
+  }
+
+  .vehicleHudSlot {
+    width: 205px;
+  }
+
+  .waypointHud {
+    padding-block: 5px;
+  }
+
+  .stationInteraction__cargo {
+    display: none;
+  }
+}
+
+@media (orientation: portrait) and (min-height: 800px) and (max-width: 720px) {
+  .vehicleHudSlot,
+  .cargoCompact {
+    bottom: calc(var(--bb-safe-bottom) + 6px);
+  }
+
+  .combatBar {
+    bottom: calc(var(--bb-safe-bottom) + 96px);
+  }
+
+  .waypointHud {
+    bottom: calc(var(--bb-safe-bottom) + 162px);
+  }
+
+  .gameShell:has(.stationInteraction) .waypointHud {
+    bottom: calc(var(--bb-safe-bottom) + 170px);
+  }
+}
+
+@media (min-width: 1921px) {
+  .loginCard {
+    margin-right: min(30vw, 560px);
+  }
+
+  .loginScreen__ambient {
+    left: 52%;
+  }
+}
+
+@media (min-width: 1600px) {
+  .mapHud {
+    width: 264px;
+  }
+
+  .mapHud .minimap {
+    width: 248px !important;
+    height: 288px !important;
+  }
+
+  .pilotHud,
+  .missionHud {
+    width: 300px;
+  }
+
+  .vehicleHudSlot {
+    width: 320px;
+  }
+}
+
+@media (max-height: 620px) {
+  .loginCard {
+    padding: 18px 22px;
+    gap: 10px;
+  }
+
+  .loginBrand span {
+    font-size: 30px;
+  }
+
+  .loginBrand p {
+    margin-top: 3px;
+  }
+
+  .loginField {
+    gap: 4px;
+  }
+
+  .loginField > div {
+    height: 42px;
+  }
+
+  .loginCard footer {
+    display: none;
+  }
+
+  .gameLoadingCore {
+    gap: 8px;
+  }
+}
+
+@media (max-height: 460px) {
+  .loginScreen {
+    place-items: start center;
+    overflow-y: auto;
+  }
+
+  .loginCard {
+    margin: 0;
+    max-height: none;
+  }
+
+  .loginScreen__ambient {
+    display: none;
+  }
+
+  .gameLoadingCore p,
+  .gameLoadingCore small {
+    display: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .uiButton,
+  .stationActionButton,
+  .stationInteraction__primary,
+  .stationTabs button,
+  .combatSlot {
+    min-height: 44px;
+  }
+}
+
+@media (max-height: 600px) and (min-width: 721px) {
+  .mapHud {
+    width: 176px;
+  }
+
+  .mapHud .minimap {
+    width: 158px !important;
+    height: 194px !important;
+  }
+
+  .pilotHud {
+    width: 220px;
+  }
+
+  .missionHud {
+    width: 220px;
+    top: calc(var(--bb-safe-top) + 91px);
+  }
+}
+
+@media (max-height: 430px) and (min-width: 600px) {
+  .missionHud,
+  .cargoCompact,
+  .stationCompact {
+    display: none;
+  }
+
+  .mapHud {
+    width: 150px;
+  }
+
+  .mapHud .minimap {
+    width: 132px !important;
+    height: 164px !important;
+  }
+
+  .vehicleHudSlot {
+    width: 205px;
+  }
+}
+.loginScreen {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  isolation: isolate;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #020711;
+}
+.loginBackdrop {
+  position: absolute;
+  inset: -2%;
+  z-index: -3;
+  background: #020711 url("/assets/baseborn-login-hero.png") center center / cover no-repeat;
+  filter: saturate(1.04) contrast(1.04);
+  transform: scale(1.02);
+}
+.loginVignette {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(1, 6, 14, .92) 0%, rgba(1, 7, 17, .64) 28%, rgba(1, 8, 20, .08) 60%),
+    linear-gradient(180deg, rgba(0, 4, 12, .5) 0%, transparent 30%, transparent 66%, rgba(0, 5, 14, .72) 100%),
+    radial-gradient(circle at 74% 45%, transparent 0%, rgba(0, 4, 12, .16) 60%, rgba(0, 3, 10, .5) 100%);
+}
+.loginSystemStatus,
+.loginSectorStatus {
+  position: absolute;
+  top: clamp(20px, 3.2vh, 34px);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  min-height: 58px;
+  border: 1px solid rgba(83, 153, 201, .28);
+  border-radius: 9px;
+  color: #a9bdce;
+  background: linear-gradient(135deg, rgba(3, 13, 27, .88), rgba(5, 14, 27, .62));
+  box-shadow: inset 0 1px rgba(255,255,255,.025), 0 16px 40px rgba(0,0,0,.18);
+  backdrop-filter: blur(10px);
+}
+.loginSystemStatus {
+  left: clamp(18px, 2vw, 32px);
+  width: 190px;
+  gap: 10px;
+  padding: 12px 14px;
+}
+.loginSystemStatus > svg { color: #49dfff; }
+.loginSystemStatus > div,
+.loginSectorStatus > div { display: grid; gap: 4px; }
+.loginSystemStatus strong,
+.loginSectorStatus span {
+  color: #b8c9d7;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.loginSystemStatus span,
+.loginSectorStatus small {
+  color: #748b9d;
+  font-size: 9px;
+}
+.loginSystemStatus > i,
+.loginSectorStatus > i {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: #526777;
+}
+.loginSystemStatus > i {
+  order: -1;
+  flex: 0 0 auto;
+  background: #32e98b;
+  box-shadow: 0 0 12px rgba(50,233,139,.72);
+}
+.loginSectorStatus {
+  right: clamp(18px, 2vw, 32px);
+  min-width: 255px;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 10px 14px 10px 18px;
+}
+.loginSectorStatus > i.is-online {
+  background: #32e98b;
+  box-shadow: 0 0 12px rgba(50,233,139,.72);
+}
+.loginSectorStatus > svg {
+  width: 42px;
+  height: 42px;
+  padding: 9px;
+  color: #d7e9f6;
+  border: 1px solid rgba(93, 164, 211, .34);
+  border-radius: 50%;
+}
+
+.loginContent {
+  position: absolute;
+  z-index: 2;
+  top: clamp(100px, 12vh, 150px);
+  left: clamp(42px, 7.4vw, 132px);
+  width: min(460px, 40vw);
+}
+.loginBrand {
+  position: relative;
+  padding-top: 54px;
+  text-align: left;
+}
+.loginBrand__emblem {
+  position: absolute;
+  top: 0;
+  left: 126px;
+  width: 70px;
+  height: 70px;
+  display: grid;
+  place-items: center;
+  color: #dff7ff;
+  border: 1px solid rgba(47, 181, 255, .78);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(48,145,235,.28), rgba(2,13,31,.58) 65%);
+  box-shadow: 0 0 32px rgba(35, 139, 255, .3), inset 0 0 20px rgba(42,178,255,.14);
+}
+.loginBrand__emblem::before,
+.loginBrand__emblem::after,
+.loginBrand__emblem i {
+  content: "";
+  position: absolute;
+  background: rgba(47, 188, 255, .8);
+}
+.loginBrand__emblem::before { width: 92px; height: 1px; }
+.loginBrand__emblem::after { width: 1px; height: 92px; }
+.loginBrand__emblem i:first-of-type { width: 84px; height: 84px; border: 1px solid rgba(47, 188, 255, .26); border-radius: 50%; background: transparent; }
+.loginBrand__emblem i:last-of-type { bottom: -13px; width: 3px; height: 28px; border-radius: 99px; box-shadow: 0 8px 18px #168cff; }
+.loginBrand h1 {
+  margin: 0;
+  color: #f3f7fb;
+  font-size: clamp(50px, 4.6vw, 72px);
+  font-weight: 950;
+  line-height: .95;
+  letter-spacing: .035em;
+  text-shadow: 0 2px 0 #9aa9b7, 0 8px 24px rgba(0,0,0,.72);
+}
+.loginBrand p {
+  margin: 12px 0 0;
+  color: #25bfff;
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: .48em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.loginBrand p b { color: #577d99; }
+
+.loginCard {
+  width: min(440px, 100%);
+  max-height: none;
+  margin: 24px 0 0 72px;
+  padding: 26px 30px;
+  gap: 16px;
+  overflow: visible;
+  border: 1px solid rgba(62, 159, 218, .38);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(3, 15, 31, .94), rgba(3, 12, 25, .83));
+  box-shadow: 0 28px 90px rgba(0,0,0,.48), inset 0 1px rgba(255,255,255,.03);
+  backdrop-filter: blur(16px);
+}
+.loginCard > header { display: grid; gap: 4px; }
+.loginCard > header span {
+  color: #38bfff;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.loginCard > header p {
+  margin: 0;
+  color: #91a8b9;
+  font-size: 12px;
+}
+.loginField { gap: 7px; }
+.loginField > span { color: #8fa8bb; font-size: 9px; letter-spacing: .1em; }
+.loginField > div {
+  height: 54px;
+  padding: 0 10px 0 15px;
+  gap: 11px;
+  border-color: rgba(73, 151, 204, .34);
+  border-radius: 7px;
+  background: rgba(1, 9, 20, .84);
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.loginField > div:focus-within {
+  border-color: rgba(45, 190, 255, .82);
+  box-shadow: 0 0 0 3px rgba(29, 153, 255, .1);
+}
+.loginField > div > svg { color: #91adc2; }
+.loginField input { color: #eef9ff; font-size: 14px; font-weight: 750; }
+.loginField button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(61, 178, 236, .2);
+  background: rgba(36, 137, 205, .12);
+}
+.loginField small { color: #698296; }
+.loginLaunch {
+  width: 100%;
+  min-height: 51px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  border: 1px solid #51ccff;
+  border-radius: 7px;
+  color: white;
+  background: linear-gradient(110deg, #1588d8, #235bea);
+  box-shadow: inset 0 1px rgba(255,255,255,.24), 0 10px 30px rgba(21,92,239,.25);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform .16s ease, filter .16s ease, box-shadow .16s ease;
+}
+.loginLaunch:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.12); box-shadow: inset 0 1px rgba(255,255,255,.28), 0 14px 38px rgba(21,92,239,.38); }
+.loginLaunch:disabled { opacity: .45; cursor: not-allowed; }
+.loginDivider { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; color: #60788a; font-size: 8px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.loginDivider i { height: 1px; background: rgba(89, 145, 183, .22); }
+.loginActions { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+.loginActions button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(79, 148, 195, .3);
+  border-radius: 7px;
+  color: #b4c8d8;
+  background: rgba(18, 40, 66, .68);
+  font-size: 10px;
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+.loginActions button:hover { color: #44caff; border-color: rgba(68,202,255,.62); background: rgba(23,72,110,.62); }
+.loginInlineNotice { border-radius: 5px; }
+
+.loginFooter {
+  position: absolute;
+  right: clamp(24px, 2vw, 34px);
+  bottom: clamp(22px, 3vh, 36px);
+  left: clamp(24px, 2vw, 34px);
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  pointer-events: none;
+}
+.loginFooter__meta {
+  display: flex;
+  gap: 10px;
+  color: #8195a6;
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.loginFooter__meta span { color: #325b79; }
+.loginPillars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: min(545px, 45vw);
+  border: 1px solid rgba(77, 151, 201, .3);
+  border-radius: 10px;
+  background: rgba(2, 12, 27, .72);
+  backdrop-filter: blur(10px);
+}
+.loginPillars article {
+  min-width: 0;
+  min-height: 74px;
+  padding: 13px 15px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.loginPillars article + article { border-left: 1px solid rgba(77, 151, 201, .2); }
+.loginPillars article > i {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid #258bc4;
+  border-radius: 50%;
+  color: #9ee3ff;
+}
+.loginPillars article > div { min-width: 0; display: grid; gap: 4px; }
+.loginPillars strong { color: #35bfff; font-size: 9px; text-transform: uppercase; }
+.loginPillars span { color: #8ca1b2; font-size: 8px; line-height: 1.35; }
+.loginFooter > small {
+  position: absolute;
+  right: 0;
+  bottom: 84px;
+  color: #6f8291;
+  font-size: 8px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1180px) {
+  .loginContent { left: 42px; width: 430px; }
+  .loginCard { margin-left: 28px; }
+  .loginPillars { width: 470px; }
+  .loginPillars article { padding: 11px; }
+}
+@media (max-width: 900px) {
+  .loginBackdrop { background-position: 64% center; }
+  .loginVignette { background: linear-gradient(90deg, rgba(1,6,14,.94), rgba(1,7,17,.56) 58%, rgba(1,7,17,.15)), linear-gradient(180deg, rgba(0,4,12,.45), transparent 60%, rgba(0,5,14,.85)); }
+  .loginContent { top: 105px; width: min(430px, calc(100vw - 56px)); }
+  .loginBrand h1 { font-size: 54px; }
+  .loginBrand__emblem { left: 108px; }
+  .loginFooter__meta { display: none; }
+  .loginPillars { margin-left: auto; width: min(520px, calc(100vw - 48px)); }
+}
+@media (max-width: 640px) {
+  .loginScreen {
+    min-height: 100dvh;
+    height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0;
+  }
+  .loginBackdrop {
+    position: fixed;
+    inset: 0;
+    background-position: 68% center;
+    transform: none;
+  }
+  .loginVignette {
+    position: fixed;
+    background: linear-gradient(180deg, rgba(1,6,15,.72) 0%, rgba(1,7,17,.48) 22%, rgba(1,7,17,.86) 60%, #020813 100%);
+  }
+  .loginSystemStatus { top: 14px; left: 14px; width: auto; min-height: 44px; padding: 8px 10px; }
+  .loginSystemStatus > svg, .loginSystemStatus span { display: none; }
+  .loginSystemStatus strong { font-size: 8px; }
+  .loginSectorStatus { top: 14px; right: 14px; min-width: 0; min-height: 44px; padding: 7px 9px; }
+  .loginSectorStatus span { display: none; }
+  .loginSectorStatus > svg { width: 31px; height: 31px; padding: 6px; }
+  .loginContent {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: auto;
+    padding: 82px 14px 18px;
+  }
+  .loginBrand { padding-top: 44px; text-align: center; }
+  .loginBrand__emblem { top: 0; left: 50%; width: 58px; height: 58px; transform: translateX(-50%); }
+  .loginBrand__emblem::before { width: 76px; }
+  .loginBrand__emblem::after { height: 76px; }
+  .loginBrand__emblem i:first-of-type { width: 69px; height: 69px; }
+  .loginBrand h1 { font-size: clamp(43px, 14vw, 58px); }
+  .loginBrand p { margin-top: 9px; font-size: 9px; letter-spacing: .35em; }
+  .loginCard {
+    width: 100%;
+    margin: 20px 0 0;
+    padding: 22px 20px;
+    gap: 14px;
+    overflow: visible;
+  }
+  .loginFooter {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    display: block;
+    padding: 0 14px max(18px, env(safe-area-inset-bottom));
+  }
+  .loginPillars { width: 100%; grid-template-columns: 1fr; }
+  .loginPillars article { min-height: 60px; }
+  .loginPillars article + article { border-top: 1px solid rgba(77,151,201,.2); border-left: 0; }
+  .loginFooter > small { position: static; display: block; padding: 12px 2px 0; text-align: right; }
+}
+@media (max-width: 390px) {
+  .loginActions button span { display: none; }
+  .loginActions button { min-height: 44px; }
+  .loginCard { padding: 19px 16px; }
+}
+@media (min-width: 641px) and (max-height: 760px) {
+  .loginContent { top: 74px; transform: scale(.86); transform-origin: top left; }
+  .loginSystemStatus, .loginSectorStatus { top: 16px; }
+  .loginFooter { bottom: 16px; }
+  .loginPillars article { min-height: 62px; padding-top: 8px; padding-bottom: 8px; }
+  .loginFooter > small { bottom: 70px; }
+}
+
+.leaderboard {
+  z-index: 26;
+  right: max(var(--bb-stage-gutter), var(--bb-safe-right));
+  top: calc(var(--bb-safe-top) + 76px);
+  max-height: min(388px, calc(100dvh - 180px));
+  overflow-y: auto;
+  background: rgba(3, 11, 23, .82);
+  border: 1px solid rgba(60, 174, 235, .28);
+  backdrop-filter: blur(15px);
+}
+
+.teamHubButton {
+  position: absolute;
+  z-index: 32;
+  top: var(--bb-safe-top);
+  right: max(var(--bb-stage-gutter), var(--bb-safe-right));
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 12px;
+  color: #b8eaff;
+  background: rgba(4, 16, 31, .88);
+  border: 1px solid rgba(57, 178, 241, .38);
+  border-radius: 9px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.teamHubButton b {
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 99px;
+  color: white;
+  background: #e14c78;
+  font-size: 10px;
+}
+.teamHubBackdrop {
+  position: absolute;
+  z-index: 150;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  background: rgba(0, 4, 12, .72);
+  backdrop-filter: blur(9px);
+}
+.teamHubPanel {
+  width: min(760px, 100%);
+  max-height: min(760px, calc(100dvh - 28px));
+  overflow: auto;
+  padding: 18px;
+  color: #d8edfa;
+  background: linear-gradient(145deg, rgba(6, 20, 38, .98), rgba(2, 9, 20, .98));
+  border: 1px solid rgba(58, 180, 241, .36);
+  border-radius: 15px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, .55);
+}
+.teamHubPanel > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.teamHubPanel > header div { display: grid; gap: 2px; }
+.teamHubPanel > header span, .teamHubSection h3 {
+  color: #54c8ff;
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.teamHubPanel > header strong { font-size: 22px; }
+.teamHubPanel button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 0 10px;
+  color: #bfeaff;
+  background: rgba(26, 114, 166, .18);
+  border: 1px solid rgba(66, 184, 242, .28);
+  border-radius: 7px;
+  cursor: pointer;
+}
+.teamHubPanel button:disabled { opacity: .42; cursor: not-allowed; }
+.teamHubPanel > header > button { width: 36px; padding: 0; }
+.teamHubColumns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.teamHubSection {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(82, 159, 204, .18);
+  border-radius: 11px;
+  background: rgba(4, 13, 27, .66);
+}
+.teamHubSection + .teamHubSection, .teamHubColumns { margin-top: 12px; }
+.teamHubSection article {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 9px;
+  border-radius: 8px;
+  background: rgba(63, 138, 184, .08);
+}
+.teamHubSection article > div { display: grid; min-width: 0; margin-right: auto; }
+.teamHubSection article strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.teamHubSection article small, .teamHubEmpty { color: #8099aa; font-size: 11px; }
+.teamHubAccept { color: #8fffc1 !important; border-color: rgba(75, 218, 139, .4) !important; }
+.teamHubError {
+  margin: 0 0 12px;
+  padding: 9px 11px;
+  color: #ff9bae;
+  background: rgba(207, 54, 82, .13);
+  border: 1px solid rgba(236, 88, 117, .3);
+  border-radius: 8px;
+}
+.stationRenameCard form { display: flex; gap: 7px; margin-top: 8px; }
+.stationRenameCard input {
+  min-width: 0;
+  flex: 1;
+  padding: 8px 9px;
+  color: #e7f7ff;
+  background: rgba(1, 8, 17, .66);
+  border: 1px solid rgba(72, 177, 230, .28);
+  border-radius: 7px;
+}
+.stationRenameCard button { min-height: 34px; }
+
+@media (max-width: 700px) {
+  .leaderboard {
+    display: block;
+    top: calc(var(--bb-safe-top) + 47px);
+    width: min(226px, calc(100vw - 20px));
+    max-height: 146px;
+    padding: 8px;
+    font-size: 10px;
+  }
+  .leaderboard h2 { margin-bottom: 5px; font-size: 11px; }
+  .leader { padding: 4px 0; }
+  .leader small { display: none; }
+  .teamHubButton { min-height: 34px; padding: 0 9px; font-size: 11px; }
+  .teamHubColumns { grid-template-columns: 1fr; }
+  .teamHubPanel { padding: 13px; }
+  .teamHubInvites article { flex-wrap: wrap; }
+}

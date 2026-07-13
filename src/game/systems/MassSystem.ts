@@ -1,0 +1,1 @@
+export function getMassMovementModifiers(mass:number){const excess=Math.max(0,mass-45);return{acceleration:Math.max(.55,1-excess*.0045),maxSpeed:Math.max(.72,1-excess*.0022),collision:1+excess*.006};}

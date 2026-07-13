@@ -1,0 +1,8 @@
+import type { StatKey } from "./stats";
+export type BuildRole = "Assault"|"Fortress"|"Support"|"Mobility"|"Technology"|"Mining"|"Command"|"Logistics"|"Recon"|"Siege";
+export type StructuralBranchId = "reinforced"|"expanded"|"lightweight"|"specialized";
+export type DamageState = "healthy"|"lightly_damaged"|"damaged"|"heavily_damaged"|"critical"|"destroyed";
+export type PhysicalModuleSlot={id:string;type:string;position:"front"|"left"|"right"|"rear"|"dorsal"|"internal";x:number;y:number;arc:"forward"|"broadside"|"rear"|"omni"|"internal";moduleId:string|null};
+export type BuildBudgetSnapshot={powerUsed:number;powerCapacity:number;mass:number;heatGeneration:number;heatCapacity:number;currentHeat:number;controlUsed:number;controlCapacity:number;overloaded:boolean;overheated:boolean};
+export type UpgradeMilestoneSnapshot={statId:StatKey;rank:number;label:string;visualChange:string;tacticalChange:string};
+export type BuildIdentitySnapshot={vehicleId:string;frame:string;structuralBranch:{id:StructuralBranchId;name:string;description:string};primaryRole:BuildRole;secondaryRole:BuildRole;roleAffinities:Record<BuildRole,number>;strengths:string[];weaknesses:string[];slotTopology:PhysicalModuleSlot[];installedModules:Array<{id:string;name:string;family:string;enabled:boolean;slotId:string;visual:string;drawback:string}>;activeSynergies:Array<{id:string;name:string;effect:string;visualEffect:string}>;availableSynergies:Array<{id:string;name:string;missing:string[]}>;budgets:BuildBudgetSnapshot;damageState:DamageState;upgradeMilestones:UpgradeMilestoneSnapshot[];visualProfileId:string;roleLabel:string;teamContribution:string};

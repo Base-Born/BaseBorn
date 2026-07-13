@@ -1,0 +1,784 @@
+:root {
+  --bb-bg: #050810;
+  --bb-panel: rgba(14, 22, 32, 0.88);
+  --bb-panel-strong: rgba(18, 30, 43, 0.96);
+  --bb-border: rgba(82, 124, 148, 0.38);
+  --bb-text: #f2f7fb;
+  --bb-muted: #b5c3cf;
+  --bb-cyan: #4cc9f0;
+  --bb-green: #6edb8f;
+  --bb-purple: #a78bfa;
+}
+
+.bbMenu {
+  position: relative;
+  width: 100vw;
+  min-height: 100vh;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: 46px 24px 34px;
+  background: var(--bb-bg);
+  isolation: isolate;
+}
+
+.bbMenu,
+.bbMenu *,
+.bbModalBackdrop,
+.bbModalBackdrop * {
+  box-sizing: border-box;
+}
+
+.bbStarfield {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 52% 26%, rgba(76, 201, 240, 0.14), transparent 26%),
+    radial-gradient(ellipse at 87% 32%, rgba(110, 219, 143, 0.09), transparent 23%),
+    radial-gradient(ellipse at 13% 56%, rgba(167, 139, 250, 0.13), transparent 25%),
+    linear-gradient(180deg, #101d2c 0%, #07111e 55%, #050810 100%);
+  z-index: -3;
+}
+
+.bbStars {
+  position: absolute;
+  inset: -20%;
+  background-image:
+    radial-gradient(circle, rgba(242, 247, 251, 0.74) 0 1px, transparent 1.3px),
+    radial-gradient(circle, rgba(76, 201, 240, 0.4) 0 1px, transparent 1.4px);
+  background-size: 82px 82px, 149px 149px;
+  opacity: 0.36;
+  animation: bbStarDrift 58s linear infinite;
+}
+
+.bbStars--far {
+  opacity: 0.15;
+  background-size: 139px 139px, 231px 231px;
+  animation-duration: 86s;
+  animation-direction: reverse;
+}
+
+.bbNebula {
+  position: absolute;
+  width: 48vw;
+  height: 46vh;
+  filter: blur(44px);
+  opacity: 0.22;
+}
+
+.bbNebula--cyan {
+  right: -14vw;
+  top: 12vh;
+  background: radial-gradient(ellipse, rgba(90, 166, 200, 0.18), transparent 68%);
+}
+
+.bbNebula--violet {
+  left: -18vw;
+  bottom: 3vh;
+  background: radial-gradient(ellipse, rgba(130, 111, 169, 0.16), transparent 68%);
+}
+
+.bbPlanet {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.46;
+  box-shadow: inset -18px -16px 24px rgba(0, 0, 0, 0.72), 0 0 24px rgba(90, 166, 200, 0.08);
+}
+
+.bbPlanet--left {
+  left: -110px;
+  bottom: -100px;
+  width: min(360px, 32vw);
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, #1e3a8a, #020617 60%);
+}
+
+.bbPlanet--right {
+  right: 8vw;
+  top: 27vh;
+  width: min(84px, 8vw);
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, #7c3aed, #020617 70%);
+}
+
+.bbOrbit {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: min(1420px, 130vw);
+  height: min(760px, 72vw);
+  transform: translate(-50%, -50%) rotate(-17deg);
+  border: 1px solid rgba(154, 164, 176, 0.12);
+  border-radius: 50%;
+  box-shadow: 0 0 22px rgba(90, 166, 200, 0.04);
+}
+
+@keyframes bbStarDrift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(88px, 118px, 0); }
+}
+
+.bbMenuStack {
+  position: relative;
+  z-index: 1;
+  width: min(670px, 92vw);
+  display: grid;
+  justify-items: center;
+  gap: 20px;
+  animation: bbMenuIn 260ms ease-out both;
+}
+
+@keyframes bbMenuIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.bbLogoBlock {
+  text-align: center;
+}
+
+.bbLogoBlock h1 {
+  margin: 0;
+  color: var(--bb-text);
+  font-size: clamp(4rem, 6.8vw, 6.05rem);
+  line-height: 0.9;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-shadow: 0 0 18px rgba(230, 237, 242, 0.2), 0 0 34px rgba(90, 166, 200, 0.1);
+}
+
+.bbLogoBlock h1 em {
+  color: var(--bb-cyan);
+  font-style: normal;
+}
+
+.bbLogoBlock p {
+  margin: 14px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 0.42em;
+  color: var(--bb-cyan);
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.12;
+}
+
+.bbLogoBlock p span { color: var(--bb-cyan); }
+.bbLogoBlock p b { color: var(--bb-purple); }
+.bbLogoBlock p strong { color: #76bf87; }
+
+.bbLaunchCard {
+  min-width: 0;
+  width: min(100%, calc(100vw - 48px));
+  max-width: 670px;
+  display: grid;
+  gap: 16px;
+  padding: 28px 46px 34px;
+  border: 1px solid rgba(154, 164, 176, 0.36);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 100%, rgba(90, 166, 200, 0.06), transparent 34%),
+    linear-gradient(180deg, rgba(24, 31, 41, 0.78), rgba(12, 17, 24, 0.92));
+  box-shadow:
+    0 0 0 1px rgba(154, 164, 176, 0.08),
+    0 0 34px rgba(90, 166, 200, 0.08),
+    0 28px 90px rgba(0, 0, 0, 0.56),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(18px);
+}
+
+.bbShipPreview {
+  position: relative;
+  justify-self: center;
+  width: 188px;
+  height: 188px;
+  margin-bottom: -22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(154, 164, 176, 0.28);
+  background:
+    radial-gradient(circle at 52% 45%, rgba(90, 166, 200, 0.12), transparent 42%),
+    rgba(13, 18, 24, 0.72);
+  box-shadow: inset 0 0 28px rgba(90, 166, 200, 0.08), 0 0 20px rgba(90, 166, 200, 0.08);
+}
+
+.bbShipPreview__ring {
+  position: absolute;
+  inset: -13px;
+  border-radius: 50%;
+  border: 2px solid rgba(90, 166, 200, 0.58);
+  border-left-color: transparent;
+  border-bottom-color: transparent;
+  border-right-color: rgba(90, 166, 200, 0.14);
+  animation: bbSpin 8s linear infinite;
+}
+
+.bbShipPreview__glow {
+  position: absolute;
+  width: 82px;
+  height: 104px;
+  border-radius: 50%;
+  background: rgba(90, 166, 200, 0.12);
+  filter: blur(13px);
+}
+
+@keyframes bbSpin {
+  to { transform: rotate(360deg); }
+}
+
+.bbPreviewShip {
+  position: relative;
+  width: 96px;
+  height: 62px;
+  background: linear-gradient(90deg, #2aa9c7 0%, #d4dee6 42%, #7ca4b8 74%, #4f7f95 100%);
+  clip-path: polygon(100% 50%, 18% 0, 34% 36%, 0 50%, 34% 64%, 18% 100%);
+  filter:
+    drop-shadow(0 0 10px rgba(255, 255, 255, 0.5))
+    drop-shadow(0 0 10px rgba(90, 166, 200, 0.38))
+    drop-shadow(-10px 0 12px rgba(79, 127, 149, 0.42));
+  transform: rotate(-90deg);
+  animation: bbShipFloat 3.6s ease-in-out infinite;
+}
+
+.bbPreviewCockpit {
+  position: absolute;
+  right: 29px;
+  top: 25px;
+  width: 19px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(245, 247, 255, 0.82);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.44);
+}
+
+.bbPreviewDecal {
+  position: absolute;
+  left: 28px;
+  right: 35px;
+  top: 29px;
+  height: 4px;
+  border-radius: 999px;
+  background: #8e80b8;
+  clip-path: polygon(0 0, 75% 0, 100% 50%, 75% 100%, 0 100%, 22% 50%);
+  opacity: 0.9;
+}
+
+@keyframes bbShipFloat {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -5px; }
+}
+
+.bbField {
+  display: grid;
+  gap: 9px;
+}
+
+.bbField span {
+  color: var(--bb-muted);
+  font-size: 0.96rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.bbInputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.bbInputWrap svg {
+  position: absolute;
+  left: 21px;
+  color: var(--bb-cyan);
+}
+
+.bbInputWrap input {
+  width: 100%;
+  height: 66px;
+  padding: 0 124px 0 68px;
+  border: 1px solid rgba(90, 166, 200, 0.85);
+  border-radius: 10px;
+  background: rgba(3, 7, 18, 0.76);
+  color: var(--bb-text);
+  font-size: 1.35rem;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.bbInputWrap input:focus {
+  border-color: rgba(90, 166, 200, 0.7);
+  box-shadow: 0 0 0 3px rgba(90, 166, 200, 0.12);
+  background: rgba(5, 12, 26, 0.9);
+}
+
+.bbRandomNameButton {
+  position: absolute;
+  right: 61px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(90, 166, 200, 0.28);
+  border-radius: 9px;
+  background: rgba(10, 21, 44, 0.74);
+  color: var(--bb-cyan);
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+
+.bbRandomNameButton svg {
+  position: static;
+  color: currentColor;
+}
+
+.bbRandomNameButton:hover,
+.bbRandomNameButton:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(90, 166, 200, 0.74);
+  background: rgba(14, 39, 72, 0.9);
+  box-shadow: 0 0 16px rgba(90, 166, 200, 0.16);
+  outline: none;
+}
+
+.bbInputWrap small {
+  position: absolute;
+  right: 18px;
+  color: #6f7f9d;
+  font-size: 1rem;
+}
+
+.bbModeDescription {
+  min-width: 0;
+  min-height: 112px;
+  padding: 18px 28px;
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid rgba(118, 191, 135, 0.28);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 12% 50%, rgba(90, 166, 200, 0.12), transparent 24%),
+    linear-gradient(135deg, rgba(90, 166, 200, 0.08), rgba(118, 191, 135, 0.08));
+}
+
+.bbModeDescription__icon {
+  display: grid;
+  place-items: center;
+  color: var(--bb-cyan);
+}
+
+.bbModeDescription span {
+  color: var(--bb-text);
+  font-size: 1.55rem;
+  font-weight: 900;
+}
+
+.bbModeDescription p {
+  margin: 0;
+  color: var(--bb-muted);
+  font-size: 1rem;
+  line-height: 1.38;
+}
+
+.bbPlayButton {
+  min-width: 0;
+  width: 100%;
+  height: 76px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(134, 239, 172, 0.24);
+  background: linear-gradient(180deg, #76bf87 0%, #5f9f6e 45%, #477d59 100%);
+  color: #ecfeff;
+  font-size: 1.85rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  box-shadow: 0 0 24px rgba(118, 191, 135, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+}
+
+.bbPlayButton:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow: 0 0 34px rgba(90, 166, 200, 0.36), 0 0 42px rgba(118, 191, 135, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.bbHowToPlayButton {
+  min-width: 0;
+  width: 100%;
+  height: 66px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(120, 160, 255, 0.24);
+  border-radius: 9px;
+  background: rgba(15, 28, 58, 0.74);
+  color: #b8c6e7;
+  font-size: 1.26rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  transition: transform 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+.bbHowToPlayButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(90, 166, 200, 0.44);
+  color: var(--bb-text);
+  box-shadow: 0 0 16px rgba(90, 166, 200, 0.12);
+}
+
+.bbFooter {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  flex-wrap: nowrap;
+  opacity: 0.68;
+}
+
+.bbFooter button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  background: transparent;
+  color: #8796b8;
+  font-size: 0.94rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.bbFooter button + button::before {
+  content: "";
+  width: 3px;
+  height: 3px;
+  margin-right: 18px;
+  border-radius: 50%;
+  background: rgba(135, 150, 184, 0.72);
+}
+
+.bbFooter button:hover {
+  color: var(--bb-text);
+}
+
+.bbModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.52);
+  backdrop-filter: blur(10px);
+}
+
+.bbModal {
+  width: min(520px, 92vw);
+  max-height: 80vh;
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid rgba(120, 180, 255, 0.34);
+  border-radius: 16px;
+  background: var(--bb-panel-strong);
+  box-shadow: 0 24px 84px rgba(0, 0, 0, 0.58), 0 0 32px rgba(90, 166, 200, 0.1);
+  animation: bbModalIn 160ms ease-out both;
+}
+
+@keyframes bbModalIn {
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.bbModal header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.bbModal h2,
+.bbModal h3 {
+  margin: 0;
+}
+
+.bbModal h2 {
+  font-size: 1.15rem;
+}
+
+.bbModal header button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(120, 160, 255, 0.2);
+  border-radius: 9px;
+  background: rgba(15, 28, 58, 0.72);
+}
+
+.bbHowToPlayContent {
+  display: grid;
+  gap: 10px;
+}
+
+.bbHowToPlaySection {
+  display: grid;
+  gap: 7px;
+  padding: 11px;
+  border: 1px solid rgba(120, 160, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(3, 7, 18, 0.38);
+}
+
+.bbHowToPlaySection h3 {
+  color: #dbeafe;
+  font-size: 0.9rem;
+}
+
+.bbHowToPlaySection p {
+  margin: 0;
+  color: var(--bb-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.bbControlRows {
+  display: grid;
+  gap: 7px;
+}
+
+.bbControlRows div {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 30px;
+}
+
+.bbControlRows b {
+  color: var(--bb-text);
+  font-size: 0.78rem;
+}
+
+.bbControlRows span {
+  color: var(--bb-muted);
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+@media (max-height: 760px) {
+  .bbMenu {
+    align-items: start;
+    padding-top: 18px;
+  }
+
+  .bbMenuStack {
+    width: min(520px, 92vw);
+    gap: 10px;
+  }
+
+  .bbLogoBlock h1 {
+    font-size: clamp(2.35rem, 7vw, 3.05rem);
+  }
+
+  .bbLogoBlock p {
+    font-size: 0.76rem;
+  }
+
+  .bbLaunchCard {
+    gap: 8px;
+    padding: 18px 28px 22px;
+  }
+
+  .bbShipPreview {
+    width: 100px;
+    height: 100px;
+  }
+
+  .bbPreviewShip {
+    width: 54px;
+    height: 34px;
+  }
+
+  .bbInputWrap input {
+    height: 48px;
+    padding: 0 94px 0 46px;
+    font-size: 1rem;
+  }
+
+  .bbRandomNameButton {
+    right: 48px;
+    width: 30px;
+    height: 30px;
+  }
+
+  .bbModeDescription {
+    min-height: 62px;
+    padding: 9px 14px;
+    grid-template-columns: 42px 1fr;
+    gap: 10px;
+  }
+
+  .bbModeDescription p {
+    font-size: 0.65rem;
+  }
+
+  .bbPlayButton {
+    height: 52px;
+    font-size: 1.08rem;
+  }
+
+  .bbHowToPlayButton {
+    height: 42px;
+    font-size: 0.9rem;
+  }
+
+  .bbFooter button {
+    min-height: 22px;
+    font-size: 0.62rem;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 520px) {
+  .bbMenu {
+    padding: 14px;
+    overflow-x: hidden;
+  }
+
+  .bbMenuStack {
+    width: 100%;
+    max-width: calc(100vw - 28px);
+    justify-items: stretch;
+  }
+
+  .bbLogoBlock h1 {
+    font-size: clamp(1.85rem, 9.4vw, 2.35rem);
+    line-height: 0.96;
+  }
+
+  .bbLogoBlock {
+    justify-self: center;
+    max-width: 100%;
+  }
+
+  .bbLogoBlock p {
+    max-width: min(330px, calc(100vw - 28px));
+    margin-top: 10px;
+    font-size: clamp(0.92rem, 5vw, 1.16rem);
+  }
+
+  .bbLaunchCard {
+    width: calc(100vw - 28px);
+    max-width: calc(100vw - 28px);
+    justify-self: start;
+    padding: 16px;
+  }
+
+  .bbInputWrap input {
+    height: 48px;
+    padding: 0 86px 0 44px;
+    font-size: 1rem;
+  }
+
+  .bbInputWrap svg {
+    left: 14px;
+  }
+
+  .bbInputWrap small {
+    right: 12px;
+    font-size: 0.72rem;
+  }
+
+  .bbRandomNameButton {
+    right: 42px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .bbModeDescription {
+    grid-template-columns: 42px 1fr;
+    gap: 10px;
+  }
+
+  .bbModeDescription__icon svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .bbModeDescription span {
+    font-size: 1rem;
+  }
+
+  .bbModeDescription p {
+    font-size: 0.75rem;
+  }
+
+  .bbFooter {
+    justify-self: center;
+    gap: 4px 9px;
+  }
+
+  .bbFooter button {
+    font-size: 0.62rem;
+  }
+
+  .bbPlanet--left {
+    width: 126px;
+  }
+
+  .bbControlRows div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .bbControlRows span {
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bbStars,
+  .bbShipPreview__ring,
+  .bbPreviewShip,
+  .bbMenuStack,
+  .bbModal {
+    animation: none;
+  }
+}
+
+.bbStoryBackdrop { background: radial-gradient(circle at 50% 20%, rgba(15,45,72,.34), rgba(0,0,0,.78)); }
+.bbStoryModal { width:min(860px,94vw); max-height:min(90dvh,920px); padding:0; overflow:hidden; display:grid; grid-template-rows:auto auto minmax(0,1fr); background:linear-gradient(155deg,rgba(8,18,34,.98),rgba(3,8,18,.98)); }
+.bbStoryModal > header { margin:0; padding:18px 20px; border-bottom:1px solid rgba(120,180,255,.18); background:rgba(6,13,27,.88); }
+.bbStoryModal > header > div { display:grid; gap:4px; }
+.bbStoryModal > header span { color:var(--bb-cyan); font-size:9px; font-weight:900; letter-spacing:.16em; }
+.bbStoryModal > header h2 { font-size:clamp(18px,3vw,25px); }
+.bbStoryHero { display:flex; align-items:center; gap:14px; padding:18px 22px; border-bottom:1px solid rgba(120,180,255,.14); color:var(--bb-cyan); background:linear-gradient(90deg,rgba(76,201,240,.09),transparent); }
+.bbStoryHero div { display:grid; gap:3px; }
+.bbStoryHero strong { color:#eefbff; font-size:clamp(15px,2.4vw,20px); }
+.bbStoryHero span { color:var(--bb-muted); font-size:12px; }
+.bbStoryContent { min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:22px clamp(18px,4vw,42px) 34px; scrollbar-color:rgba(76,201,240,.42) rgba(255,255,255,.03); }
+.bbStoryContent h2,.bbStoryContent h3 { scroll-margin-top:18px; }
+.bbStoryContent h2 { margin:8px 0 14px; color:#f3f9ff; font-size:clamp(22px,4vw,34px); }
+.bbStoryContent h3 { margin:30px 0 10px; color:#dff8ff; font-size:clamp(16px,2.5vw,21px); }
+.bbStoryContent p { margin:0 0 13px; color:#aebfce; font-size:13px; line-height:1.75; }
+.bbStoryContent p strong,.bbStoryContent li strong { color:#edf9ff; }
+.bbStoryContent ul,.bbStoryContent ol { margin:5px 0 18px; padding-left:23px; color:#aebfce; }
+.bbStoryContent li { padding:3px 0; font-size:13px; line-height:1.55; }
+.bbStoryContent li::marker { color:var(--bb-cyan); font-weight:900; }
+.bbStoryContent hr { height:1px; margin:26px 0; border:0; background:linear-gradient(90deg,transparent,rgba(76,201,240,.38),transparent); }
+.bbStoryContent > footer { margin-top:36px; padding:24px; display:grid; gap:5px; text-align:center; border:1px solid rgba(76,201,240,.2); border-radius:12px; background:rgba(76,201,240,.06); }
+.bbStoryContent > footer strong { color:var(--bb-cyan); letter-spacing:.08em; }
+.bbStoryContent > footer span { color:#eef9ff; font-size:18px; font-weight:900; }
+@media(max-width:520px){.bbStoryBackdrop{padding:0}.bbStoryModal{width:100vw;max-height:100dvh;height:100dvh;border:0;border-radius:0}.bbStoryModal>header{padding:14px 16px}.bbStoryHero{padding:14px 17px}.bbStoryContent{padding:18px 18px 30px}.bbStoryContent p,.bbStoryContent li{font-size:12px}.bbStoryContent h3{margin-top:24px}}

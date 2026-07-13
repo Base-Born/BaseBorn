@@ -1,0 +1,49 @@
+.leaderboard {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.leader {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.leader span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leader span em {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(52, 211, 153, 0.16);
+  color: #76bf87;
+  font-size: 0.56rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.leader b {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.leader--player {
+  margin: 0 -5px;
+  padding: 7px 5px;
+  border-radius: 8px;
+  background: rgba(52, 211, 153, 0.06);
+}
+
+.leader--player span {
+  color: #76bf87;
+}
+

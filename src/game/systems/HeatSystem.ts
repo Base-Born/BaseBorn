@@ -1,0 +1,1 @@
+export function getHeatModifiers(current:number,capacity:number){const ratio=current/Math.max(1,capacity);return{ratio,reload:ratio>.75?Math.max(.55,1-(ratio-.75)*.8):1,engine:ratio>1?Math.max(.6,1-(ratio-1)*.5):1,overheated:ratio>=1};}

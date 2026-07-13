@@ -1,0 +1,103 @@
+import type { HullTier, HullTierId } from "./stationTypes";
+
+export const HULL_TIERS: HullTier[] = [
+  {
+    tier: 1,
+    name: "Salvaged Hull",
+    description: "A damaged starter spacecraft with exposed systems, minimal cargo, one weapon slot, and no hyperdrive.",
+    levelRequirement: 1,
+    requiredRepairStage: null,
+    requiredCraftingTier: 0,
+    etherCost: {},
+    healthMultiplier: 1,
+    speedMultiplier: 1,
+    cargoCapacity: 100,
+    slots: { weapon: 1, defense: 0, engine: 0, mining: 0, utility: 1, core: 0 },
+  },
+  {
+    tier: 2,
+    name: "Reconstructed Vessel",
+    description: "A structurally complete vessel with restored plating, expanded cargo, and its first shield mount.",
+    levelRequirement: 5,
+    requiredRepairStage: "coreSystems",
+    requiredCraftingTier: 0,
+    etherCost: { rawEther: 180 },
+    healthMultiplier: 1.18,
+    speedMultiplier: 1.02,
+    cargoCapacity: 200,
+    slots: { weapon: 1, defense: 1, engine: 0, mining: 0, utility: 1, core: 0 },
+  },
+  {
+    tier: 3,
+    name: "Combat-Ready Ship",
+    description: "A sustained-combat frame with a second weapon hardpoint, stronger shields, and improved thrusters.",
+    levelRequirement: 15,
+    requiredRepairStage: "storage",
+    requiredCraftingTier: 1,
+    etherCost: { rawEther: 260, refinedEther: 120 },
+    healthMultiplier: 1.42,
+    speedMultiplier: 1.08,
+    cargoCapacity: 300,
+    slots: { weapon: 2, defense: 1, engine: 1, mining: 0, utility: 1, core: 0 },
+  },
+  {
+    tier: 4,
+    name: "Specialized Vessel",
+    description: "A role-defining hull that commits to combat, mining, cargo, support, energy, speed, or hybrid builds.",
+    levelRequirement: 30,
+    requiredRepairStage: "crafting",
+    requiredCraftingTier: 2,
+    etherCost: { refinedEther: 280, chargedEther: 150 },
+    healthMultiplier: 1.78,
+    speedMultiplier: 1.03,
+    cargoCapacity: 400,
+    slots: { weapon: 2, defense: 2, engine: 1, mining: 1, utility: 1, core: 0 },
+  },
+  {
+    tier: 5,
+    name: "Advanced Warship",
+    description: "A high-tier combat or industrial vessel with heavy systems, stronger shielding, and expanded utility capacity.",
+    levelRequirement: 50,
+    requiredRepairStage: "defenses",
+    requiredCraftingTier: 3,
+    etherCost: { chargedEther: 360, radiantEther: 180 },
+    healthMultiplier: 2.28,
+    speedMultiplier: 0.98,
+    cargoCapacity: 600,
+    slots: { weapon: 3, defense: 2, engine: 1, mining: 1, utility: 2, core: 0 },
+  },
+  {
+    tier: 6,
+    name: "Command Vessel",
+    description: "A station-linked command hull with fleet support, long-range sensors, redundant engines, and team systems.",
+    levelRequirement: 75,
+    requiredRepairStage: "commandCore",
+    requiredCraftingTier: 4,
+    etherCost: { radiantEther: 440, primalEther: 160 },
+    healthMultiplier: 2.85,
+    speedMultiplier: 0.94,
+    cargoCapacity: 800,
+    slots: { weapon: 3, defense: 3, engine: 2, mining: 2, utility: 2, core: 0 },
+  },
+  {
+    tier: 7,
+    name: "Mothership-Class Vessel",
+    description: "The endgame team vessel with heavy systems, docking support, massive cargo capacity, and hyperdrive access.",
+    levelRequirement: 100,
+    requiredRepairStage: "fullRestoration",
+    requiredCraftingTier: 5,
+    etherCost: { radiantEther: 700, primalEther: 280, coreEther: 80 },
+    healthMultiplier: 3.65,
+    speedMultiplier: 0.9,
+    cargoCapacity: 1000,
+    slots: { weapon: 4, defense: 3, engine: 2, mining: 2, utility: 3, core: 1 },
+  },
+];
+
+export function getHullTier(tier: HullTierId) {
+  return HULL_TIERS.find((entry) => entry.tier === tier) ?? HULL_TIERS[0];
+}
+
+export function getNextHullTier(tier: HullTierId) {
+  return HULL_TIERS.find((entry) => entry.tier === tier + 1);
+}

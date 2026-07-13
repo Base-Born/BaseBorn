@@ -1,0 +1,174 @@
+.coreUpgradePanel {
+  width: 350px;
+  color: #e6edf2;
+  pointer-events: auto;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.35));
+}
+
+.coreUpgradePanel header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 0 0 7px 10px;
+}
+
+.coreUpgradePanel h2 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.coreUpgradePanel header strong {
+  color: #f8fafc;
+  font-size: 1.25rem;
+  font-weight: 950;
+  line-height: 1;
+  transform: rotate(-18deg);
+  text-shadow:
+    -2px -2px 0 rgba(0, 0, 0, 0.55),
+    2px -2px 0 rgba(0, 0, 0, 0.55),
+    -2px 2px 0 rgba(0, 0, 0, 0.55),
+    2px 2px 0 rgba(0, 0, 0, 0.55);
+}
+
+.coreUpgradeRows {
+  display: grid;
+  gap: 4px;
+}
+
+.coreUpgradeRow {
+  --stat-color: #6faec6;
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) 34px 78px 26px 28px;
+  align-items: center;
+  gap: 5px;
+  height: 27px;
+  padding: 0 3px 0 12px;
+  border: 2px solid rgba(10, 14, 20, 0.72);
+  border-radius: 14px;
+  background:
+    linear-gradient(90deg, rgba(33, 35, 37, 0.97) 0%, rgba(56, 58, 60, 0.96) 76%, color-mix(in srgb, var(--stat-color) 68%, #d8dde0 10%) 76%, color-mix(in srgb, var(--stat-color) 68%, #d8dde0 10%) 100%);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.coreUpgradeRow:not(:disabled):hover {
+  filter: brightness(1.04);
+}
+
+.coreUpgradeRow:disabled {
+  cursor: default;
+  opacity: 0.58;
+}
+
+.coreUpgradeRow--hyper {
+  box-shadow: 0 0 7px color-mix(in srgb, var(--stat-color) 24%, transparent), inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.coreUpgradeText {
+  min-width: 0;
+}
+
+.coreUpgradeText b {
+  display: block;
+  color: #f8fafc;
+  font-size: 0.82rem;
+  font-weight: 950;
+  line-height: 1.05;
+  text-align: left;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.66);
+  white-space: nowrap;
+}
+
+.coreUpgradeKey {
+  color: #e5e7eb;
+  font-size: 0.68rem;
+  font-weight: 950;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75);
+}
+
+.coreUpgradePips {
+  display: grid;
+  gap: 2px;
+}
+
+.normalPips,
+.hyperPips {
+  display: flex;
+  gap: 2px;
+  justify-content: end;
+}
+
+.coreUpgradePips i {
+  width: 7px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.16);
+}
+
+.normalPips i.filled {
+  background: var(--stat-color);
+}
+
+.hyperPips i {
+  opacity: 0.32;
+}
+
+.hyperPips.unlocked i {
+  opacity: 0.62;
+}
+
+.hyperPips i.filled {
+  opacity: 1;
+  background: #ffffff;
+  box-shadow: 0 0 4px color-mix(in srgb, var(--stat-color) 60%, transparent);
+}
+
+.coreUpgradeState {
+  color: #111827;
+  font-size: 0.54rem;
+  font-weight: 950;
+  text-align: center;
+}
+
+.coreUpgradePlus {
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  color: #1f2937;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.coreUpgradePlus svg {
+  width: 15px;
+  height: 15px;
+}
+
+.coreUpgradeRow:not(:disabled) .coreUpgradePlus {
+  color: #111827;
+}
+
+@media (max-width: 540px) {
+  .coreUpgradePanel {
+    width: min(350px, calc(100vw - 28px));
+  }
+
+  .coreUpgradeRow {
+    grid-template-columns: minmax(126px, 1fr) 30px 58px 24px 24px;
+  }
+
+  .hyperPips {
+    display: none;
+  }
+}

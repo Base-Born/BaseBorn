@@ -1,0 +1,1308 @@
+.leftHudStack {
+  position: absolute;
+  left: 16px;
+  top: 86px;
+  z-index: 4;
+  display: grid;
+  gap: 10px;
+  width: 280px;
+  max-height: calc(100vh - 210px);
+  overflow: hidden auto;
+  scrollbar-width: thin;
+}
+
+.gameShell--leftPanelsOpen .leftHudStack {
+  max-height: calc(100vh - 156px);
+}
+
+.bottomLeftUpgradeDock {
+  position: absolute;
+  left: 16px;
+  bottom: 70px;
+  z-index: 5;
+  width: min(390px, calc(100vw - 32px));
+  max-height: calc(100vh - 180px);
+  overflow: hidden auto;
+  scrollbar-width: thin;
+}
+
+.playerStatusCard {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(82, 124, 148, 0.36);
+  border-radius: 12px;
+  background: rgba(14, 22, 32, 0.88);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(10px);
+}
+
+.playerStatusCard span,
+.playerStatusCard .scoreLine,
+.playerStatusCard .pointsLine {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.playerStatusCard .scoreLine,
+.playerStatusCard .pointsLine {
+  grid-column: 1 / -1;
+}
+
+.bottomHud .hudButtons button.active {
+  border-color: rgba(76, 201, 240, 0.72);
+  color: var(--cyan);
+}
+
+.cargoHud {
+  display: grid;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 1px solid rgba(82, 124, 148, 0.36);
+  border-radius: 12px;
+  background: rgba(14, 22, 32, 0.88);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.24);
+  color: #f2f7fb;
+  backdrop-filter: blur(10px);
+}
+
+.cargoHud header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.cargoHud header span {
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.cargoHud__bar {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(30, 41, 59, 0.92);
+}
+
+.cargoHud__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #eef3f6, #4cc9f0, #ffd166);
+}
+
+.cargoHud small {
+  color: rgba(218, 228, 236, 0.82);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.cargoHud__types {
+  display: flex;
+  gap: 8px;
+  font-size: 0.72rem;
+  flex-wrap: wrap;
+}
+
+.cargoHud em {
+  color: #ffd166;
+  font-size: 0.74rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.cargoHud__manage {
+  min-height: 26px;
+  border: 1px solid rgba(76, 201, 240, 0.28);
+  border-radius: 7px;
+  background: rgba(8, 18, 30, 0.76);
+  color: #dff8ff;
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
+.cargoHud--full {
+  border-color: rgba(255, 209, 102, 0.64);
+  box-shadow: 0 0 18px rgba(255, 209, 102, 0.14);
+}
+
+.objectiveTracker {
+  display: grid;
+  gap: 7px;
+  padding: 11px 12px;
+  border: 1px solid rgba(255, 209, 102, 0.3);
+  border-radius: 12px;
+  background: rgba(18, 24, 30, 0.9);
+  color: #f2f7fb;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(10px);
+}
+
+.objectiveTracker header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.objectiveTracker header b {
+  color: #ffd166;
+}
+
+.objectiveTracker strong {
+  color: #f6fbff;
+  font-size: 0.88rem;
+}
+
+.objectiveTracker p,
+.objectiveTracker small {
+  margin: 0;
+  color: rgba(218, 228, 236, 0.82);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.objectiveTracker__finder {
+  display: grid;
+  gap: 4px;
+  padding: 8px 9px;
+  border: 1px solid rgba(76, 201, 240, 0.24);
+  border-radius: 7px;
+  background: rgba(76, 201, 240, 0.08);
+}
+
+.objectiveTracker__finder span,
+.objectiveTracker__finder small {
+  color: rgba(218, 228, 236, 0.82);
+}
+
+.objectiveTracker__finder b {
+  color: #eaf7ff;
+  font-size: 0.72rem;
+}
+
+.objectiveTracker__progress {
+  position: relative;
+  height: 16px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.objectiveTracker__progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4cc9f0, #ffd166);
+}
+
+.objectiveTracker__progress span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #f6fbff;
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
+.compactStationStatus {
+  display: grid;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 1px solid rgba(82, 124, 148, 0.36);
+  border-radius: 12px;
+  background: rgba(14, 22, 32, 0.88);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.22);
+}
+
+.compactStationStatus header,
+.compactStationStatus small {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.compactStationStatus header b,
+.compactStationStatus strong {
+  color: #f6fbff;
+}
+
+.compactStationStatus > div {
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(82, 124, 148, 0.22);
+  overflow: hidden;
+}
+
+.compactStationStatus > div i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6edb8f, #4cc9f0);
+}
+
+.compactStationStatus button {
+  min-height: 28px;
+  border: 1px solid rgba(76, 201, 240, 0.32);
+  border-radius: 7px;
+  background: rgba(8, 18, 30, 0.82);
+  color: #dff8ff;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.compactStationStatus--warning {
+  border-color: rgba(255, 107, 120, 0.45);
+}
+
+.stationInteraction {
+  position: absolute;
+  left: 50%;
+  bottom: 108px;
+  z-index: 7;
+  width: min(620px, calc(100vw - 32px));
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid rgba(76, 201, 240, 0.34);
+  border-radius: 14px;
+  background: rgba(9, 16, 26, 0.92);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.34), inset 0 0 24px rgba(76, 201, 240, 0.06);
+  color: #f2f7fb;
+  transform: translateX(-50%);
+  backdrop-filter: blur(16px);
+}
+
+.stationInteraction--warning {
+  border-color: rgba(255, 107, 120, 0.5);
+}
+
+.stationInteraction__main {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.stationInteraction__icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(76, 201, 240, 0.12);
+  color: #4cc9f0;
+}
+
+.stationInteraction header,
+.stationInteraction__meta,
+.stationInteraction__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stationInteraction header {
+  justify-content: space-between;
+}
+
+.stationInteraction header span,
+.stationInteraction p,
+.stationInteraction__meta {
+  margin: 0;
+  color: rgba(218, 228, 236, 0.78);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.stationInteraction__meta {
+  flex-wrap: wrap;
+}
+
+.stationInteraction__meta b {
+  color: #ffd166;
+}
+
+.stationInteraction__meta .stationInteraction__hint {
+  color: #dff8ff;
+}
+
+.stationInteraction__cargo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(82, 124, 148, 0.24);
+  border-radius: 10px;
+  background: rgba(4, 9, 15, 0.42);
+}
+
+.stationInteraction__cargo section {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.stationInteraction__cargo header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: rgba(218, 228, 236, 0.78);
+  font-size: 0.64rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.stationInteraction__cargo .stationResourceRows {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.stationInteraction__cargo .stationResourceRows div {
+  min-height: 22px;
+  padding: 3px 5px;
+  border-radius: 6px;
+  background: rgba(14, 27, 40, 0.72);
+  font-size: 0.62rem;
+}
+
+.stationInteraction__bar {
+  height: 7px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: rgba(82, 124, 148, 0.24);
+  overflow: hidden;
+}
+
+.stationInteraction__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff8aa0, #ffd166, #6edb8f);
+}
+
+.stationInteraction__actions {
+  flex-wrap: wrap;
+}
+
+.stationActionButton,
+.stationInteraction__primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid rgba(82, 124, 148, 0.36);
+  border-radius: 8px;
+  background: rgba(14, 27, 40, 0.86);
+  color: #eaf8ff;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.stationInteraction__primary {
+  margin-left: auto;
+  border-color: rgba(110, 219, 143, 0.5);
+  background: rgba(25, 76, 55, 0.9);
+}
+
+.stationActionButton:disabled {
+  color: rgba(218, 228, 236, 0.5);
+}
+
+.stationActionButton--danger {
+  border-color: rgba(255, 107, 120, 0.5);
+  color: #ffd7dc;
+}
+
+.stationActionButton kbd,
+.stationInteraction__primary kbd {
+  color: #4cc9f0;
+  font: inherit;
+}
+
+.stationPanel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(82, 124, 148, 0.36);
+  border-radius: 12px;
+  background: rgba(14, 22, 32, 0.9);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.24);
+  color: #e6edf2;
+  backdrop-filter: blur(10px);
+}
+
+.shipUpgradePanel {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(82, 124, 148, 0.36);
+  border-radius: 12px;
+  background: rgba(14, 22, 32, 0.92);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.26);
+  color: #f2f7fb;
+  backdrop-filter: blur(10px);
+}
+
+.shipUpgradePanel > header,
+.baseFrameSelect header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.shipUpgradePanel h2 {
+  margin: 0;
+  color: #f6fbff;
+  font-size: 0.94rem;
+}
+
+.shipUpgradePanel header span,
+.baseFrameSelect header span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.shipUpgradePanel > header strong {
+  color: #ffd166;
+  font-size: 1.25rem;
+}
+
+.baseFrameSelect {
+  display: grid;
+  gap: 6px;
+}
+
+.baseFrameSelect header b {
+  color: #4cc9f0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.baseFrameGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.baseFrameCard {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 7px 6px;
+  border: 1px solid color-mix(in srgb, var(--frame-color) 32%, rgba(82, 124, 148, 0.22));
+  border-radius: 8px;
+  background: rgba(6, 13, 22, 0.62);
+  color: #f2f7fb;
+  text-align: left;
+}
+
+.baseFrameCard.selected {
+  border-color: var(--frame-color);
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--frame-color) 12%, transparent);
+}
+
+.baseFrameCard strong {
+  overflow: hidden;
+  font-size: 0.62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.baseFrameCard span,
+.baseFrameCard small {
+  color: rgba(218, 228, 236, 0.78);
+  font-size: 0.52rem;
+  line-height: 1.25;
+}
+
+.baseFrameCard span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.baseFrameSummary {
+  min-height: 26px;
+  color: rgba(218, 228, 236, 0.78);
+  font-size: 0.56rem;
+  line-height: 1.35;
+}
+
+.shipUpgradeRows {
+  display: grid;
+  gap: 4px;
+}
+
+.shipUpgradeRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px 78px 34px;
+  align-items: center;
+  gap: 6px;
+  min-height: 35px;
+  padding: 5px 6px;
+  border: 1px solid color-mix(in srgb, var(--stat-color) 28%, rgba(82, 124, 148, 0.2));
+  border-radius: 8px;
+  background: rgba(7, 14, 24, 0.74);
+  color: #f2f7fb;
+  text-align: left;
+}
+
+.shipUpgradeRow:disabled {
+  opacity: 0.58;
+}
+
+.shipUpgradeRow--hyper {
+  box-shadow: inset 0 0 16px color-mix(in srgb, var(--stat-color) 10%, transparent);
+}
+
+.shipUpgradeText {
+  display: grid;
+  min-width: 0;
+}
+
+.shipUpgradeText b {
+  overflow: hidden;
+  color: #f6fbff;
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shipUpgradeText small {
+  overflow: hidden;
+  color: rgba(218, 228, 236, 0.7);
+  font-size: 0.56rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shipUpgradeKey {
+  color: rgba(218, 228, 236, 0.76);
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
+.shipUpgradePips {
+  display: grid;
+  gap: 3px;
+}
+
+.shipUpgradePips span {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+}
+
+.shipUpgradePips i {
+  height: 5px;
+  border-radius: 2px;
+  background: rgba(218, 228, 236, 0.14);
+}
+
+.shipUpgradePips i.filled {
+  background: var(--stat-color);
+}
+
+.shipUpgradePips .hyper i {
+  background: rgba(255, 209, 102, 0.1);
+}
+
+.shipUpgradePips .hyper.unlocked i.filled,
+.shipUpgradePips .hyper i.filled {
+  background: #ffd166;
+}
+
+.shipUpgradePlus {
+  display: grid;
+  place-items: center;
+  color: var(--stat-color);
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
+.stationPanel header,
+.hullPanel header,
+.modulePanel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.stationPanel header b,
+.hullPanel header b,
+.modulePanel header b {
+  color: var(--cyan);
+}
+
+.stationPanel__empty,
+.stationPanel__status,
+.stationPanel__repair,
+.stationPanel__storage,
+.stationPanel__move,
+.hullPanel,
+.modulePanel {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid rgba(154, 164, 176, 0.16);
+  border-radius: 8px;
+  background: rgba(9, 13, 19, 0.42);
+}
+
+.stationPanel strong,
+.hullPanel strong,
+.modulePanel strong {
+  color: #f3f6f8;
+  font-size: 0.86rem;
+}
+
+.stationPanel p,
+.hullPanel p,
+.modulePanel p,
+.stationPanel small,
+.hullPanel small,
+.modulePanel small {
+  margin: 0;
+  color: rgba(203, 210, 216, 0.78);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.stationPanel button,
+.hullPanel button,
+.modulePanel button {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid rgba(90, 166, 200, 0.34);
+  border-radius: 7px;
+  background: rgba(23, 33, 45, 0.88);
+  color: #e6edf2;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.stationPanel button:disabled,
+.hullPanel button:disabled,
+.modulePanel button:disabled {
+  opacity: 0.48;
+}
+
+.stationPanel__storage div,
+.modulePanel__installed {
+  color: rgba(203, 210, 216, 0.72);
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+
+.stationPanel__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.stationPanel__grid span {
+  display: grid;
+  gap: 2px;
+  padding: 7px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.stationPanel__grid b {
+  color: #e6edf2;
+  font-size: 0.76rem;
+}
+
+.stationPanel__lock {
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: rgba(198, 168, 77, 0.1);
+  color: #d8ca8a;
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.stationPanel__move {
+  border-color: rgba(76, 201, 240, 0.22);
+}
+
+.stationPanel__move span {
+  color: var(--cyan);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.stationPanel__move button {
+  border-color: rgba(76, 201, 240, 0.42);
+}
+
+.stationPanel__move--ready {
+  background: rgba(76, 201, 240, 0.08);
+  box-shadow: inset 0 0 16px rgba(76, 201, 240, 0.06);
+}
+
+.stationPanel__move--ready button {
+  background: rgba(25, 74, 96, 0.88);
+  color: #e9fbff;
+}
+
+.hullPanel__next,
+.modulePanel article {
+  display: grid;
+  gap: 4px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(154, 164, 176, 0.12);
+}
+
+.modulePanel article span {
+  color: var(--muted);
+  font-size: 0.64rem;
+  text-transform: capitalize;
+}
+
+.modulePanel__installed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.modulePanel__installed span {
+  padding: 3px 6px;
+  border: 1px solid rgba(90, 166, 200, 0.18);
+  border-radius: 999px;
+  background: rgba(90, 166, 200, 0.08);
+}
+
+.stationDefensePanel,
+.fuelPanel {
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid rgba(154, 164, 176, 0.16);
+  border-radius: 8px;
+  background: rgba(9, 13, 19, 0.42);
+}
+
+.stationDefensePanel__alert {
+  color: #d8ca8a !important;
+}
+
+.stationDefensePanel__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.stationDefensePanel__stats span {
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+
+.stationDefensePanel__stats b {
+  color: #e6edf2;
+  font-size: 0.7rem;
+}
+
+.stationDefensePanel__cards {
+  display: grid;
+  gap: 6px;
+}
+
+.stationDefensePanel__cards article {
+  display: grid;
+  gap: 3px;
+  padding: 7px;
+  border: 1px solid rgba(154, 164, 176, 0.12);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.stationDefensePanel__cards span {
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
+.fuelPanel div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.fuelPanel button {
+  min-width: 0;
+  font-size: 0.62rem;
+}
+
+.baseWarning {
+  position: fixed;
+  top: 82px;
+  left: 50%;
+  z-index: 7;
+  width: min(460px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  padding: 10px 14px;
+  border: 1px solid rgba(198, 168, 77, 0.42);
+  border-radius: 8px;
+  background: rgba(30, 26, 18, 0.88);
+  color: #f4e7ad;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.baseWarning--lost {
+  top: 128px;
+  border-color: rgba(199, 116, 122, 0.5);
+  background: rgba(36, 18, 21, 0.9);
+  color: #ffd7db;
+}
+
+.deathScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 24px;
+  background: rgba(4, 7, 12, 0.7);
+  color: #e6edf2;
+  text-align: center;
+  backdrop-filter: blur(6px);
+}
+
+.deathScreen > * {
+  justify-self: center;
+}
+
+.deathScreen svg {
+  color: #c6a84d;
+}
+
+.deathScreen h2 {
+  margin: 0;
+  color: #f3f6f8;
+  font-size: 1.45rem;
+}
+
+.deathScreen p,
+.deathScreen span,
+.deathScreen em {
+  max-width: 420px;
+  margin: 0;
+  color: rgba(230, 237, 242, 0.78);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.deathScreen strong {
+  margin: 8px 0 4px;
+  padding: 10px 14px;
+  border: 1px solid rgba(90, 166, 200, 0.32);
+  border-radius: 8px;
+  background: rgba(18, 23, 30, 0.84);
+  color: #f3f6f8;
+  font-size: 1.05rem;
+}
+
+.deathScreen em {
+  color: #d8ca8a;
+  font-style: normal;
+  font-weight: 800;
+}
+
+@media (max-width: 860px) {
+  .leftHudStack {
+    top: 142px;
+    left: 14px;
+    width: min(260px, calc(100vw - 28px));
+    max-height: calc(100vh - 280px);
+  }
+
+  .bottomLeftUpgradeDock {
+    left: 14px;
+    bottom: 74px;
+  }
+}
+
+@media (max-width: 540px) {
+  .leftHudStack {
+    width: min(250px, calc(100vw - 140px));
+  }
+
+  .bottomLeftUpgradeDock {
+    width: min(322px, calc(100vw - 28px));
+  }
+
+  .gameShell--leftPanelsOpen .minimap {
+    display: none;
+  }
+}
+
+.stationCommandBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(2, 6, 12, 0.44);
+  backdrop-filter: blur(6px);
+}
+
+.stationCommandPanel {
+  width: min(1120px, calc(100vw - 48px));
+  max-height: min(780px, calc(100vh - 48px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  border: 1px solid rgba(82, 124, 148, 0.48);
+  border-radius: 14px;
+  background: rgba(9, 16, 26, 0.96);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48), inset 0 0 32px rgba(76, 201, 240, 0.04);
+  color: #f2f7fb;
+  overflow: hidden;
+}
+
+.stationCommandHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(82, 124, 148, 0.28);
+}
+
+.stationCommandHeader span,
+.stationCommandSection span,
+.stationCommandGrid span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.stationCommandHeader strong {
+  display: block;
+  color: #f6fbff;
+  font-size: 1.18rem;
+}
+
+.stationCommandHeader__stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.stationCommandHeader__stats span,
+.inviteCode {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(76, 201, 240, 0.08);
+  color: #dff8ff;
+}
+
+.stationCommandHeader > button,
+.cargoManagementPanel header > button,
+.shipFrameTreePanel header > button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(82, 124, 148, 0.32);
+  border-radius: 8px;
+  background: rgba(14, 27, 40, 0.86);
+}
+
+.stationCommandBody {
+  display: grid;
+  grid-template-columns: 188px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.stationTabs {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 12px;
+  border-right: 1px solid rgba(82, 124, 148, 0.22);
+  background: rgba(4, 10, 18, 0.5);
+}
+
+.stationTabs button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(218, 228, 236, 0.72);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.stationTabs button.active {
+  border-color: rgba(76, 201, 240, 0.42);
+  background: rgba(76, 201, 240, 0.1);
+  color: #e9fbff;
+}
+
+.stationCommandBody main {
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+}
+
+.stationCommandGrid,
+.stationCardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stationCommandGrid article,
+.stationCardGrid article,
+.stationCommandSection,
+.cargoManagementPanel,
+.shipFrameTreePanel {
+  padding: 12px;
+  border: 1px solid rgba(82, 124, 148, 0.26);
+  border-radius: 10px;
+  background: rgba(10, 18, 30, 0.72);
+}
+
+.stationCommandGrid article strong,
+.stationCardGrid article strong,
+.stationCommandSection strong {
+  display: block;
+  color: #f6fbff;
+}
+
+.stationCommandGrid article p,
+.stationCardGrid article p,
+.stationCommandSection p,
+.stationCommandSection small {
+  margin: 4px 0 0;
+  color: rgba(218, 228, 236, 0.74);
+  font-size: 0.72rem;
+  line-height: 1.38;
+}
+
+.stationQuickActions,
+.stationFilters,
+.cargoManagementActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+
+.stationCommandSection {
+  display: grid;
+  gap: 12px;
+}
+
+.stationCommandSection header,
+.cargoManagementPanel header,
+.shipFrameTreePanel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stationCommandSection button,
+.stationQuickActions button,
+.stationFilters button,
+.cargoManagementActions button,
+.stationCardGrid button {
+  min-height: 31px;
+  padding: 0 10px;
+  border: 1px solid rgba(76, 201, 240, 0.3);
+  border-radius: 8px;
+  background: rgba(14, 27, 40, 0.86);
+  color: #eaf8ff;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.stationFilters button.active {
+  border-color: rgba(110, 219, 143, 0.48);
+  color: #b9f8c8;
+}
+
+.stationStorageColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stationResourceRows {
+  display: grid;
+  gap: 6px;
+}
+
+.stationResourceRows div {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: 7px;
+  padding: 7px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(218, 228, 236, 0.82);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.stationResourceRows i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.etherValue {
+  color: #ffd166;
+}
+
+.stationRepairTrack,
+.stationCardGrid--pads {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stationRepairTrack article,
+.stationCardGrid article {
+  padding: 12px;
+  border: 1px solid rgba(82, 124, 148, 0.26);
+  border-radius: 10px;
+  background: rgba(10, 18, 30, 0.72);
+}
+
+.stationRepairTrack article.active,
+.stationCardGrid article.completed {
+  border-color: rgba(110, 219, 143, 0.42);
+}
+
+.stationRepairTrack article.locked,
+.stationCardGrid article.locked {
+  opacity: 0.62;
+}
+
+.stationDefenseSummary,
+.stationSlotGrid,
+.stationRequirementList {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.stationRequirementList {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stationDefenseSummary span,
+.stationSlotGrid span,
+.stationRequirementList span {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.stationDefenseSummary b,
+.stationSlotGrid b {
+  color: #f6fbff;
+}
+
+.cargoManagementPanel,
+.shipFrameTreePanel {
+  position: absolute;
+  right: 18px;
+  bottom: 104px;
+  z-index: 18;
+  width: min(390px, calc(100vw - 36px));
+  display: grid;
+  gap: 12px;
+  background: rgba(9, 16, 26, 0.96);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.38);
+}
+
+@media (max-width: 760px) {
+  .stationInteraction {
+    bottom: 84px;
+  }
+
+  .stationCommandBackdrop {
+    padding: 10px;
+  }
+
+  .stationCommandPanel {
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+  }
+
+  .stationCommandBody {
+    grid-template-columns: 1fr;
+  }
+
+  .stationTabs {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid rgba(82, 124, 148, 0.22);
+  }
+
+  .stationCommandGrid,
+  .stationCardGrid,
+  .stationStorageColumns,
+  .stationRepairTrack,
+  .stationDefenseSummary,
+  .stationSlotGrid,
+  .stationRequirementList {
+    grid-template-columns: 1fr;
+  }
+}

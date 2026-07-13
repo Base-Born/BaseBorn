@@ -1,0 +1,149 @@
+.evolutionChoicePanel {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: hidden;
+}
+
+.evolutionChoicePanel header {
+  padding: 0 0 8px 4px;
+  border-bottom: 0;
+}
+
+.evolutionChoicePanel h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 2px;
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-shadow:
+    -2px -2px 0 rgba(0, 0, 0, 0.7),
+    2px -2px 0 rgba(0, 0, 0, 0.7),
+    -2px 2px 0 rgba(0, 0, 0, 0.7),
+    2px 2px 0 rgba(0, 0, 0, 0.7);
+}
+
+.evolutionChoicePanel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.evolutionChoiceList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-height: clamp(120px, calc(100vh - 500px), 220px);
+  overflow: auto;
+  gap: 8px;
+  padding: 2px;
+}
+
+.evolutionChoiceCard {
+  --branch-accent: #5aa6c8;
+  display: grid;
+  grid-template-rows: 62px auto;
+  align-items: stretch;
+  gap: 4px;
+  min-height: 108px;
+  padding: 5px;
+  border: 4px solid rgba(45, 47, 50, 0.82);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--branch-accent) 46%, #ffffff 24%) 0 48%, color-mix(in srgb, var(--branch-accent) 36%, #111827 22%) 48% 100%);
+  color: var(--text);
+  text-align: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 7px 16px rgba(0, 0, 0, 0.3);
+}
+
+.evolutionChoiceCard.available {
+  box-shadow: 0 0 12px color-mix(in srgb, var(--branch-accent) 12%, transparent);
+}
+
+.evolutionChoiceCard.locked {
+  filter: grayscale(0.55);
+}
+
+.evolutionPreview {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+}
+
+.evolutionPreview .shipPreviewIcon {
+  width: 72px;
+  height: 60px;
+  overflow: visible;
+}
+
+.evolutionPreview .shipPreviewIcon__ship {
+  transform: rotate(-90deg) scale(2.35);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.evolutionPreview .shipPreviewIcon__hull,
+.evolutionPreview .shipPreviewIcon__innerHull {
+  stroke-width: 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.evolutionPreview .shipPreviewIcon__cockpit {
+  fill: rgba(226, 232, 240, 0.78);
+  stroke-width: 2.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.evolutionPreview .shipPreviewIcon__armor,
+.evolutionPreview .shipPreviewIcon__mount,
+.evolutionPreview .shipPreviewIcon__trail,
+.evolutionPreview .shipPreviewIcon__crown {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.evolutionCardText {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  align-self: end;
+}
+
+.evolutionCardText b,
+.evolutionCardText small,
+.evolutionCardText em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evolutionCardText b {
+  color: #f8fafc;
+  font-size: 0.8rem;
+  font-weight: 950;
+  line-height: 1.05;
+  text-shadow:
+    -1.5px -1.5px 0 rgba(0, 0, 0, 0.72),
+    1.5px -1.5px 0 rgba(0, 0, 0, 0.72),
+    -1.5px 1.5px 0 rgba(0, 0, 0, 0.72),
+    1.5px 1.5px 0 rgba(0, 0, 0, 0.72);
+}
+
+.evolutionCardText small,
+.evolutionCardText em {
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-style: normal;
+  text-transform: capitalize;
+}
+
+.evolutionCardText em {
+  color: #c6a84d;
+}

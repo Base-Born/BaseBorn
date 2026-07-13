@@ -1,0 +1,1 @@
+import type { BuildIdentitySnapshot } from "../../data/buildIdentity";export function StrengthWeaknessPanel({build}:{build:BuildIdentitySnapshot}){return <section className="identityTradeoffs"><div><span>STRENGTHS</span>{build.strengths.map(v=><b key={v}>+ {v}</b>)}</div><div><span>WEAKNESSES</span>{build.weaknesses.map(v=><b key={v}>- {v}</b>)}</div></section>}

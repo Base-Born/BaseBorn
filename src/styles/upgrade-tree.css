@@ -1,0 +1,942 @@
+:root {
+  --tree-bg: rgba(3, 7, 18, 0.96);
+  --tree-panel: rgba(8, 14, 30, 0.88);
+  --tree-border: rgba(120, 180, 255, 0.18);
+  --tree-line: rgba(90, 166, 200, 0.16);
+  --tree-line-active: rgba(90, 166, 200, 0.82);
+  --tree-text: #f5f7ff;
+  --tree-muted: #8f9bb8;
+  --tree-available: #76bf87;
+  --tree-current: #5aa6c8;
+  --tree-locked: rgba(120, 130, 155, 0.42);
+}
+
+.upgradeTreeOverlay {
+  position: absolute;
+  inset: 72px 10px 70px;
+  z-index: 8;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  border: 1px solid rgba(90, 166, 200, 0.34);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 24% 48%, rgba(90, 166, 200, 0.13), transparent 28%),
+    radial-gradient(circle at 72% 26%, rgba(130, 111, 169, 0.065), transparent 26%),
+    linear-gradient(180deg, rgba(8, 14, 30, 0.82), rgba(3, 7, 18, 0.96));
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.52), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(20px);
+  color: var(--tree-text);
+  animation: upgradeTreeOpen 120ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes upgradeTreeOpen {
+  from { opacity: 0; transform: scale(0.985); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.upgradeTreeTopBar {
+  display: grid;
+  grid-template-columns: minmax(250px, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-bottom: 1px solid var(--tree-border);
+  background: rgba(5, 10, 24, 0.74);
+}
+
+.upgradeTreeTitle h2 {
+  margin: 0 0 2px;
+  font-size: 1.05rem;
+  line-height: 1.15;
+}
+
+.upgradeTreeTitle p,
+.upgradeTreeStatus span {
+  margin: 0;
+  color: var(--tree-muted);
+  font-size: 0.78rem;
+}
+
+.upgradeTreeStatus {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.upgradeTreeStatus strong {
+  color: var(--tree-available);
+  font-size: 0.78rem;
+}
+
+.upgradeTreeTools {
+  display: flex;
+  gap: 6px;
+}
+
+.upgradeTreeTools button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(120, 180, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.76);
+  color: #dbeafe;
+}
+
+.upgradeTreeTools button:hover,
+.branchFilterBar button:hover {
+  border-color: rgba(90, 166, 200, 0.54);
+  color: #f8fdff;
+}
+
+.upgradeTreeViewport {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  cursor: grab;
+  background-image:
+    linear-gradient(rgba(120, 180, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 180, 255, 0.035) 1px, transparent 1px);
+  background-size: 72px 72px;
+}
+
+.upgradeTreeViewport:active {
+  cursor: grabbing;
+}
+
+.upgradeTreeWorld {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.upgradeTierLabels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.upgradeTierLabels span {
+  position: absolute;
+  top: 18px;
+  width: 180px;
+  color: var(--tree-current);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.upgradeTreeLines {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.upgradeTreeLine {
+  fill: none;
+  stroke: var(--tree-line);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 820;
+  stroke-dashoffset: 820;
+  animation: treeLineDraw 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes treeLineDraw {
+  to { stroke-dashoffset: 0; }
+}
+
+.upgradeTreeLine.active {
+  stroke: var(--tree-line-active);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 7px rgba(90, 166, 200, 0.48));
+}
+
+.upgradeTreeLine.available {
+  stroke: rgba(118, 191, 135, 0.56);
+  stroke-width: 2.6;
+  filter: drop-shadow(0 0 5px rgba(118, 191, 135, 0.22));
+}
+
+.upgradeTreeLine.locked {
+  stroke: rgba(120, 140, 180, 0.08);
+}
+
+.upgradeTreeLine.faded {
+  stroke: rgba(120, 140, 180, 0.05);
+}
+
+.upgradeTreeNode {
+  --branch-accent: #5aa6c8;
+  position: absolute;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--branch-accent) 42%, rgba(148, 163, 184, 0.22));
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(5, 10, 24, 0.82));
+  color: var(--tree-text);
+  text-align: left;
+  box-shadow: inset 0 0 22px color-mix(in srgb, var(--branch-accent) 8%, transparent);
+  animation: nodeFanIn 250ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: opacity 120ms ease, transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+@keyframes nodeFanIn {
+  from { transform: translateX(-18px) scale(0.9); opacity: 0; }
+  to { transform: translateX(0) scale(1); opacity: var(--node-opacity, 1); }
+}
+
+.upgradeTreeNode:not(:disabled):hover {
+  transform: translateY(-1px) scale(1.02);
+}
+
+.upgradeTreeNode:disabled {
+  cursor: pointer;
+}
+
+.upgradeTreeNode--core {
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  border-radius: 12px;
+  border-color: rgba(90, 166, 200, 0.82);
+  box-shadow: 0 0 28px rgba(90, 166, 200, 0.2), inset 0 0 26px rgba(90, 166, 200, 0.08);
+  animation-duration: 100ms;
+}
+
+.upgradeTreeNode--mother {
+  border-radius: 12px;
+  clip-path: polygon(9% 0, 91% 0, 100% 50%, 91% 100%, 9% 100%, 0 50%);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--branch-accent) 24%, transparent);
+}
+
+.upgradeTreeNode--compact {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--branch-accent) 36%, rgba(8, 14, 30, 0.86));
+  border-color: color-mix(in srgb, var(--branch-accent) 64%, transparent);
+  animation: previewDotIn 200ms cubic-bezier(0.16, 1, 0.3, 1) 160ms both;
+}
+
+@keyframes previewDotIn {
+  from { transform: scale(0.45); opacity: 0; }
+  to { transform: scale(1); opacity: var(--node-opacity, 0.36); }
+}
+
+.ghostDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e0fbff;
+  box-shadow: 0 0 10px var(--branch-accent);
+}
+
+.nodeIcon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: var(--branch-accent);
+  background: color-mix(in srgb, var(--branch-accent) 13%, rgba(2, 6, 23, 0.82));
+}
+
+.nodeIcon svg {
+  width: 25px;
+  height: 25px;
+}
+
+.nodeIcon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nodeIcon path:first-child {
+  fill: color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.nodeIcon .detail {
+  fill: color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.nodeText {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.nodeText strong {
+  overflow: hidden;
+  color: #f8fbff;
+  font-size: 0.88rem;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nodeText small {
+  color: var(--tree-muted);
+  font-size: 0.72rem;
+  text-transform: capitalize;
+}
+
+.upgradeTreeNode em {
+  align-self: start;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--tree-muted);
+  font-size: 0.56rem;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.upgradeTreeNode--current {
+  border-color: var(--tree-current);
+  box-shadow: 0 0 30px rgba(90, 166, 200, 0.26), inset 0 0 24px rgba(90, 166, 200, 0.1);
+}
+
+.upgradeTreeNode--current em {
+  color: var(--tree-current);
+}
+
+.upgradeTreeNode--available {
+  border-color: var(--tree-available);
+  box-shadow: 0 0 18px rgba(118, 191, 135, 0.18), inset 0 0 18px rgba(118, 191, 135, 0.06);
+  animation: availablePulse 1.35s ease-in-out infinite;
+}
+
+.upgradeTreeNode--available em {
+  color: var(--tree-available);
+}
+
+@keyframes availablePulse {
+  50% { box-shadow: 0 0 24px rgba(118, 191, 135, 0.24), inset 0 0 20px rgba(118, 191, 135, 0.08); }
+}
+
+.upgradeTreeNode--locked,
+.upgradeTreeNode--planned {
+  filter: grayscale(0.5);
+}
+
+.upgradeTreeNode--planned em {
+  color: #c4b5fd;
+}
+
+.branchFilterBar {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  overflow-x: auto;
+  border-top: 1px solid var(--tree-border);
+  background: rgba(5, 10, 24, 0.78);
+}
+
+.branchFilterBar button {
+  --branch-accent: #5aa6c8;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(120, 180, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.72);
+  color: var(--tree-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.branchFilterBar i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--branch-accent);
+  box-shadow: 0 0 9px var(--branch-accent);
+}
+
+.branchFilterBar button.active {
+  border-color: color-mix(in srgb, var(--branch-accent) 72%, rgba(90, 166, 200, 0.42));
+  color: #ffffff;
+  background: color-mix(in srgb, var(--branch-accent) 14%, rgba(15, 23, 42, 0.86));
+}
+
+.upgradeNodeTooltip {
+  position: fixed;
+  z-index: 30;
+  width: min(310px, calc(100vw - 24px));
+  padding: 12px;
+  border: 1px solid rgba(120, 180, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(5, 10, 24, 0.96);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.48);
+  pointer-events: none;
+}
+
+.upgradeNodeTooltip header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.upgradeNodeTooltip strong {
+  font-size: 0.9rem;
+}
+
+.upgradeNodeTooltip header span,
+.upgradeNodeTooltip p,
+.upgradeNodeTooltip dd,
+.upgradeNodeTooltip footer,
+.tooltipColumns span {
+  color: var(--tree-muted);
+  font-size: 0.72rem;
+}
+
+.upgradeNodeTooltip p {
+  margin-bottom: 8px;
+}
+
+.upgradeNodeTooltip dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.upgradeNodeTooltip div,
+.upgradeNodeTooltip dt,
+.upgradeNodeTooltip dd {
+  margin: 0;
+}
+
+.upgradeNodeTooltip dt,
+.tooltipColumns b {
+  color: #dbeafe;
+  font-size: 0.64rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tooltipColumns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tooltipColumns section {
+  display: grid;
+  gap: 2px;
+}
+
+.upgradeNodeTooltip footer {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(120, 180, 255, 0.12);
+}
+
+@media (max-width: 860px) {
+  .upgradeTreeOverlay {
+    inset: 0;
+    border-radius: 0;
+  }
+
+  .upgradeTreeTopBar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .upgradeTreeStatus {
+    grid-column: 1 / -1;
+    order: 3;
+    overflow-x: auto;
+  }
+
+  .upgradeTreeTools {
+    gap: 4px;
+  }
+
+  .upgradeTreeTools button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .upgradeTreeTitle p {
+    display: none;
+  }
+
+  .upgradeNodeTooltip {
+    left: 10px !important;
+    right: 10px;
+    top: auto !important;
+    bottom: 58px;
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upgradeTreeWorld,
+  .upgradeTreeNode,
+  .upgradeTreeNode--available,
+  .upgradeTreeOverlay {
+    animation: none;
+    transition: none;
+  }
+}
+
+.upgradeTreeOverlay {
+  inset: 0;
+  z-index: 7;
+  display: block;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(5, 10, 24, 0.08), rgba(2, 6, 23, 0.42) 62%, rgba(2, 6, 23, 0.58)),
+    linear-gradient(rgba(120, 180, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 180, 255, 0.028) 1px, transparent 1px);
+  background-size: auto, 64px 64px, 64px 64px;
+  box-shadow: none;
+  color: var(--tree-text);
+  pointer-events: none;
+  backdrop-filter: none;
+  animation: radialTreeOpen 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes radialTreeOpen {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.radialTreeHint {
+  position: absolute;
+  top: 84px;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  padding: 7px 12px;
+  border: 1px solid rgba(90, 166, 200, 0.24);
+  border-radius: 999px;
+  background: rgba(5, 10, 24, 0.62);
+  color: rgba(219, 234, 254, 0.8);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  pointer-events: none;
+}
+
+.upgradeTreeTopBar,
+.branchFilterBar,
+.upgradeTierLabels {
+  display: none;
+}
+
+.upgradeTreeViewport {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  overflow: visible;
+  cursor: default;
+  background: none;
+  pointer-events: none;
+}
+
+.upgradeTreeViewport:active {
+  cursor: default;
+}
+
+.upgradeTreeWorld {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: 50% 50%;
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.upgradeTreeLines {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.upgradeTreeLine {
+  stroke: rgba(120, 180, 255, 0.09);
+  stroke-width: 1.5;
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
+  animation: radialLineIn 680ms cubic-bezier(0.16, 1, 0.3, 1) 220ms both;
+}
+
+@keyframes radialLineIn {
+  from {
+    opacity: 0;
+    stroke-dashoffset: 180;
+  }
+  to {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+.upgradeTreeLine.active {
+  stroke: rgba(90, 166, 200, 0.78);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 8px rgba(90, 166, 200, 0.6));
+}
+
+.upgradeTreeLine.available {
+  stroke: rgba(118, 191, 135, 0.56);
+  stroke-width: 2.4;
+  filter: drop-shadow(0 0 6px rgba(118, 191, 135, 0.24));
+}
+
+.upgradeTreeLine.locked {
+  stroke: rgba(120, 140, 180, 0.08);
+}
+
+.upgradeTreeNode {
+  display: grid;
+  grid-template-columns: 1fr;
+  place-items: center;
+  gap: 0;
+  padding: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 42% 35%, color-mix(in srgb, var(--branch-accent) 40%, rgba(255, 255, 255, 0.14)), transparent 26%),
+    radial-gradient(circle, rgba(15, 23, 42, 0.96), rgba(5, 10, 24, 0.86));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--branch-accent) 16%, transparent), inset 0 0 18px rgba(255, 255, 255, 0.03);
+  text-align: center;
+  pointer-events: auto;
+  animation: radialFanOut 620ms cubic-bezier(0.16, 1, 0.3, 1) var(--fan-delay, 0ms) both;
+  will-change: transform, opacity;
+}
+
+@keyframes radialNodeIn {
+  from { transform: scale(0.55); opacity: 0; }
+  to { transform: scale(1); opacity: var(--node-opacity, 1); }
+}
+
+@keyframes radialFanOut {
+  0% {
+    transform: translate3d(var(--fan-dx, 0), var(--fan-dy, 0), 0) scale(0.08) rotate(-10deg);
+    opacity: 0;
+  }
+  56% {
+    transform: translate3d(calc(var(--fan-dx, 0) * -0.055), calc(var(--fan-dy, 0) * -0.055), 0) scale(1.12) rotate(2deg);
+    opacity: var(--node-opacity, 1);
+  }
+  78% {
+    transform: translate3d(calc(var(--fan-dx, 0) * 0.018), calc(var(--fan-dy, 0) * 0.018), 0) scale(0.98) rotate(0deg);
+    opacity: var(--node-opacity, 1);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    opacity: var(--node-opacity, 1);
+  }
+}
+
+.upgradeTreeNode:not([aria-disabled="true"]):hover {
+  transform: scale(1.14);
+  z-index: 4;
+}
+
+.upgradeTreeNode[aria-disabled="true"] {
+  cursor: default;
+}
+
+.upgradeTreeNode--core {
+  border-radius: 50%;
+  border-color: rgba(90, 166, 200, 0.9);
+  background:
+    radial-gradient(circle at 42% 36%, rgba(90, 166, 200, 0.44), transparent 30%),
+    radial-gradient(circle, rgba(10, 20, 42, 0.98), rgba(5, 10, 24, 0.9));
+  box-shadow: 0 0 32px rgba(90, 166, 200, 0.34), inset 0 0 22px rgba(90, 166, 200, 0.1);
+}
+
+.upgradeTreeNode--mother {
+  border-radius: 8px;
+  clip-path: polygon(50% 0, 90% 20%, 100% 50%, 90% 80%, 50% 100%, 10% 80%, 0 50%, 10% 20%);
+  box-shadow: 0 0 34px color-mix(in srgb, var(--branch-accent) 28%, transparent), inset 0 0 20px rgba(255, 255, 255, 0.05);
+}
+
+.upgradeTreeNode--compact {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 42% 35%, color-mix(in srgb, var(--branch-accent) 22%, rgba(255, 255, 255, 0.06)), transparent 28%),
+    radial-gradient(circle, rgba(15, 23, 42, 0.96), rgba(5, 10, 24, 0.86));
+  animation: radialFanOut 620ms cubic-bezier(0.16, 1, 0.3, 1) var(--fan-delay, 0ms) both;
+}
+
+.nodeIcon {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: transparent;
+}
+
+.nodeIcon svg {
+  width: 78%;
+  height: 78%;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--branch-accent) 42%, transparent));
+}
+
+.nodeText {
+  position: absolute;
+  inset: auto auto -8px 50%;
+  display: block;
+  min-width: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.nodeText strong {
+  display: none;
+}
+
+.nodeText small {
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 16px;
+  padding: 0 4px;
+  border: 1px solid rgba(120, 180, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.84);
+  color: rgba(219, 234, 254, 0.76);
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.upgradeTreeNode em {
+  position: absolute;
+  left: 50%;
+  top: -9px;
+  transform: translateX(-50%);
+  padding: 2px 5px;
+  border: 1px solid rgba(90, 166, 200, 0.25);
+  background: rgba(2, 6, 23, 0.86);
+  font-size: 0.5rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.upgradeTreeNode--current {
+  border-color: var(--tree-current);
+  box-shadow: 0 0 34px rgba(90, 166, 200, 0.46), inset 0 0 24px rgba(90, 166, 200, 0.14);
+}
+
+.upgradeTreeNode--available {
+  border-color: var(--tree-available);
+  box-shadow: 0 0 20px rgba(118, 191, 135, 0.22), inset 0 0 18px rgba(118, 191, 135, 0.08);
+  animation: radialFanOut 620ms cubic-bezier(0.16, 1, 0.3, 1) var(--fan-delay, 0ms) both, availablePulse 1.35s ease-in-out calc(var(--fan-delay, 0ms) + 660ms) infinite;
+}
+
+.upgradeTreeNode--locked,
+.upgradeTreeNode--planned {
+  filter: grayscale(0.45);
+}
+
+.upgradeNodeTooltip {
+  z-index: 30;
+  pointer-events: none;
+}
+
+@media (max-width: 860px) {
+  .radialTreeHint {
+    top: 76px;
+  }
+}
+
+.upgradeTreeNode--core {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.nodeIcon svg.shipPreviewIcon {
+  width: 116%;
+  height: 116%;
+}
+
+.shipPreviewIcon {
+  overflow: visible;
+}
+
+.shipPreviewIcon__hull,
+.shipPreviewIcon__innerHull {
+  stroke-width: 2.35;
+  stroke-linejoin: round;
+}
+
+.shipPreviewIcon__innerHull {
+  opacity: 0.88;
+}
+
+.shipPreviewIcon__crown {
+  fill: none;
+  opacity: 0.78;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.35;
+}
+
+.shipPreviewIcon__crown rect,
+.shipPreviewIcon__crown circle {
+  stroke-width: 1.25;
+}
+
+.shipPreviewIcon__cockpit {
+  fill: rgba(245, 247, 255, 0.86);
+  stroke-width: 1.15;
+}
+
+.shipPreviewIcon__armor {
+  fill: none;
+  opacity: 0.48;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.05;
+}
+
+.shipPreviewIcon__mount {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.45;
+}
+
+.shipPreviewIcon__trail {
+  fill: none;
+  opacity: 0.72;
+  stroke-linecap: round;
+  stroke-width: 2.1;
+}
+
+.upgradeNodeTooltip {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  width: min(440px, calc(100vw - 24px));
+  gap: 12px;
+}
+
+.upgradeNodeTooltip__preview {
+  grid-row: 1 / span 4;
+  display: grid;
+  place-items: center;
+  min-height: 132px;
+  border: 1px solid color-mix(in srgb, var(--branch-accent) 44%, rgba(120, 180, 255, 0.18));
+  border-radius: 10px;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--branch-accent) 14%, transparent), transparent 62%),
+    rgba(2, 6, 23, 0.72);
+  box-shadow: inset 0 0 28px color-mix(in srgb, var(--branch-accent) 12%, transparent);
+}
+
+.upgradeNodeTooltip__preview .shipPreviewIcon {
+  width: 112px;
+  height: 112px;
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--branch-accent) 36%, transparent));
+}
+
+.upgradeNodeTooltip header,
+.upgradeNodeTooltip p,
+.upgradeNodeTooltip dl,
+.upgradeNodeTooltip .tooltipColumns,
+.upgradeNodeTooltip footer {
+  grid-column: 2;
+}
+
+.upgradeTreeNode {
+  will-change: auto;
+}
+
+.upgradeTreeOverlay--opening .upgradeTreeNode {
+  animation: radialFanOutFast 330ms cubic-bezier(0.2, 0.9, 0.2, 1) var(--fan-delay, 0ms) both;
+  box-shadow: none;
+  will-change: transform, opacity;
+}
+
+.upgradeTreeOverlay--opening .upgradeTreeNode--available {
+  animation: radialFanOutFast 330ms cubic-bezier(0.2, 0.9, 0.2, 1) var(--fan-delay, 0ms) both;
+}
+
+.upgradeTreeOverlay--opening .nodeIcon svg,
+.upgradeTreeOverlay--opening .shipPreviewIcon,
+.upgradeTreeOverlay--opening .upgradeTreeLine {
+  filter: none !important;
+}
+
+.upgradeTreeOverlay--opening .upgradeTreeLine {
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
+  animation: radialLineFadeFast 180ms ease-out 90ms both;
+}
+
+@keyframes radialFanOutFast {
+  0% {
+    transform: translate3d(calc(var(--fan-dx, 0) * 0.98), calc(var(--fan-dy, 0) * 0.98), 0) scale(0.16);
+    opacity: 0;
+  }
+  72% {
+    transform: translate3d(calc(var(--fan-dx, 0) * -0.025), calc(var(--fan-dy, 0) * -0.025), 0) scale(1.04);
+    opacity: var(--node-opacity, 1);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: var(--node-opacity, 1);
+  }
+}
+
+@keyframes radialLineFadeFast {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.upgradeTreeNode,
+.upgradeTreeNode--compact,
+.upgradeTreeNode--available {
+  animation-duration: 330ms;
+  animation-name: radialFanOutFast;
+  animation-timing-function: cubic-bezier(0.2, 0.9, 0.2, 1);
+  animation-delay: var(--fan-delay, 0ms);
+  animation-fill-mode: both;
+}
+
+.upgradeTreeNode--available {
+  animation-name: radialFanOutFast, availablePulse;
+  animation-duration: 330ms, 1.35s;
+  animation-timing-function: cubic-bezier(0.2, 0.9, 0.2, 1), ease-in-out;
+  animation-delay: var(--fan-delay, 0ms), calc(var(--fan-delay, 0ms) + 380ms);
+  animation-iteration-count: 1, infinite;
+}
+
+.upgradeTreeLine,
+.upgradeTreeLine.active,
+.upgradeTreeLine.available {
+  filter: none;
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
+  animation: radialLineFadeFast 160ms ease-out 90ms both;
+}
+
+.upgradeTreeNode .nodeIcon svg {
+  filter: none;
+}

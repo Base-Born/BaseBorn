@@ -1,0 +1,7 @@
+export type ModuleSynergyDefinition={id:string;name:string;requiredTags:string[];requiredCount?:number;effect:string;visualEffect:string;drawback:string};
+export const MODULE_SYNERGIES:ModuleSynergyDefinition[]=[
+{id:"aegis_reconstruction",name:"Aegis Reconstruction",requiredTags:["shield","repair"],effect:"Repair systems restore shields while hull repair is active.",visualEffect:"Shield restoration drones orbit damaged plating.",drawback:"Repair cycles consume additional power."},
+{id:"reinforced_ram",name:"Reinforced Ram Mode",requiredTags:["defense","engine"],effect:"Mass and boost convert into stronger collision damage.",visualEffect:"Forward armor glows during high-speed impact.",drawback:"Turning response is reduced during boost."},
+{id:"survey_lance",name:"Survey Lance",requiredTags:["mining","cargo"],effect:"Mined Ether is pulled toward external cargo racks.",visualEffect:"A collection stream links fragments to the ship.",drawback:"Cargo racks increase target profile."},
+{id:"coordinated_battery",name:"Coordinated Battery",requiredTags:["weapon"],requiredCount:2,effect:"Weapon modules synchronize their opening salvo.",visualEffect:"Hardpoints pulse in sequence before firing.",drawback:"The synchronized burst produces extra heat."},
+{id:"nova_command",name:"Nova Command Link",requiredTags:["engine","command"],effect:"Mothership commands retain improved relocation speed.",visualEffect:"Thrusters form a linked command-light pattern.",drawback:"High control and power demand."}];

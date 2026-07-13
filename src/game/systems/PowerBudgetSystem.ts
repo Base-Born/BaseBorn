@@ -1,0 +1,1 @@
+import type { BuildIdentitySnapshot } from "../data/buildIdentity";export function getPowerEfficiency(build:BuildIdentitySnapshot){return build.budgets.overloaded?Math.max(.55,build.budgets.powerCapacity/Math.max(1,build.budgets.powerUsed)):1;}
