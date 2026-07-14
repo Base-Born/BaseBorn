@@ -28,7 +28,7 @@ const defaultCustomization: Customization = {
   name: "Voidseed",
   shipColor: "#2fbce1",
   glowColor: "#4cc9f0",
-  trailColor: "#6edb8f",
+  trailColor: "#4cc9f0",
   projectileColor: "#eef7ff",
   wingVariant: "delta",
   cockpitVariant: "needle",

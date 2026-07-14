@@ -5,7 +5,8 @@ const controlSections = [
   {
     title: "Movement",
     rows: [
-      ["WASD / Arrow Keys", "Move ship / pilot station while docked"],
+      ["W / S or ↑ / ↓", "Forward thrust / reverse thrusters"],
+      ["A / D or ← / →", "Strafe left / right with maneuvering jets"],
       ["Mouse", "Aim"],
     ],
   },

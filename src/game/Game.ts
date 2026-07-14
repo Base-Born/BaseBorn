@@ -372,6 +372,8 @@ export class Game {
       y: this.player.pos.y,
       vx: this.player.vel.x,
       vy: this.player.vel.y,
+      thrustForward: this.player.thrustLocal.forward,
+      thrustStrafe: this.player.thrustLocal.strafe,
       angle: this.player.angle,
       healthRatio: this.player.maxHealth > 0 ? Math.max(0, this.player.health / this.player.maxHealth) : 0,
       level: this.player.level,

@@ -105,7 +105,7 @@ export class Player {
     const frame = getBaseShipFrame(this.baseFrameId);
     this.customization.shipColor = frame.visualTheme.primary;
     this.customization.glowColor = frame.visualTheme.glow;
-    this.customization.trailColor = frame.visualTheme.accent;
+    this.customization.trailColor = "#4cc9f0";
     this.recalculate();
     this.syncDrones();
   }

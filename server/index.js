@@ -51,8 +51,8 @@ server.on("upgrade",(request,socket,head)=>{
 
 function cleanText(value,fallback,maxLength){if(typeof value!=="string")return fallback;const clean=value.replace(/[<>\u0000-\u001f]/g,"").trim().slice(0,maxLength);return clean||fallback;}
 function finite(value,fallback,min,max){return typeof value==="number"&&Number.isFinite(value)?Math.max(min,Math.min(max,value)):fallback;}
-function cleanCustomization(value){const source=value&&typeof value==="object"?value:{};const color=(key,fallback)=>/^#[0-9a-f]{6}$/i.test(source[key])?source[key]:fallback;const choice=(key,allowed,fallback)=>allowed.includes(source[key])?source[key]:fallback;return{name:cleanText(source.name,"Nova Pilot",16),shipColor:color("shipColor","#2fbce1"),glowColor:color("glowColor","#4cc9f0"),trailColor:color("trailColor","#6edb8f"),projectileColor:color("projectileColor","#eef7ff"),wingVariant:choice("wingVariant",["delta","swept","fork"],"delta"),cockpitVariant:choice("cockpitVariant",["needle","dome","split"],"needle"),decalPattern:choice("decalPattern",["none","stripe","chevron"],"chevron"),thrusterStyle:choice("thrusterStyle",["ion","flare","pulse"],"ion"),glowIntensity:finite(source.glowIntensity,0.8,0,2)};}
-function cleanState(value,previous,identity){const source=value&&typeof value==="object"?value:{};return{id:identity.id,name:identity.customization.name,customization:identity.customization,x:finite(source.x,previous?.x||0,-500000,500000),y:finite(source.y,previous?.y||0,-500000,500000),vx:finite(source.vx,0,-5000,5000),vy:finite(source.vy,0,-5000,5000),angle:finite(source.angle,0,-Math.PI*4,Math.PI*4),healthRatio:finite(source.healthRatio,1,0,1),level:Math.round(finite(source.level,1,1,100)),score:Math.round(finite(source.score,0,0,2_000_000_000)),shipClassId:cleanText(source.shipClassId,"base_ship",64),shipClass:cleanText(source.shipClass,"Base Ship",48),docked:Boolean(source.docked),updatedAt:Date.now()};}
+function cleanCustomization(value){const source=value&&typeof value==="object"?value:{};const color=(key,fallback)=>/^#[0-9a-f]{6}$/i.test(source[key])?source[key]:fallback;const choice=(key,allowed,fallback)=>allowed.includes(source[key])?source[key]:fallback;return{name:cleanText(source.name,"Nova Pilot",16),shipColor:color("shipColor","#2fbce1"),glowColor:color("glowColor","#4cc9f0"),trailColor:color("trailColor","#4cc9f0"),projectileColor:color("projectileColor","#eef7ff"),wingVariant:choice("wingVariant",["delta","swept","fork"],"delta"),cockpitVariant:choice("cockpitVariant",["needle","dome","split"],"needle"),decalPattern:choice("decalPattern",["none","stripe","chevron"],"chevron"),thrusterStyle:choice("thrusterStyle",["ion","flare","pulse"],"ion"),glowIntensity:finite(source.glowIntensity,0.8,0,2)};}
+function cleanState(value,previous,identity){const source=value&&typeof value==="object"?value:{};return{id:identity.id,name:identity.customization.name,customization:identity.customization,x:finite(source.x,previous?.x||0,-500000,500000),y:finite(source.y,previous?.y||0,-500000,500000),vx:finite(source.vx,0,-5000,5000),vy:finite(source.vy,0,-5000,5000),thrustForward:finite(source.thrustForward,0,-1,1),thrustStrafe:finite(source.thrustStrafe,0,-1,1),angle:finite(source.angle,0,-Math.PI*4,Math.PI*4),healthRatio:finite(source.healthRatio,1,0,1),level:Math.round(finite(source.level,1,1,100)),score:Math.round(finite(source.score,0,0,2_000_000_000)),shipClassId:cleanText(source.shipClassId,"base_ship",64),shipClass:cleanText(source.shipClass,"Base Ship",48),docked:Boolean(source.docked),updatedAt:Date.now()};}
 function distance(a,b){return Math.hypot((a?.x||0)-(b?.x||0),(a?.y||0)-(b?.y||0));}
 function randomSpawn(room){
   const corners=[[-1,-1],[1,-1],[-1,1],[1,1]];
@@ -134,7 +134,7 @@ function spawnAtTeamBase(room,websocket,team){
   const station=team?.stationId?room.stations.get(team.stationId):null;
   if(!station)return null;
   const spawn=spawnNearStation(station);
-  websocket.playerState=cleanState({...websocket.playerState,x:spawn.x,y:spawn.y,vx:0,vy:0},websocket.playerState,websocket.identity);
+  websocket.playerState=cleanState({...websocket.playerState,x:spawn.x,y:spawn.y,vx:0,vy:0,thrustForward:0,thrustStrafe:0},websocket.playerState,websocket.identity);
   moveStarterStationNearPlayer(room,websocket,spawn);
   return spawn;
 }
@@ -213,7 +213,7 @@ websocketServer.on("connection",(websocket)=>{
     const room=rooms.get(websocket.roomId);if(!room)return;
     const playerId=websocket.identity.id;
     if(message?.type==="state"){if(now-websocket.lastStateAt<20)return;websocket.lastStateAt=now;websocket.playerState=cleanState(message.state,websocket.playerState,websocket.identity);broadcastRoom(room.id);return;}
-    if(message?.type==="request_respawn"){const respawn=randomSpawn(room);websocket.playerState=cleanState({...websocket.playerState,x:respawn.x,y:respawn.y,vx:0,vy:0},websocket.playerState,websocket.identity);websocket.send(JSON.stringify({type:"respawn",respawn}));broadcastRoom(room.id);return;}
+    if(message?.type==="request_respawn"){const respawn=randomSpawn(room);websocket.playerState=cleanState({...websocket.playerState,x:respawn.x,y:respawn.y,vx:0,vy:0,thrustForward:0,thrustStrafe:0},websocket.playerState,websocket.identity);websocket.send(JSON.stringify({type:"respawn",respawn}));broadcastRoom(room.id);return;}
     if(message?.type==="drop_cargo"){
       const type=etherTypes.has(message.etherType)?message.etherType:null;
       const amount=Math.round(finite(message.amount,0,1,100000));

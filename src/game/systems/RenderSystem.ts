@@ -69,6 +69,17 @@ export class RenderSystem {
       if (remote.docked || !this.visible({ x: remote.renderX, y: remote.renderY }, camera, w, h, 180)) return;
       let visualProfile;
       try { visualProfile = getShipVisualProfile(remote.shipClassId); } catch { visualProfile = getShipVisualProfile("base_ship"); }
+      this.drawThrusterPlumes({
+        x: remote.renderX,
+        y: remote.renderY,
+        angle: remote.renderAngle,
+        radius: 24 * visualProfile.sizeScale,
+        forwardPower: remote.thrustForward ?? 0,
+        strafePower: remote.thrustStrafe ?? 0,
+        visualScale: 1,
+        trailLength: 1,
+        glowScale: 1,
+      });
       this.shipRenderer.drawShip({ ctx, x: remote.renderX, y: remote.renderY, rotation: remote.renderAngle, visualProfile, playerCustomization: remote.customization, animationTime: now });
       this.drawRemotePlayerLabel(remote);
     });    if (!player.destroyed) {
@@ -335,26 +346,50 @@ export class RenderSystem {
   private drawPlayerThrusters(player: Player) {
     const forwardPower = player.thrustLocal.forward;
     const strafePower = player.thrustLocal.strafe;
+    const effective = getEffectivePlayerStats(player.stats, player.baseFrameId);
+    this.drawThrusterPlumes({
+      x: player.pos.x,
+      y: player.pos.y,
+      angle: player.angle,
+      radius: player.radius,
+      forwardPower,
+      strafePower,
+      visualScale: effective.movementSpeed.thrusterVisualScale,
+      trailLength: effective.movementSpeed.thrusterTrailLength,
+      glowScale: effective.movementSpeed.thrusterGlowIntensity,
+    });
+  }
+
+  private drawThrusterPlumes(args: {
+    x: number;
+    y: number;
+    angle: number;
+    radius: number;
+    forwardPower: number;
+    strafePower: number;
+    visualScale: number;
+    trailLength: number;
+    glowScale: number;
+  }) {
+    const { x, y, angle, radius: r, forwardPower, strafePower, visualScale, trailLength, glowScale } = args;
     if (Math.abs(forwardPower) < 0.05 && Math.abs(strafePower) < 0.05) return;
     const ctx = this.ctx;
-    const r = player.radius;
-    const effective = getEffectivePlayerStats(player.stats, player.baseFrameId);
-    const visualScale = effective.movementSpeed.thrusterVisualScale;
-    const trailLength = effective.movementSpeed.thrusterTrailLength;
-    const glowScale = effective.movementSpeed.thrusterGlowIntensity;
+    const blue = "#39c8ff";
+    const blueMid = "rgba(57,200,255,.62)";
     ctx.save();
-    ctx.translate(player.pos.x, player.pos.y);
-    ctx.rotate(player.angle);
+    ctx.translate(x, y);
+    ctx.rotate(angle);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.shadowColor = player.customization.trailColor;
-    ctx.shadowBlur = (5 + player.customization.glowIntensity * 7) * glowScale;
+    ctx.shadowColor = blue;
+    ctx.shadowBlur = 13 * glowScale;
 
     const plume = (startX: number, startY: number, endX: number, endY: number, power: number, width: number) => {
       const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
-      gradient.addColorStop(0, player.customization.trailColor);
-      gradient.addColorStop(0.5, "rgba(120, 145, 158, .5)");
-      gradient.addColorStop(1, "rgba(120, 145, 158, 0)");
+      gradient.addColorStop(0, "#effdff");
+      gradient.addColorStop(0.14, blue);
+      gradient.addColorStop(0.52, blueMid);
+      gradient.addColorStop(1, "rgba(57,200,255,0)");
       ctx.globalAlpha = clamp(Math.abs(power), 0, 1);
       ctx.strokeStyle = gradient;
       ctx.lineWidth = width * visualScale * (0.72 + Math.abs(power) * 0.7);
@@ -365,20 +400,20 @@ export class RenderSystem {
     };
 
     if (forwardPower > 0.05) {
-      plume(-r * 0.82, -r * 0.34, -r * (1.95 + forwardPower * 0.8) * trailLength, -r * 0.48, forwardPower, 6);
-      plume(-r * 0.82, r * 0.34, -r * (1.95 + forwardPower * 0.8) * trailLength, r * 0.48, forwardPower, 6);
+      plume(-r * 1.72, -r * 0.29, -r * (2.15 + forwardPower * 1.15) * trailLength, -r * 0.34, forwardPower, 6);
+      plume(-r * 1.72, r * 0.29, -r * (2.15 + forwardPower * 1.15) * trailLength, r * 0.34, forwardPower, 6);
     }
     if (forwardPower < -0.05) {
-      plume(r * 0.92, -r * 0.18, r * (1.72 + Math.abs(forwardPower) * 0.42), -r * 0.22, forwardPower, 4);
-      plume(r * 0.92, r * 0.18, r * (1.72 + Math.abs(forwardPower) * 0.42), r * 0.22, forwardPower, 4);
+      plume(r * 1.55, -r * 0.16, r * (1.9 + Math.abs(forwardPower) * 0.58), -r * 0.18, forwardPower, 3.5);
+      plume(r * 1.55, r * 0.16, r * (1.9 + Math.abs(forwardPower) * 0.58), r * 0.18, forwardPower, 3.5);
     }
     if (strafePower > 0.05) {
-      plume(-r * 0.16, -r * 0.86, -r * 0.2, -r * (1.8 + strafePower * 0.35), strafePower, 4);
-      plume(r * 0.44, -r * 0.42, r * 0.5, -r * (1.42 + strafePower * 0.28), strafePower, 3);
+      plume(-r * 0.92, -r * 0.72, -r * 0.96, -r * (1.32 + strafePower * 0.48), strafePower, 4);
+      plume(r * 0.56, -r * 0.43, r * 0.6, -r * (0.86 + strafePower * 0.38), strafePower, 3);
     }
     if (strafePower < -0.05) {
-      plume(-r * 0.16, r * 0.86, -r * 0.2, r * (1.8 + Math.abs(strafePower) * 0.35), strafePower, 4);
-      plume(r * 0.44, r * 0.42, r * 0.5, r * (1.42 + Math.abs(strafePower) * 0.28), strafePower, 3);
+      plume(-r * 0.92, r * 0.72, -r * 0.96, r * (1.32 + Math.abs(strafePower) * 0.48), strafePower, 4);
+      plume(r * 0.56, r * 0.43, r * 0.6, r * (0.86 + Math.abs(strafePower) * 0.38), strafePower, 3);
     }
     ctx.restore();
     ctx.globalAlpha = 1;

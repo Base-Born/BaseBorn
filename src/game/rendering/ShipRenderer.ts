@@ -56,7 +56,6 @@ export class ShipRenderer {
 
     const reactorPulse = .72 + Math.sin(animationTime * .0022) * .18;
     const spriteReady = Boolean(this.baseShipSprite?.complete && this.baseShipSprite.naturalWidth > 0);
-    this.drawBaseShipEngine(ctx, r, profile.glowColor, animationTime, spriteReady);
 
     // A low, breathing reactor wash reaches the nearby armor without turning
     // the whole silhouette into a neon glow.
@@ -193,77 +192,6 @@ export class ShipRenderer {
     ctx.shadowBlur = 0;
 
     this.drawBaseShipArmorDetail(ctx, r, primary, profile.glowColor, animationTime);
-    ctx.restore();
-  }
-
-  private drawBaseShipEngine(ctx: CanvasRenderingContext2D, r: number, glow: string, animationTime: number, spriteMode: boolean) {
-    ctx.save();
-    const breath = .5 + Math.sin(animationTime * .00235) * .5;
-    const tremor = Math.sin(animationTime * .011) * .035 + Math.sin(animationTime * .017) * .018;
-    const plumeLength = 1.72 + breath * .34 + tremor;
-    const plumeWidth = .085 + breath * .045;
-    const nozzleX = spriteMode ? -1.72 : -.93;
-    const nozzleY = spriteMode ? .29 : .17;
-
-    for (const side of [-1, 1]) {
-      const y = side * r * nozzleY;
-      const phase = animationTime * .00235 + (side > 0 ? .34 : 0);
-      const localBreath = .56 + Math.sin(phase) * .18;
-      const tailX = spriteMode
-        ? r * (nozzleX - 1.15 - breath * .34 - (side > 0 ? .04 : 0))
-        : -r * (plumeLength + (side > 0 ? .04 : 0));
-      const nozzleWorldX = r * nozzleX;
-      const plume = ctx.createLinearGradient(tailX, y, nozzleWorldX + r * .2, y);
-      plume.addColorStop(0, "rgba(62,186,255,0)");
-      plume.addColorStop(.27, "rgba(56,184,255,.16)");
-      plume.addColorStop(.72, glow);
-      plume.addColorStop(1, "#f2fdff");
-      ctx.fillStyle = plume;
-      ctx.globalAlpha = .68 + localBreath * .28;
-      ctx.shadowColor = glow;
-      ctx.shadowBlur = r * (.3 + breath * .28);
-      ctx.beginPath();
-      ctx.moveTo(nozzleWorldX + r * .12, y - r * plumeWidth);
-      ctx.bezierCurveTo(nozzleWorldX - r * .3, y - r * plumeWidth * 1.15, tailX + r * .18, y - r * .16, tailX, y);
-      ctx.bezierCurveTo(tailX + r * .18, y + r * .16, nozzleWorldX - r * .3, y + r * plumeWidth * 1.15, nozzleWorldX + r * .12, y + r * plumeWidth);
-      ctx.closePath();
-      ctx.fill();
-
-      // A handful of traveling ion motes keeps the exhaust alive at idle.
-      ctx.fillStyle = "#bff5ff";
-      for (let i = 0; i < 3; i += 1) {
-        const travel = (animationTime * .00072 + i * .31 + (side > 0 ? .17 : 0)) % 1;
-        const px = nozzleWorldX - r * (.15 + travel * (spriteMode ? 1.18 : plumeLength - .84));
-        const py = y + Math.sin(animationTime * .006 + i * 2.1 + side) * r * .055 * travel;
-        ctx.globalAlpha = (1 - travel) * .62;
-        ctx.beginPath();
-        ctx.arc(px, py, Math.max(.7, r * (.018 + (1 - travel) * .012)), 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.globalAlpha = 1;
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = "#101a22";
-      ctx.strokeStyle = "#8fabb9";
-      ctx.lineWidth = Math.max(1, r * .035);
-      ctx.beginPath();
-      ctx.ellipse(nozzleWorldX, y, r * (spriteMode ? .19 : .17), r * (spriteMode ? .13 : .15), 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      const coreX = nozzleWorldX - r * .04;
-      const core = ctx.createRadialGradient(coreX, y, 0, coreX, y, r * .12);
-      core.addColorStop(0, "#ffffff");
-      core.addColorStop(.32, "#dffaff");
-      core.addColorStop(.7, glow);
-      core.addColorStop(1, "#126486");
-      ctx.fillStyle = core;
-      ctx.shadowColor = glow;
-      ctx.shadowBlur = r * (.25 + localBreath * .34);
-      ctx.beginPath();
-      ctx.ellipse(coreX, y, r * (.075 + localBreath * .012), r * (.085 + localBreath * .015), 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
     ctx.restore();
   }
 

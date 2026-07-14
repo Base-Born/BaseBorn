@@ -10,6 +10,8 @@ export type NetworkPlayerState = {
   y: number;
   vx: number;
   vy: number;
+  thrustForward: number;
+  thrustStrafe: number;
   angle: number;
   healthRatio: number;
   level: number;
