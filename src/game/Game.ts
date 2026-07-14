@@ -41,6 +41,7 @@ import type { Customization, GameSnapshot, Planet, Vec2 } from "./types";
 import { getUpgradeImpactProfile } from "./data/upgradeImpactProfiles";
 import { GameEventSystem } from "./systems/GameEventSystem";
 import { MultiplayerClient } from "./network/MultiplayerClient";
+import { SPACE_BACKGROUND_CONFIG } from "./data/spaceBackgroundConfig";
 
 const DRONE_IDLE_FARM_RADIUS = 1150;
 const DRONE_IDLE_FARM_PADDING = 220;
@@ -155,6 +156,7 @@ export class Game {
     cancelAnimationFrame(this.raf);
     this.input.destroy();
     this.multiplayer.destroy();
+    this.renderer.destroy();
     window.removeEventListener("resize", this.resize);
     if ((globalThis as typeof globalThis & { __basebornGame?: Game }).__basebornGame === this) {
       delete (globalThis as typeof globalThis & { __basebornGame?: Game }).__basebornGame;
@@ -778,7 +780,7 @@ export class Game {
   }
 
   private resize = () => {
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, SPACE_BACKGROUND_CONFIG.maxDevicePixelRatio);
     const rect = this.canvas.getBoundingClientRect();
     this.canvas.width = Math.floor(rect.width * dpr);
     this.canvas.height = Math.floor(rect.height * dpr);

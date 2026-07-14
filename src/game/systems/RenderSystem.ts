@@ -6,6 +6,8 @@ import { drawAsteroid } from "../rendering/AsteroidRenderer";
 import { drawEtherDrop } from "../rendering/EtherRenderer";
 import { clamp } from "../math";
 import { StationRenderer } from "./renderers/StationRenderer";
+import { SpaceBackgroundRenderer } from "../rendering/SpaceBackgroundRenderer";
+import { SPACE_BACKGROUND_CONFIG } from "../data/spaceBackgroundConfig";
 import { getEffectivePlayerStats } from "./StatScalingSystem";
 import type { Asteroid } from "../entities/Asteroid";
 import type { Drone } from "../entities/Drone";
@@ -21,48 +23,38 @@ export type Camera = { x: number; y: number; zoom: number };
 
 export class RenderSystem {
   private ctx: CanvasRenderingContext2D;
-  private stars: Array<{ x: number; y: number; r: number; a: number }> = [];
   private shipRenderer = new ShipRenderer();
   private stationRenderer = new StationRenderer();
+  private spaceBackground = new SpaceBackgroundRenderer();
 
   constructor(private canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Canvas 2D context unavailable");
     this.ctx = ctx;
-    this.stars = Array.from({ length: 900 }, () => ({ x: (Math.random() - 0.5) * MAP_CONFIG.worldWidth, y: (Math.random() - 0.5) * MAP_CONFIG.worldHeight, r: Math.random() * 1.35 + 0.25, a: Math.random() * 0.38 + 0.16 }));
   }
 
   render(player: Player, enemies: Enemy[], asteroids: Asteroid[], projectiles: Projectile[], camera: Camera, planets: Planet[] = [], etherDrops: EtherDrop[] = [], stations: Station[] = [], remotePlayers: RemotePlayerState[] = []) {
     const ctx = this.ctx;
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, SPACE_BACKGROUND_CONFIG.maxDevicePixelRatio);
     const w = this.canvas.width / dpr;
     const h = this.canvas.height / dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-    const gradient = ctx.createRadialGradient(w / 2, h / 2, 80, w / 2, h / 2, Math.max(w, h));
-    gradient.addColorStop(0, "#172131");
-    gradient.addColorStop(0.58, "#0b1421");
-    gradient.addColorStop(1, "#04070d");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, w, h);
-    const cyanWash = ctx.createRadialGradient(w * 0.68, h * 0.28, 20, w * 0.68, h * 0.28, Math.max(w, h) * 0.62);
-    cyanWash.addColorStop(0, "rgba(76, 201, 240, 0.11)");
-    cyanWash.addColorStop(0.5, "rgba(76, 201, 240, 0.035)");
-    cyanWash.addColorStop(1, "rgba(76, 201, 240, 0)");
-    ctx.fillStyle = cyanWash;
-    ctx.fillRect(0, 0, w, h);
-    const violetWash = ctx.createRadialGradient(w * 0.24, h * 0.78, 20, w * 0.24, h * 0.78, Math.max(w, h) * 0.55);
-    violetWash.addColorStop(0, "rgba(167, 139, 250, 0.08)");
-    violetWash.addColorStop(0.55, "rgba(167, 139, 250, 0.028)");
-    violetWash.addColorStop(1, "rgba(167, 139, 250, 0)");
-    ctx.fillStyle = violetWash;
-    ctx.fillRect(0, 0, w, h);
+    const now = performance.now();
+    const dockedStation = player.dockedStationId ? stations.find((station) => station.id === player.dockedStationId) : undefined;
+    this.spaceBackground.render(ctx, {
+      width: w,
+      height: h,
+      camera,
+      velocity: dockedStation?.vel ?? player.vel,
+      thrust: Math.min(1, Math.hypot(player.thrustLocal.forward, player.thrustLocal.strafe)),
+      now,
+      warping: dockedStation?.hyperdrive.hyperdriveState === "warping",
+    });
     ctx.save();
     ctx.translate(w / 2 - camera.x * camera.zoom, h / 2 - camera.y * camera.zoom);
     ctx.scale(camera.zoom, camera.zoom);
-    this.drawStars(camera, w, h);
     this.drawZones();
-    const now = performance.now();
     planets.forEach((p) => this.visible(p.pos, camera, w, h, p.radius + 220) && this.drawPlanet(p));
     asteroids.forEach((a) => this.visible(a.pos, camera, w, h, a.radius + 120) && drawAsteroid(ctx, a));
     etherDrops.forEach((drop) => this.visible(drop.pos, camera, w, h, 140) && drawEtherDrop(ctx, drop));
@@ -97,6 +89,10 @@ export class RenderSystem {
     }
     ctx.restore();
     this.drawVignette(w, h);
+  }
+
+  destroy() {
+    this.spaceBackground.destroy();
   }
 
   private drawRemotePlayerLabel(remote: RemotePlayerState) {
@@ -141,18 +137,6 @@ export class RenderSystem {
     return Math.abs(pos.x - camera.x) * camera.zoom < w / 2 + margin && Math.abs(pos.y - camera.y) * camera.zoom < h / 2 + margin;
   }
 
-  private drawStars(camera: Camera, w: number, h: number) {
-    const ctx = this.ctx;
-    ctx.fillStyle = "#f2f7fb";
-    for (const star of this.stars) {
-      if (!this.visible(star, camera, w, h, 40)) continue;
-      ctx.globalAlpha = star.a;
-      ctx.beginPath();
-      ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
 
   private drawZones() {
     const ctx = this.ctx;

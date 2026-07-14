@@ -35,10 +35,9 @@
   overflow: hidden;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 52% 26%, rgba(76, 201, 240, 0.14), transparent 26%),
-    radial-gradient(ellipse at 87% 32%, rgba(110, 219, 143, 0.09), transparent 23%),
-    radial-gradient(ellipse at 13% 56%, rgba(167, 139, 250, 0.13), transparent 25%),
-    linear-gradient(180deg, #101d2c 0%, #07111e 55%, #050810 100%);
+    radial-gradient(ellipse at 52% 26%, rgba(34, 78, 111, 0.10), transparent 28%),
+    radial-gradient(ellipse at 13% 56%, rgba(76, 65, 112, 0.07), transparent 27%),
+    linear-gradient(180deg, #050a12 0%, #020408 55%, #010205 100%);
   z-index: -3;
 }
 

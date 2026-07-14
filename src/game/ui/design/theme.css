@@ -64,7 +64,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
 
 .loginScreen, .gameLoadingScreen, .connectionError {
   position: fixed; inset: 0; min-height: 100dvh; overflow: hidden; display:grid; place-items:center;
-  color: var(--bb-text); background: radial-gradient(circle at 50% 35%, #10294d 0, #07101e 32%, #03050b 75%);
+  color: var(--bb-text); background: radial-gradient(circle at 50% 35%, #07111d 0, #03070d 38%, #010205 78%);
 }
 .loginScreen__ambient { position:absolute; width:min(70vw,900px); height:min(80vh,760px); left:54%; top:8%; opacity:.7; filter:drop-shadow(0 0 60px rgba(45,188,225,.2)); pointer-events:none; }
 .loginCard { z-index:2; width:min(430px,calc(100vw - 32px)); margin-right:min(42vw,620px); padding:30px; display:grid; gap:18px; border:1px solid rgba(91,181,221,.25); border-radius:18px; background:linear-gradient(150deg,rgba(9,17,33,.94),rgba(7,12,24,.82)); box-shadow:0 30px 100px rgba(0,0,0,.55); backdrop-filter:blur(18px); }
@@ -85,7 +85,7 @@ button:focus-visible, input:focus-visible, [role="button"]:focus-visible { outli
 .loginCard footer { display:flex; justify-content:space-between; color:#5f7486; font-size:9px; text-transform:uppercase; letter-spacing:.08em; }
 
 .gameLoadingCore, .connectionError { text-align:center; }
-.gameLoadingCore { width:min(540px,calc(100vw - 40px)); display:grid; place-items:center; gap:12px; }
+.gameLoadingCore { position:relative; z-index:2; width:min(540px,calc(100vw - 40px)); padding:clamp(24px,5vw,48px); display:grid; place-items:center; gap:12px; border:1px solid rgba(76,201,240,.16); border-radius:18px; background:rgba(2,8,17,.72); box-shadow:0 28px 90px rgba(0,0,0,.52); backdrop-filter:blur(14px); }
 .gameLoadingCore > svg { color:var(--bb-cyan); }
 .gameLoadingCore > span, .connectionError > span { color:var(--bb-cyan); font-size:10px; font-weight:900; letter-spacing:.2em; }
 .gameLoadingCore h1, .connectionError h1 { margin:0; font-size:clamp(30px,6vw,58px); }
