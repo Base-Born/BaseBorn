@@ -13,6 +13,18 @@ type DrawArgs = {
 };
 
 export class ShipRenderer {
+  private readonly baseShipSprite: HTMLImageElement | null;
+
+  constructor() {
+    if (typeof Image === "undefined") {
+      this.baseShipSprite = null;
+      return;
+    }
+    this.baseShipSprite = new Image();
+    this.baseShipSprite.decoding = "async";
+    this.baseShipSprite.src = "/assets/ships/base-ship-topdown.png";
+  }
+
   drawShip(args: DrawArgs) {
     const { ctx, x, y, rotation, visualProfile: profile, playerCustomization, animationTime } = args;
     const baseRadius = 24 * profile.sizeScale;
@@ -43,7 +55,8 @@ export class ShipRenderer {
     ctx.lineCap = "round";
 
     const reactorPulse = .72 + Math.sin(animationTime * .0022) * .18;
-    this.drawBaseShipEngine(ctx, r, profile.glowColor, animationTime);
+    const spriteReady = Boolean(this.baseShipSprite?.complete && this.baseShipSprite.naturalWidth > 0);
+    this.drawBaseShipEngine(ctx, r, profile.glowColor, animationTime, spriteReady);
 
     // A low, breathing reactor wash reaches the nearby armor without turning
     // the whole silhouette into a neon glow.
@@ -58,6 +71,19 @@ export class ShipRenderer {
     ctx.ellipse(-r * .48, 0, r * .98, r * .78, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+
+    if (spriteReady && this.baseShipSprite) {
+      const spriteWidth = r * 4.25;
+      const spriteHeight = spriteWidth * (this.baseShipSprite.naturalHeight / this.baseShipSprite.naturalWidth);
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,.92)";
+      ctx.shadowBlur = r * .3;
+      ctx.drawImage(this.baseShipSprite, -spriteWidth * .49, -spriteHeight * .5, spriteWidth, spriteHeight);
+      ctx.restore();
+      this.drawBaseShipSpriteLighting(ctx, r, profile.glowColor, animationTime);
+      ctx.restore();
+      return;
+    }
 
     const wingGradient = ctx.createLinearGradient(-r * .72, 0, r * .65, 0);
     wingGradient.addColorStop(0, "#101820");
@@ -170,19 +196,24 @@ export class ShipRenderer {
     ctx.restore();
   }
 
-  private drawBaseShipEngine(ctx: CanvasRenderingContext2D, r: number, glow: string, animationTime: number) {
+  private drawBaseShipEngine(ctx: CanvasRenderingContext2D, r: number, glow: string, animationTime: number, spriteMode: boolean) {
     ctx.save();
     const breath = .5 + Math.sin(animationTime * .00235) * .5;
     const tremor = Math.sin(animationTime * .011) * .035 + Math.sin(animationTime * .017) * .018;
     const plumeLength = 1.72 + breath * .34 + tremor;
     const plumeWidth = .085 + breath * .045;
+    const nozzleX = spriteMode ? -1.72 : -.93;
+    const nozzleY = spriteMode ? .29 : .17;
 
     for (const side of [-1, 1]) {
-      const y = side * r * .17;
+      const y = side * r * nozzleY;
       const phase = animationTime * .00235 + (side > 0 ? .34 : 0);
       const localBreath = .56 + Math.sin(phase) * .18;
-      const tailX = -r * (plumeLength + (side > 0 ? .04 : 0));
-      const plume = ctx.createLinearGradient(tailX, y, -r * .72, y);
+      const tailX = spriteMode
+        ? r * (nozzleX - 1.15 - breath * .34 - (side > 0 ? .04 : 0))
+        : -r * (plumeLength + (side > 0 ? .04 : 0));
+      const nozzleWorldX = r * nozzleX;
+      const plume = ctx.createLinearGradient(tailX, y, nozzleWorldX + r * .2, y);
       plume.addColorStop(0, "rgba(62,186,255,0)");
       plume.addColorStop(.27, "rgba(56,184,255,.16)");
       plume.addColorStop(.72, glow);
@@ -192,9 +223,9 @@ export class ShipRenderer {
       ctx.shadowColor = glow;
       ctx.shadowBlur = r * (.3 + breath * .28);
       ctx.beginPath();
-      ctx.moveTo(-r * .79, y - r * plumeWidth);
-      ctx.bezierCurveTo(-r * 1.15, y - r * plumeWidth * 1.15, tailX + r * .18, y - r * .16, tailX, y);
-      ctx.bezierCurveTo(tailX + r * .18, y + r * .16, -r * 1.15, y + r * plumeWidth * 1.15, -r * .79, y + r * plumeWidth);
+      ctx.moveTo(nozzleWorldX + r * .12, y - r * plumeWidth);
+      ctx.bezierCurveTo(nozzleWorldX - r * .3, y - r * plumeWidth * 1.15, tailX + r * .18, y - r * .16, tailX, y);
+      ctx.bezierCurveTo(tailX + r * .18, y + r * .16, nozzleWorldX - r * .3, y + r * plumeWidth * 1.15, nozzleWorldX + r * .12, y + r * plumeWidth);
       ctx.closePath();
       ctx.fill();
 
@@ -202,7 +233,7 @@ export class ShipRenderer {
       ctx.fillStyle = "#bff5ff";
       for (let i = 0; i < 3; i += 1) {
         const travel = (animationTime * .00072 + i * .31 + (side > 0 ? .17 : 0)) % 1;
-        const px = -r * (.98 + travel * (plumeLength - .84));
+        const px = nozzleWorldX - r * (.15 + travel * (spriteMode ? 1.18 : plumeLength - .84));
         const py = y + Math.sin(animationTime * .006 + i * 2.1 + side) * r * .055 * travel;
         ctx.globalAlpha = (1 - travel) * .62;
         ctx.beginPath();
@@ -216,11 +247,12 @@ export class ShipRenderer {
       ctx.strokeStyle = "#8fabb9";
       ctx.lineWidth = Math.max(1, r * .035);
       ctx.beginPath();
-      ctx.ellipse(-r * .88, y, r * .17, r * .15, 0, 0, Math.PI * 2);
+      ctx.ellipse(nozzleWorldX, y, r * (spriteMode ? .19 : .17), r * (spriteMode ? .13 : .15), 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
-      const core = ctx.createRadialGradient(-r * .93, y, 0, -r * .93, y, r * .12);
+      const coreX = nozzleWorldX - r * .04;
+      const core = ctx.createRadialGradient(coreX, y, 0, coreX, y, r * .12);
       core.addColorStop(0, "#ffffff");
       core.addColorStop(.32, "#dffaff");
       core.addColorStop(.7, glow);
@@ -229,7 +261,52 @@ export class ShipRenderer {
       ctx.shadowColor = glow;
       ctx.shadowBlur = r * (.25 + localBreath * .34);
       ctx.beginPath();
-      ctx.ellipse(-r * .93, y, r * (.075 + localBreath * .012), r * (.085 + localBreath * .015), 0, 0, Math.PI * 2);
+      ctx.ellipse(coreX, y, r * (.075 + localBreath * .012), r * (.085 + localBreath * .015), 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  private drawBaseShipSpriteLighting(ctx: CanvasRenderingContext2D, r: number, glow: string, animationTime: number) {
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+
+    const reactorPulse = .5 + Math.sin(animationTime * .0023) * .5;
+    const reactor = ctx.createRadialGradient(r * .18, 0, 0, r * .18, 0, r * .32);
+    reactor.addColorStop(0, `rgba(230,252,255,${.62 + reactorPulse * .28})`);
+    reactor.addColorStop(.3, glow);
+    reactor.addColorStop(1, "rgba(76,201,240,0)");
+    ctx.globalAlpha = .45 + reactorPulse * .28;
+    ctx.fillStyle = reactor;
+    ctx.beginPath();
+    ctx.arc(r * .18, 0, r * (.22 + reactorPulse * .04), 0, Math.PI * 2);
+    ctx.fill();
+
+    const leds: Array<[number, number, number]> = [
+      [-1.28, -.72, 0], [-1.28, .72, .8], [-.76, -.42, 1.6], [-.76, .42, 2.4],
+      [-.18, -.5, 3.2], [-.18, .5, 4], [.72, -.32, 4.8], [.72, .32, 5.6], [1.53, 0, 6.4],
+    ];
+    ctx.fillStyle = "#c9f8ff";
+    ctx.shadowColor = glow;
+    for (const [x, y, phase] of leds) {
+      const pulse = .35 + (.5 + Math.sin(animationTime * .004 + phase) * .5) * .65;
+      ctx.globalAlpha = pulse;
+      ctx.shadowBlur = r * (.09 + pulse * .2);
+      ctx.beginPath();
+      ctx.arc(x * r, y * r, Math.max(1, r * .032), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // A pair of packets travels toward the wing tips, suggesting energy is
+    // circulating through the ship rather than merely blinking in place.
+    for (const side of [-1, 1]) {
+      const travel = (animationTime * .00042 + (side > 0 ? .47 : 0)) % 1;
+      const x = r * (-.34 - travel * 1.16);
+      const y = side * r * (.48 + travel * .62);
+      ctx.globalAlpha = .35 + Math.sin(travel * Math.PI) * .65;
+      ctx.shadowBlur = r * .24;
+      ctx.beginPath();
+      ctx.ellipse(x, y, r * .09, r * .025, -.55 * side, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();

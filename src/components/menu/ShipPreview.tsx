@@ -4,11 +4,8 @@ export function ShipPreview() {
       <span className="bbShipPreview__ring" />
       <span className="bbShipPreview__glow" />
       <div className="bbPreviewShip">
-        <span className="bbPreviewWing bbPreviewWing--top" />
-        <span className="bbPreviewWing bbPreviewWing--bottom" />
+        <img className="bbPreviewShipImage" src="/assets/ships/base-ship-topdown.png" alt="" />
         <span className="bbPreviewEngine" />
-        <span className="bbPreviewHull" />
-        <span className="bbPreviewCockpit" />
         <span className="bbPreviewDecal" />
       </div>
     </div>
