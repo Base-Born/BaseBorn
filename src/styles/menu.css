@@ -278,6 +278,20 @@
   border: 2px solid #718995;
   background: #dffaff;
   box-shadow: -12px 0 14px 3px rgba(76,201,240,.62), 0 0 8px #4cc9f0;
+  animation: bbEngineBreathe 2.7s ease-in-out infinite;
+}
+
+@keyframes bbEngineBreathe {
+  0%, 100% {
+    transform: scale(.92);
+    opacity: .78;
+    box-shadow: -10px 0 11px 2px rgba(76,201,240,.46), 0 0 6px #4cc9f0;
+  }
+  48% {
+    transform: scale(1.08);
+    opacity: 1;
+    box-shadow: -19px 0 21px 5px rgba(76,201,240,.78), 0 0 12px #a7efff;
+  }
 }
 
 .bbPreviewCockpit {
@@ -303,6 +317,12 @@
   background: #4cc9f0;
   clip-path: polygon(0 0, 75% 0, 100% 50%, 75% 100%, 0 100%, 22% 50%);
   box-shadow: 0 0 6px #4cc9f0;
+  animation: bbSystemsPulse 2.15s ease-in-out infinite alternate;
+}
+
+@keyframes bbSystemsPulse {
+  from { opacity: .48; filter: brightness(.8); }
+  to { opacity: 1; filter: brightness(1.45); }
 }
 
 @keyframes bbShipFloat {
@@ -788,6 +808,8 @@
   .bbStars,
   .bbShipPreview__ring,
   .bbPreviewShip,
+  .bbPreviewEngine,
+  .bbPreviewDecal,
   .bbMenuStack,
   .bbModal {
     animation: none;

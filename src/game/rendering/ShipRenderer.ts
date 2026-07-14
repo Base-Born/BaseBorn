@@ -26,14 +26,14 @@ export class ShipRenderer {
     ctx.shadowBlur = 3 + profile.detailLevel * 0.8;
     drawShipEffects(ctx, profile, baseRadius, animationTime);
     if (profile.variantType.toString().startsWith("mother")) this.drawMothership(ctx, profile, baseRadius, primary, accent);
-    else if (profile.branch === "Core") this.drawBaseShip(ctx, profile, baseRadius, primary, accent);
+    else if (profile.branch === "Core") this.drawBaseShip(ctx, profile, baseRadius, primary, accent, animationTime);
     else this.drawBranchShip(ctx, profile, baseRadius, primary, accent);
     this.drawBuildIdentity(ctx, profile, baseRadius, animationTime);
     this.drawWeaponMounts(ctx, profile, baseRadius, accent);
     ctx.restore();
   }
 
-  private drawBaseShip(ctx: CanvasRenderingContext2D, profile: ShipVisualProfile, r: number, primary: string, accent: string) {
+  private drawBaseShip(ctx: CanvasRenderingContext2D, profile: ShipVisualProfile, r: number, primary: string, accent: string, animationTime: number) {
     // The starter craft is intentionally more detailed than the old six-point
     // polygon. Its silhouette and material language follow the Base Ship
     // concept: a compact armored fuselage, long swept wings, inset cyan systems,
@@ -42,7 +42,22 @@ export class ShipRenderer {
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
 
-    this.drawBaseShipEngine(ctx, r, profile.glowColor);
+    const reactorPulse = .72 + Math.sin(animationTime * .0022) * .18;
+    this.drawBaseShipEngine(ctx, r, profile.glowColor, animationTime);
+
+    // A low, breathing reactor wash reaches the nearby armor without turning
+    // the whole silhouette into a neon glow.
+    ctx.save();
+    ctx.globalAlpha = .13 + reactorPulse * .09;
+    const reactorWash = ctx.createRadialGradient(-r * .48, 0, r * .04, -r * .48, 0, r * .92);
+    reactorWash.addColorStop(0, profile.glowColor);
+    reactorWash.addColorStop(.46, "rgba(44,172,225,.3)");
+    reactorWash.addColorStop(1, "rgba(44,172,225,0)");
+    ctx.fillStyle = reactorWash;
+    ctx.beginPath();
+    ctx.ellipse(-r * .48, 0, r * .98, r * .78, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
     const wingGradient = ctx.createLinearGradient(-r * .72, 0, r * .65, 0);
     wingGradient.addColorStop(0, "#101820");
@@ -144,52 +159,83 @@ export class ShipRenderer {
     ctx.fillStyle = canopy;
     ctx.strokeStyle = "#bdefff";
     ctx.shadowColor = profile.glowColor;
-    ctx.shadowBlur = r * .2;
+    ctx.shadowBlur = r * (.16 + reactorPulse * .1);
     ctx.beginPath();
     ctx.ellipse(r * .47, 0, r * .22, r * .145, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    this.drawBaseShipArmorDetail(ctx, r, primary, profile.glowColor);
+    this.drawBaseShipArmorDetail(ctx, r, primary, profile.glowColor, animationTime);
     ctx.restore();
   }
 
-  private drawBaseShipEngine(ctx: CanvasRenderingContext2D, r: number, glow: string) {
+  private drawBaseShipEngine(ctx: CanvasRenderingContext2D, r: number, glow: string, animationTime: number) {
     ctx.save();
-    const plume = ctx.createLinearGradient(-r * 2.05, 0, -r * .72, 0);
-    plume.addColorStop(0, "rgba(62,186,255,0)");
-    plume.addColorStop(.35, "rgba(56,184,255,.2)");
-    plume.addColorStop(.74, glow);
-    plume.addColorStop(1, "#e9fcff");
-    ctx.fillStyle = plume;
-    ctx.shadowColor = glow;
-    ctx.shadowBlur = r * .42;
-    ctx.beginPath();
-    ctx.moveTo(-r * .83, -r * .12);
-    ctx.bezierCurveTo(-r * 1.22, -r * .13, -r * 1.62, -r * .25, -r * 2.06, 0);
-    ctx.bezierCurveTo(-r * 1.62, r * .25, -r * 1.22, r * .13, -r * .83, r * .12);
-    ctx.closePath();
-    ctx.fill();
-    ctx.shadowBlur = 0;
+    const breath = .5 + Math.sin(animationTime * .00235) * .5;
+    const tremor = Math.sin(animationTime * .011) * .035 + Math.sin(animationTime * .017) * .018;
+    const plumeLength = 1.72 + breath * .34 + tremor;
+    const plumeWidth = .085 + breath * .045;
 
-    ctx.fillStyle = "#17242d";
-    ctx.strokeStyle = "#8fabb9";
-    ctx.lineWidth = Math.max(1, r * .04);
-    ctx.beginPath();
-    ctx.ellipse(-r * .91, 0, r * .19, r * .25, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#dffaff";
-    ctx.shadowColor = glow;
-    ctx.shadowBlur = r * .42;
-    ctx.beginPath();
-    ctx.ellipse(-r * .96, 0, r * .1, r * .15, 0, 0, Math.PI * 2);
-    ctx.fill();
+    for (const side of [-1, 1]) {
+      const y = side * r * .17;
+      const phase = animationTime * .00235 + (side > 0 ? .34 : 0);
+      const localBreath = .56 + Math.sin(phase) * .18;
+      const tailX = -r * (plumeLength + (side > 0 ? .04 : 0));
+      const plume = ctx.createLinearGradient(tailX, y, -r * .72, y);
+      plume.addColorStop(0, "rgba(62,186,255,0)");
+      plume.addColorStop(.27, "rgba(56,184,255,.16)");
+      plume.addColorStop(.72, glow);
+      plume.addColorStop(1, "#f2fdff");
+      ctx.fillStyle = plume;
+      ctx.globalAlpha = .68 + localBreath * .28;
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = r * (.3 + breath * .28);
+      ctx.beginPath();
+      ctx.moveTo(-r * .79, y - r * plumeWidth);
+      ctx.bezierCurveTo(-r * 1.15, y - r * plumeWidth * 1.15, tailX + r * .18, y - r * .16, tailX, y);
+      ctx.bezierCurveTo(tailX + r * .18, y + r * .16, -r * 1.15, y + r * plumeWidth * 1.15, -r * .79, y + r * plumeWidth);
+      ctx.closePath();
+      ctx.fill();
+
+      // A handful of traveling ion motes keeps the exhaust alive at idle.
+      ctx.fillStyle = "#bff5ff";
+      for (let i = 0; i < 3; i += 1) {
+        const travel = (animationTime * .00072 + i * .31 + (side > 0 ? .17 : 0)) % 1;
+        const px = -r * (.98 + travel * (plumeLength - .84));
+        const py = y + Math.sin(animationTime * .006 + i * 2.1 + side) * r * .055 * travel;
+        ctx.globalAlpha = (1 - travel) * .62;
+        ctx.beginPath();
+        ctx.arc(px, py, Math.max(.7, r * (.018 + (1 - travel) * .012)), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#101a22";
+      ctx.strokeStyle = "#8fabb9";
+      ctx.lineWidth = Math.max(1, r * .035);
+      ctx.beginPath();
+      ctx.ellipse(-r * .88, y, r * .17, r * .15, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      const core = ctx.createRadialGradient(-r * .93, y, 0, -r * .93, y, r * .12);
+      core.addColorStop(0, "#ffffff");
+      core.addColorStop(.32, "#dffaff");
+      core.addColorStop(.7, glow);
+      core.addColorStop(1, "#126486");
+      ctx.fillStyle = core;
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = r * (.25 + localBreath * .34);
+      ctx.beginPath();
+      ctx.ellipse(-r * .93, y, r * (.075 + localBreath * .012), r * (.085 + localBreath * .015), 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 
-  private drawBaseShipArmorDetail(ctx: CanvasRenderingContext2D, r: number, primary: string, glow: string) {
+  private drawBaseShipArmorDetail(ctx: CanvasRenderingContext2D, r: number, primary: string, glow: string, animationTime: number) {
     ctx.save();
     ctx.lineWidth = Math.max(1, r * .022);
     ctx.strokeStyle = "rgba(8,15,21,.7)";
@@ -220,19 +266,49 @@ export class ShipRenderer {
       ctx.stroke();
     }
 
-    ctx.globalAlpha = 1;
+    const systemPulse = .66 + Math.sin(animationTime * .0031) * .22;
+    ctx.globalAlpha = systemPulse;
     ctx.fillStyle = glow;
     ctx.shadowColor = glow;
-    ctx.shadowBlur = r * .18;
+    ctx.shadowBlur = r * (.12 + systemPulse * .22);
     for (const side of [-1, 1]) {
       ctx.beginPath();
       ctx.roundRect(-r * .22, side * r * .29 - r * .035, r * .27, r * .07, r * .02);
       ctx.fill();
+
+      // Energy appears to travel out through the long wing channels.
+      const travel = (animationTime * .00055 + (side > 0 ? .42 : 0)) % 1;
+      const wingX = r * (.08 - travel * .72);
+      const wingY = side * r * (.46 + travel * .5);
+      ctx.globalAlpha = .35 + (1 - Math.abs(.5 - travel) * 2) * .65;
+      ctx.beginPath();
+      ctx.roundRect(wingX - r * .08, wingY - r * .025, r * .16, r * .05, r * .02);
+      ctx.fill();
     }
     ctx.shadowBlur = 0;
 
+    // Independently phased blue status lights make the hull read as a powered
+    // machine rather than a single uniformly glowing icon.
+    const leds: Array<[number, number, number]> = [
+      [-.58, -.28, 0], [-.58, .28, .9], [-.2, -.36, 1.8], [-.2, .36, 2.7],
+      [.2, -.34, 3.6], [.2, .34, 4.5], [.78, -.18, 5.4], [.78, .18, 6.3],
+    ];
+    for (const [x, y, phase] of leds) {
+      const ledPulse = .42 + (.5 + Math.sin(animationTime * .0042 + phase) * .5) * .58;
+      ctx.globalAlpha = ledPulse;
+      ctx.fillStyle = "#9eeeff";
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = r * (.08 + ledPulse * .18);
+      ctx.beginPath();
+      ctx.arc(x * r, y * r, Math.max(1, r * .035), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
     ctx.fillStyle = "#ff9b37";
-    [[-.69, -.2], [-.69, .2], [.72, -.19], [.72, .19]].forEach(([x, y]) => {
+    [[-.69, -.2], [-.69, .2], [.72, -.19], [.72, .19]].forEach(([x, y], index) => {
+      ctx.globalAlpha = .56 + (.5 + Math.sin(animationTime * .002 + index * 1.4) * .5) * .36;
       ctx.beginPath();
       ctx.roundRect(x * r, y * r - r * .025, r * .12, r * .05, r * .02);
       ctx.fill();
