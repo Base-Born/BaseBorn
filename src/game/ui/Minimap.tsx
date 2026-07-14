@@ -62,12 +62,9 @@ export function Minimap({ snapshot }: { snapshot: GameSnapshot }) {
   return (
     <aside className="minimap" style={{ width: size, height: size + statusHeight, "--minimap-status-height": `${statusHeight}px` } as CSSProperties}>
       <svg viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`Sector minimap. You are in ${youLabel}`}>
-        <defs>
-          <clipPath id="minimapMapClip"><rect x={innerRect.x} y={innerRect.y} width={innerRect.width} height={innerRect.height} rx="7" /></clipPath>
-        </defs>
         <rect className="minimapPanel" x="1" y="1" width={size - 2} height={size - 2} rx="10" />
         <rect className="minimapInnerMap" x={innerRect.x} y={innerRect.y} width={innerRect.width} height={innerRect.height} rx="7" />
-        <g clipPath="url(#minimapMapClip)">
+        <g>
         <g transform={zoomTransform}>
         <g className="minimapLootZones">
           {[...LOOT_REGION_ORDER].reverse().map((region) => {
