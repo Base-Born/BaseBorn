@@ -12,7 +12,7 @@ The Ether Collapse destroyed the civilizations that once ruled the stars.
 
 Now, abandoned stations drift through space, ancient machines guard forgotten worlds, and powerful Ether grows inside the asteroids scattered across the universe.
 
-You awaken as one of the BaseBorn—a pilot created to rebuild from the ruins.
+You awaken as one of the BaseBorn a pilot created to rebuild from the ruins.
 
 Begin with a damaged ship.
 
@@ -28,7 +28,7 @@ Build new weapons, engines, shields, drones, defenses, and station systems. Ever
 
 Reach level 100 and transform your ship into a personal mothership.
 
-Join up to five other pilots and connect your motherships together to create a Galactic Space Station—an enormous team-controlled structure shaped by the ships, modules, and roles your team chooses.
+Join up to five other pilots and connect your motherships together to create a Galactic Space Station an enormous team-controlled structure shaped by the ships, modules, and roles your team chooses.
 
 Build a fortress.
 
@@ -38,7 +38,7 @@ Build a support network.
 
 Build something no other team has.
 
-Travel toward the center of the universe, where the most powerful Ether—and the greatest dangers—are waiting.
+Travel toward the center of the universe, where the most powerful Ether and the greatest dangers are waiting.
 
 Your ship is temporary.
 
