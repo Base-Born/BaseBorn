@@ -18,6 +18,7 @@ export class StationRenderer {
     this.renderStationDockingArms(ctx, station, profile);
     this.renderStationModules(ctx, station, profile, options);
     this.renderStationHullRing(ctx, station, profile, options);
+    this.renderOrbitalArchitecture(ctx, station, profile, options);
     this.renderStationLandingPads(ctx, station, profile, options);
     this.renderStationDefenses(ctx, station, profile, options);
     this.renderStationCore(ctx, station, profile, options);
@@ -122,6 +123,174 @@ export class StationRenderer {
 
     if (hasStationVisualUpgrade(profile, "armor_plating")) {
       this.renderArmorPlates(ctx, profile, options);
+    }
+    ctx.restore();
+  }
+
+  private renderOrbitalArchitecture(ctx: CanvasRenderingContext2D, station: Station, profile: StationVisualProfile, options: StationRenderOptions) {
+    const pulse = 0.78 + Math.sin(options.now * 0.0024 + profile.seed) * 0.16;
+    const operational = Math.max(0.16, profile.repairProgress);
+    const cyan = profile.healthRatio <= 0.28 ? profile.warningColor : profile.coreColor;
+    ctx.save();
+
+    // Layered armored decks give the station the stepped, weighty silhouette of
+    // the concept while keeping its actual gameplay radius unchanged.
+    const deckGradient = ctx.createRadialGradient(
+      -profile.baseRadius * .13,
+      -profile.baseRadius * .16,
+      profile.coreRadius * .34,
+      0,
+      0,
+      profile.outerRadius,
+    );
+    deckGradient.addColorStop(0, "#9da9b1");
+    deckGradient.addColorStop(.2, "#333e46");
+    deckGradient.addColorStop(.44, "#111a21");
+    deckGradient.addColorStop(.7, "#647079");
+    deckGradient.addColorStop(.86, "#202a31");
+    deckGradient.addColorStop(1, "#080e13");
+
+    const decks = [
+      { radius: profile.outerRadius * .82, width: profile.baseRadius * .17, alpha: .92 },
+      { radius: profile.outerRadius * .64, width: profile.baseRadius * .2, alpha: .96 },
+      { radius: profile.outerRadius * .43, width: profile.baseRadius * .18, alpha: 1 },
+    ];
+    for (const deck of decks) {
+      ctx.globalAlpha = deck.alpha;
+      ctx.strokeStyle = deckGradient;
+      ctx.lineWidth = deck.width;
+      ctx.beginPath();
+      ctx.arc(0, 0, deck.radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(222,231,236,.28)";
+      ctx.lineWidth = Math.max(1.5, profile.baseRadius * .014);
+      ctx.beginPath();
+      ctx.arc(0, 0, deck.radius - deck.width * .42, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Luminous habitable window bands. Broken stations expose fewer lit bays;
+    // repaired bases progressively regain a full cyan ring.
+    ctx.globalAlpha = (.35 + operational * .55) * pulse;
+    ctx.strokeStyle = cyan;
+    ctx.shadowColor = cyan;
+    ctx.shadowBlur = profile.baseRadius * .09;
+    ctx.lineCap = "butt";
+    ctx.lineWidth = Math.max(2, profile.baseRadius * .035);
+    ctx.setLineDash([
+      profile.baseRadius * (.2 + operational * .11),
+      profile.baseRadius * (.13 - operational * .04),
+    ]);
+    ctx.lineDashOffset = -(profile.seed % 19);
+    for (const radius of [profile.outerRadius * .73, profile.outerRadius * .5]) {
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2 * (.42 + operational * .58));
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+
+    // Radial ribs divide the deck into believable manufactured sections.
+    ctx.globalAlpha = .72;
+    for (let i = 0; i < 16; i += 1) {
+      if (!profile.isClaimed && seededUnit(profile.seed, i + 510) < profile.damageLevel * .3) continue;
+      const angle = i * Math.PI / 8;
+      ctx.strokeStyle = i % 4 === 0 ? "rgba(188,201,210,.55)" : "rgba(7,12,16,.88)";
+      ctx.lineWidth = i % 4 === 0 ? profile.baseRadius * .035 : profile.baseRadius * .018;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(angle) * profile.outerRadius * .32, Math.sin(angle) * profile.outerRadius * .32);
+      ctx.lineTo(Math.cos(angle) * profile.outerRadius * .88, Math.sin(angle) * profile.outerRadius * .88);
+      ctx.stroke();
+    }
+
+    this.renderStationCommandTower(ctx, profile, cyan, pulse);
+
+    // Small warm maintenance lights break up the cool palette in the same way
+    // as the reference station's service bays.
+    ctx.globalAlpha = .72 * operational;
+    ctx.fillStyle = "#ff9b37";
+    ctx.shadowColor = "#ff9b37";
+    ctx.shadowBlur = 5;
+    for (let i = 0; i < 10; i += 1) {
+      const angle = i * Math.PI / 5 + .13;
+      const radius = profile.outerRadius * (i % 2 ? .58 : .78);
+      ctx.beginPath();
+      ctx.arc(Math.cos(angle) * radius, Math.sin(angle) * radius, Math.max(1.5, profile.baseRadius * .018), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  private renderStationCommandTower(ctx: CanvasRenderingContext2D, profile: StationVisualProfile, color: string, pulse: number) {
+    const towerHeight = profile.coreRadius * (1.35 + profile.repairProgress * .38);
+    const towerWidth = profile.coreRadius * .58;
+    const riseX = -towerHeight * .22;
+    const riseY = -towerHeight * .58;
+    ctx.save();
+
+    ctx.fillStyle = "rgba(0,0,0,.48)";
+    ctx.beginPath();
+    ctx.ellipse(profile.coreRadius * .18, profile.coreRadius * .2, profile.coreRadius * 1.08, profile.coreRadius * .66, -.15, 0, Math.PI * 2);
+    ctx.fill();
+
+    const towerGradient = ctx.createLinearGradient(riseX - towerWidth, riseY, towerWidth, 0);
+    towerGradient.addColorStop(0, "#101820");
+    towerGradient.addColorStop(.42, "#7a8790");
+    towerGradient.addColorStop(.64, "#26323a");
+    towerGradient.addColorStop(1, "#080e13");
+    ctx.fillStyle = towerGradient;
+    ctx.strokeStyle = "rgba(205,217,225,.48)";
+    ctx.lineWidth = Math.max(1.5, profile.baseRadius * .022);
+    ctx.beginPath();
+    ctx.moveTo(-towerWidth, profile.coreRadius * .42);
+    ctx.lineTo(riseX - towerWidth * .36, riseY);
+    ctx.lineTo(riseX + towerWidth * .3, riseY - profile.coreRadius * .13);
+    ctx.lineTo(towerWidth, profile.coreRadius * .42);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Stacked command decks.
+    for (let i = 0; i < 3; i += 1) {
+      const y = riseY * (.24 + i * .22);
+      const width = towerWidth * (1.18 - i * .18);
+      ctx.fillStyle = i % 2 ? "#1a252d" : "#56636c";
+      ctx.strokeStyle = "rgba(211,223,230,.34)";
+      ctx.beginPath();
+      ctx.ellipse(riseX * (.22 + i * .23), y, width, profile.coreRadius * .2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = .66 * pulse;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = profile.baseRadius * .1;
+    ctx.lineWidth = Math.max(2, profile.baseRadius * .026);
+    ctx.beginPath();
+    ctx.moveTo(riseX - towerWidth * .18, riseY * .78);
+    ctx.lineTo(riseX + towerWidth * .22, riseY * .78);
+    ctx.stroke();
+
+    // Communications spires give the center a recognisable station skyline.
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "rgba(174,190,200,.74)";
+    ctx.lineWidth = Math.max(1, profile.baseRadius * .014);
+    const spires = [
+      [riseX, riseY - profile.coreRadius * .75, profile.coreRadius * .82],
+      [riseX - towerWidth * .72, riseY * .55, profile.coreRadius * .46],
+      [riseX + towerWidth * .66, riseY * .48, profile.coreRadius * .38],
+    ];
+    for (const [x, y, height] of spires) {
+      ctx.beginPath();
+      ctx.moveTo(x, y + height * .5);
+      ctx.lineTo(x, y - height * .5);
+      ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.globalAlpha = .72 * pulse;
+      ctx.beginPath();
+      ctx.arc(x, y - height * .5, Math.max(1.5, profile.baseRadius * .016), 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   }

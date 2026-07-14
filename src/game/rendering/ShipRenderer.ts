@@ -34,9 +34,210 @@ export class ShipRenderer {
   }
 
   private drawBaseShip(ctx: CanvasRenderingContext2D, profile: ShipVisualProfile, r: number, primary: string, accent: string) {
-    this.poly(ctx, [[1.32, 0], [-0.62, 0.72], [-0.38, 0.16], [-1.05, 0], [-0.38, -0.16], [-0.62, -0.72]], r, primary, profile.glowColor);
-    this.cockpit(ctx, r, profile.cockpitShape, accent);
-    this.engine(ctx, r, profile.trailStyle, 1);
+    // The starter craft is intentionally more detailed than the old six-point
+    // polygon. Its silhouette and material language follow the Base Ship
+    // concept: a compact armored fuselage, long swept wings, inset cyan systems,
+    // warm service lights, and a powerful exposed ion engine.
+    ctx.save();
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+
+    this.drawBaseShipEngine(ctx, r, profile.glowColor);
+
+    const wingGradient = ctx.createLinearGradient(-r * .72, 0, r * .65, 0);
+    wingGradient.addColorStop(0, "#101820");
+    wingGradient.addColorStop(.48, "#56636c");
+    wingGradient.addColorStop(.76, "#b8c1c7");
+    wingGradient.addColorStop(1, "#333e47");
+    ctx.fillStyle = wingGradient;
+    ctx.strokeStyle = "#111b24";
+    ctx.lineWidth = Math.max(1.5, r * .065);
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(r * .52, side * r * .27);
+      ctx.lineTo(r * .08, side * r * .48);
+      ctx.lineTo(-r * .52, side * r * 1.18);
+      ctx.lineTo(-r * 1.02, side * r * 1.06);
+      ctx.lineTo(-r * .52, side * r * .29);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Reinforced leading edge and panel breaks keep the wings readable at
+      // gameplay scale without relying on a large texture.
+      ctx.strokeStyle = "rgba(220,232,239,.55)";
+      ctx.lineWidth = Math.max(1, r * .025);
+      ctx.beginPath();
+      ctx.moveTo(r * .34, side * r * .34);
+      ctx.lineTo(-r * .52, side * r * 1.03);
+      ctx.lineTo(-r * .83, side * r * .96);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(8,15,21,.75)";
+      ctx.beginPath();
+      ctx.moveTo(-r * .13, side * r * .5);
+      ctx.lineTo(-r * .39, side * r * .73);
+      ctx.moveTo(-r * .47, side * r * .34);
+      ctx.lineTo(-r * .67, side * r * .72);
+      ctx.stroke();
+    }
+
+    // Dark mechanical undercarriage visible around the main armored shell.
+    ctx.fillStyle = "#111a22";
+    ctx.strokeStyle = "#070d12";
+    ctx.lineWidth = Math.max(1.5, r * .055);
+    ctx.beginPath();
+    ctx.moveTo(r * 1.29, 0);
+    ctx.bezierCurveTo(r * .93, -r * .39, -r * .37, -r * .5, -r * .91, -r * .3);
+    ctx.lineTo(-r * 1.08, 0);
+    ctx.lineTo(-r * .91, r * .3);
+    ctx.bezierCurveTo(-r * .37, r * .5, r * .93, r * .39, r * 1.29, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    const hullGradient = ctx.createLinearGradient(0, -r * .48, 0, r * .48);
+    hullGradient.addColorStop(0, "#eff3f5");
+    hullGradient.addColorStop(.2, "#8e9aa3");
+    hullGradient.addColorStop(.48, "#38434c");
+    hullGradient.addColorStop(.72, "#aeb8be");
+    hullGradient.addColorStop(1, "#29343d");
+    ctx.fillStyle = hullGradient;
+    ctx.strokeStyle = "#17232c";
+    ctx.lineWidth = Math.max(1.5, r * .06);
+    ctx.beginPath();
+    ctx.moveTo(r * 1.34, 0);
+    ctx.bezierCurveTo(r * 1.06, -r * .22, r * .68, -r * .36, r * .12, -r * .39);
+    ctx.bezierCurveTo(-r * .35, -r * .43, -r * .73, -r * .31, -r * .94, -r * .17);
+    ctx.lineTo(-r * 1.04, 0);
+    ctx.lineTo(-r * .94, r * .17);
+    ctx.bezierCurveTo(-r * .73, r * .31, -r * .35, r * .43, r * .12, r * .39);
+    ctx.bezierCurveTo(r * .68, r * .36, r * 1.06, r * .22, r * 1.34, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Raised dorsal spine and cockpit canopy.
+    const spineGradient = ctx.createLinearGradient(-r * .62, 0, r * 1.12, 0);
+    spineGradient.addColorStop(0, "#26323b");
+    spineGradient.addColorStop(.42, "#7c8992");
+    spineGradient.addColorStop(.75, "#d6dde1");
+    spineGradient.addColorStop(1, "#58656d");
+    ctx.fillStyle = spineGradient;
+    ctx.strokeStyle = "rgba(9,17,24,.9)";
+    ctx.lineWidth = Math.max(1, r * .035);
+    ctx.beginPath();
+    ctx.moveTo(r * 1.16, 0);
+    ctx.lineTo(r * .76, -r * .17);
+    ctx.lineTo(-r * .53, -r * .2);
+    ctx.lineTo(-r * .72, 0);
+    ctx.lineTo(-r * .53, r * .2);
+    ctx.lineTo(r * .76, r * .17);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    const canopy = ctx.createRadialGradient(r * .45, -r * .06, 0, r * .45, 0, r * .25);
+    canopy.addColorStop(0, "#d9fbff");
+    canopy.addColorStop(.25, accent);
+    canopy.addColorStop(.62, "#1d7696");
+    canopy.addColorStop(1, "#071722");
+    ctx.fillStyle = canopy;
+    ctx.strokeStyle = "#bdefff";
+    ctx.shadowColor = profile.glowColor;
+    ctx.shadowBlur = r * .2;
+    ctx.beginPath();
+    ctx.ellipse(r * .47, 0, r * .22, r * .145, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    this.drawBaseShipArmorDetail(ctx, r, primary, profile.glowColor);
+    ctx.restore();
+  }
+
+  private drawBaseShipEngine(ctx: CanvasRenderingContext2D, r: number, glow: string) {
+    ctx.save();
+    const plume = ctx.createLinearGradient(-r * 2.05, 0, -r * .72, 0);
+    plume.addColorStop(0, "rgba(62,186,255,0)");
+    plume.addColorStop(.35, "rgba(56,184,255,.2)");
+    plume.addColorStop(.74, glow);
+    plume.addColorStop(1, "#e9fcff");
+    ctx.fillStyle = plume;
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = r * .42;
+    ctx.beginPath();
+    ctx.moveTo(-r * .83, -r * .12);
+    ctx.bezierCurveTo(-r * 1.22, -r * .13, -r * 1.62, -r * .25, -r * 2.06, 0);
+    ctx.bezierCurveTo(-r * 1.62, r * .25, -r * 1.22, r * .13, -r * .83, r * .12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = "#17242d";
+    ctx.strokeStyle = "#8fabb9";
+    ctx.lineWidth = Math.max(1, r * .04);
+    ctx.beginPath();
+    ctx.ellipse(-r * .91, 0, r * .19, r * .25, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#dffaff";
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = r * .42;
+    ctx.beginPath();
+    ctx.ellipse(-r * .96, 0, r * .1, r * .15, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  private drawBaseShipArmorDetail(ctx: CanvasRenderingContext2D, r: number, primary: string, glow: string) {
+    ctx.save();
+    ctx.lineWidth = Math.max(1, r * .022);
+    ctx.strokeStyle = "rgba(8,15,21,.7)";
+    [-.55, -.22, .12, .48, .82].forEach((x, index) => {
+      const half = (.29 - Math.abs(x - .08) * .07) * r;
+      ctx.beginPath();
+      ctx.moveTo(x * r, -half);
+      ctx.lineTo((x + .08) * r, 0);
+      ctx.lineTo(x * r, half);
+      ctx.stroke();
+      if (index < 4) {
+        ctx.beginPath();
+        ctx.moveTo((x + .08) * r, 0);
+        ctx.lineTo((x + .24) * r, 0);
+        ctx.stroke();
+      }
+    });
+
+    // Custom ship color is retained as restrained hull trim instead of making
+    // the whole craft look like a flat neon polygon.
+    ctx.strokeStyle = primary;
+    ctx.globalAlpha = .8;
+    ctx.lineWidth = Math.max(1.2, r * .04);
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(-r * .42, side * r * .24);
+      ctx.lineTo(r * .23, side * r * .29);
+      ctx.stroke();
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = glow;
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = r * .18;
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.roundRect(-r * .22, side * r * .29 - r * .035, r * .27, r * .07, r * .02);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = "#ff9b37";
+    [[-.69, -.2], [-.69, .2], [.72, -.19], [.72, .19]].forEach(([x, y]) => {
+      ctx.beginPath();
+      ctx.roundRect(x * r, y * r - r * .025, r * .12, r * .05, r * .02);
+      ctx.fill();
+    });
+    ctx.restore();
   }
 
   private drawBranchShip(ctx: CanvasRenderingContext2D, profile: ShipVisualProfile, r: number, primary: string, accent: string) {

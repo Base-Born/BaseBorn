@@ -233,39 +233,76 @@
 
 .bbPreviewShip {
   position: relative;
-  width: 96px;
-  height: 62px;
-  background: linear-gradient(90deg, #2aa9c7 0%, #d4dee6 42%, #7ca4b8 74%, #4f7f95 100%);
-  clip-path: polygon(100% 50%, 18% 0, 34% 36%, 0 50%, 34% 64%, 18% 100%);
+  width: 118px;
+  height: 76px;
   filter:
-    drop-shadow(0 0 10px rgba(255, 255, 255, 0.5))
-    drop-shadow(0 0 10px rgba(90, 166, 200, 0.38))
-    drop-shadow(-10px 0 12px rgba(79, 127, 149, 0.42));
+    drop-shadow(0 0 7px rgba(255, 255, 255, 0.28))
+    drop-shadow(0 0 13px rgba(76, 201, 240, 0.38));
   transform: rotate(-90deg);
   animation: bbShipFloat 3.6s ease-in-out infinite;
 }
 
+.bbPreviewHull {
+  position: absolute;
+  inset: 24px 5px;
+  z-index: 2;
+  clip-path: polygon(100% 50%, 79% 12%, 26% 0, 0 32%, 0 68%, 26% 100%, 79% 88%);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.82), transparent 22%, rgba(3,10,15,.58) 52%, rgba(208,220,227,.7) 76%, rgba(25,36,45,.94)),
+    linear-gradient(90deg, #1b2730, #89969e 52%, #d9e1e5 78%, #4d5b64);
+  border-radius: 46% 58% 58% 46%;
+  box-shadow: inset 0 0 0 1px rgba(5,13,19,.82);
+}
+
+.bbPreviewWing {
+  position: absolute;
+  z-index: 1;
+  left: 20px;
+  width: 62px;
+  height: 30px;
+  background: linear-gradient(115deg, #101820 8%, #aab5bc 58%, #36434c 92%);
+  clip-path: polygon(100% 10%, 57% 34%, 0 100%, 8% 22%, 66% 0);
+}
+
+.bbPreviewWing--top { top: 1px; }
+.bbPreviewWing--bottom { bottom: 1px; transform: scaleY(-1); }
+
+.bbPreviewEngine {
+  position: absolute;
+  z-index: 3;
+  left: -7px;
+  top: 31px;
+  width: 23px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #718995;
+  background: #dffaff;
+  box-shadow: -12px 0 14px 3px rgba(76,201,240,.62), 0 0 8px #4cc9f0;
+}
+
 .bbPreviewCockpit {
   position: absolute;
-  right: 29px;
-  top: 25px;
+  z-index: 4;
+  right: 30px;
+  top: 30px;
   width: 19px;
-  height: 12px;
+  height: 16px;
   border-radius: 999px;
-  background: rgba(245, 247, 255, 0.82);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.44);
+  background: radial-gradient(circle at 68% 35%, #e9fdff 0 12%, #4cc9f0 28%, #126785 56%, #071722 78%);
+  box-shadow: 0 0 9px rgba(76,201,240,.72), inset 0 0 0 1px rgba(215,250,255,.7);
 }
 
 .bbPreviewDecal {
   position: absolute;
+  z-index: 4;
   left: 28px;
-  right: 35px;
-  top: 29px;
-  height: 4px;
+  right: 52px;
+  top: 36px;
+  height: 3px;
   border-radius: 999px;
-  background: #8e80b8;
+  background: #4cc9f0;
   clip-path: polygon(0 0, 75% 0, 100% 50%, 75% 100%, 0 100%, 22% 50%);
-  opacity: 0.9;
+  box-shadow: 0 0 6px #4cc9f0;
 }
 
 @keyframes bbShipFloat {
