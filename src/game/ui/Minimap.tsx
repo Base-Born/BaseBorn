@@ -204,8 +204,8 @@ export function Minimap({ snapshot }: { snapshot: GameSnapshot }) {
               {horizontalLines.map(({ y, index }) => <line key={`zoom-h-${index}`} x1={innerRect.x} y1={y} x2={innerRect.x + innerRect.width} y2={y} />)}
             </g>
             <g className="minimapAxisLabels minimapZoomAxisLabels">
-              {verticalLines.map(({ x, index }) => <text className="minimapAxisLabelColumn" key={`zoom-label-x-${index}`} x={x} y={innerRect.y - 7}>{columns[index]}</text>)}
-              {horizontalLines.map(({ y, index }) => <text className="minimapAxisLabelRow" key={`zoom-label-y-${index}`} x={innerRect.x - 7} y={y + 3}>{index + 1}</text>)}
+              {verticalLines.filter(({ index }) => index < columns.length).map(({ x, index }) => <text className="minimapAxisLabelColumn" key={`zoom-label-x-${index}`} x={x} y={innerRect.y - 7}>{columns[index]}</text>)}
+              {horizontalLines.filter(({ index }) => index < rows.length).map(({ y, index }) => <text className="minimapAxisLabelRow" key={`zoom-label-y-${index}`} x={innerRect.x - 7} y={y + 3}>{index + 1}</text>)}
             </g>
           </>;
         })()}
