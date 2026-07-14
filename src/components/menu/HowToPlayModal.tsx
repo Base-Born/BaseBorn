@@ -5,7 +5,7 @@ const controlSections = [
   {
     title: "Movement",
     rows: [
-      ["WASD / Arrow Keys", "Move"],
+      ["WASD / Arrow Keys", "Move ship / pilot station while docked"],
       ["Mouse", "Aim"],
     ],
   },
@@ -13,26 +13,34 @@ const controlSections = [
     title: "Combat",
     rows: [
       ["Left Click / Space", "Fire"],
+      ["Right Click", "Repel drones / secondary system"],
       ["E", "Auto Fire"],
       ["Q", "Auto Throttle"],
     ],
   },
   {
-    title: "Upgrades",
+    title: "Station",
     rows: [
-      ["1-8", "Upgrade core stats"],
-      ["U", "Core upgrades"],
-      ["Hold Y", "View evolution tree"],
-      ["Release Y", "Close evolution tree"],
+      ["F", "Claim / dock / undock"],
+      ["R", "Scanner pulse / repair next stage"],
+      ["U", "Station command while docked; ship panel otherwise"],
+      ["V", "Locate nearest broken station or team station"],
     ],
   },
   {
-    title: "Map and Team",
+    title: "Cargo and Upgrades",
     rows: [
-      ["M", "Map"],
-      ["T", "Team panel"],
-      ["B", "Base panel"],
-      ["Tab", "Leaderboard"],
+      ["H", "Toggle cargo pickup"],
+      ["G", "Eject lowest-quality cargo"],
+      ["1-9", "Upgrade ship stats while docked"],
+      ["Y", "Open ship upgrades"],
+    ],
+  },
+  {
+    title: "Map and Interface",
+    rows: [
+      ["M", "Cycle minimap zoom: Sector / Local / Close"],
+      ["Escape", "Close the active panel or overlay"],
     ],
   },
 ];

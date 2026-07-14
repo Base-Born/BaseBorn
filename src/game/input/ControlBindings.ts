@@ -15,8 +15,8 @@ export const CONTROL_BINDINGS: Record<ControlAction, { label: string; primary: s
   command: { label: "Command / management", primary: "U" },
   dropCargo: { label: "Eject cargo", primary: "G" },
   cargoPickup: { label: "Toggle cargo pickup", primary: "H" },
-  navigation: { label: "Cycle waypoint", primary: "V" },
-  mapZoom: { label: "Toggle minimap zoom", primary: "M" },
+  navigation: { label: "Locate station waypoint", primary: "V" },
+  mapZoom: { label: "Cycle minimap zoom levels", primary: "M" },
   close: { label: "Close overlay", primary: "Escape" },
 };
 
