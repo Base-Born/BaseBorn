@@ -1,6 +1,12 @@
-import { Boxes, Crosshair, Hand, Radar, Settings, Zap } from "lucide-react";
+import { Boxes, Crosshair, Download, Hand, Maximize, Radar, Settings, Zap } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import type { GameSnapshot, Vec2 } from "../../types";
+import { isInstalledDisplayMode, requestMobileFullscreen } from "./mobileDisplay";
+
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+};
 
 type MobileControllerProps = {
   snapshot: GameSnapshot;
@@ -87,6 +93,11 @@ function VirtualStick({ label, className, onChange, resetOnRelease = true }: Sti
 }
 
 export function MobileController({ snapshot, active, onMove, onAim, onFire, onInteract, onScan, onCargo, onShip, onToggleAutoFire }: MobileControllerProps) {
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [installed, setInstalled] = useState(isInstalledDisplayMode);
+  const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
+  const [displayHint, setDisplayHint] = useState("");
+
   useEffect(() => {
     if (!active) {
       onMove({ x: 0, y: 0 });
@@ -97,6 +108,26 @@ export function MobileController({ snapshot, active, onMove, onAim, onFire, onIn
       onFire(false);
     };
   }, [active]);
+
+  useEffect(() => {
+    const onInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+    };
+    const onInstalled = () => {
+      setInstalled(true);
+      setInstallPrompt(null);
+    };
+    const onFullscreen = () => setFullscreen(Boolean(document.fullscreenElement));
+    window.addEventListener("beforeinstallprompt", onInstallPrompt);
+    window.addEventListener("appinstalled", onInstalled);
+    document.addEventListener("fullscreenchange", onFullscreen);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onInstallPrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+      document.removeEventListener("fullscreenchange", onFullscreen);
+    };
+  }, []);
 
   const healthPercent = Math.round(snapshot.maxHealth > 0 ? snapshot.health / snapshot.maxHealth * 100 : 0);
   const shieldPercent = Math.round(snapshot.maxShield > 0 ? snapshot.shieldHealth / snapshot.maxShield * 100 : 0);
@@ -113,8 +144,29 @@ export function MobileController({ snapshot, active, onMove, onAim, onFire, onIn
     onFire(false);
   };
 
+  const enterFullscreen = async () => {
+    const entered = await requestMobileFullscreen();
+    if (!entered) setDisplayHint("Install to Home Screen for a browser-free view");
+  };
+
+  const installApp = async () => {
+    if (!installPrompt) {
+      setDisplayHint(/iphone|ipad|ipod/i.test(navigator.userAgent) ? "Tap Share, then Add to Home Screen" : "Open the browser menu, then tap Install app");
+      return;
+    }
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice.outcome === "accepted") setInstalled(true);
+    setInstallPrompt(null);
+  };
+
   return (
     <div className={`mobileController${active ? " is-active" : ""}`} aria-label="Touch flight controls">
+      <div className="mobileDisplayActions">
+        {!fullscreen && <button type="button" onClick={enterFullscreen} aria-label="Enter fullscreen"><Maximize size={16} /><span>FULL</span></button>}
+        {!installed && <button type="button" onClick={installApp} aria-label="Install BaseBorn"><Download size={16} /><span>INSTALL</span></button>}
+      </div>
+      {displayHint && <button type="button" className="mobileDisplayHint" onClick={() => setDisplayHint("")} aria-label="Dismiss install instructions">{displayHint}</button>}
       <div className="mobileVitals" aria-label="Ship status">
         <span><i className="mobileVitals__hull" style={{ "--value": `${healthPercent}%` } as CSSProperties} />Hull <b>{healthPercent}%</b></span>
         <span><i className="mobileVitals__shield" style={{ "--value": `${shieldPercent}%` } as CSSProperties} />Shield <b>{shieldPercent}%</b></span>

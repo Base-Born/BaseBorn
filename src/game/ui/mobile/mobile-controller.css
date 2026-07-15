@@ -27,6 +27,49 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  .mobileDisplayActions {
+    position: absolute;
+    z-index: 3;
+    top: var(--bb-safe-top);
+    right: calc(var(--bb-safe-right) + 72px);
+    display: flex;
+    gap: 5px;
+    pointer-events: none;
+  }
+
+  .mobileDisplayActions button {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 32px;
+    padding: 0 8px;
+    color: #afe9ff;
+    border: 1px solid rgba(72, 190, 241, .35);
+    border-radius: 8px;
+    background: rgba(3, 18, 34, .82);
+    backdrop-filter: blur(8px);
+  }
+
+  .mobileDisplayActions span { font-size: 7px; font-weight: 900; letter-spacing: .08em; }
+
+  .mobileDisplayHint {
+    position: absolute;
+    z-index: 4;
+    top: calc(var(--bb-safe-top) + 39px);
+    left: 50%;
+    max-width: min(86vw, 330px);
+    min-height: 32px;
+    padding: 6px 11px;
+    color: #dff7ff;
+    border: 1px solid rgba(73, 192, 241, .42);
+    border-radius: 9px;
+    background: rgba(3, 18, 34, .95);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .42);
+    transform: translateX(-50%);
+    font-size: 9px;
+    font-weight: 800;
+  }
+
   .mobileStick {
     position: absolute;
     bottom: calc(var(--bb-safe-bottom) + 8px);
@@ -252,10 +295,46 @@
     right: auto !important;
     bottom: calc(var(--bb-safe-bottom) + 188px) !important;
     width: min(360px, calc(100vw - var(--bb-safe-left) - var(--bb-safe-right))) !important;
-    max-height: min(172px, 25vh);
-    padding: 10px !important;
-    overflow: auto;
+    max-height: none;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 8px !important;
+    overflow: visible;
     transform: translateX(-50%) !important;
+  }
+
+  .gameShell:has(.mobileController.is-active) .stationInteraction__main {
+    min-width: 0;
+    grid-template-columns: 29px minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .gameShell:has(.mobileController.is-active) .stationInteraction__icon {
+    width: 29px;
+    height: 29px;
+  }
+
+  .gameShell:has(.mobileController.is-active) .stationInteraction__main header strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+  }
+
+  .gameShell:has(.mobileController.is-active) .stationInteraction__main header span,
+  .gameShell:has(.mobileController.is-active) .stationInteraction__main p { font-size: 8px; }
+  .gameShell:has(.mobileController.is-active) .stationInteraction__bar { height: 3px; margin-top: 3px; }
+  .gameShell:has(.mobileController.is-active) .stationInteraction__meta,
+  .gameShell:has(.mobileController.is-active) .stationInteraction__cargo,
+  .gameShell:has(.mobileController.is-active) .stationActionButton { display: none !important; }
+  .gameShell:has(.mobileController.is-active) .stationInteraction__actions { flex-wrap: nowrap; }
+  .gameShell:has(.mobileController.is-active) .stationInteraction__primary {
+    min-height: 32px;
+    margin: 0;
+    padding: 0 9px;
+    white-space: nowrap;
+    font-size: 9px;
   }
 }
 
@@ -268,13 +347,16 @@
     height: clamp(82px, 21vh, 108px);
   }
   .mobileVitals {
-    bottom: calc(var(--bb-safe-bottom) + 116px);
+    top: calc(var(--bb-safe-top) + 66px);
+    bottom: auto;
   }
   .mobileActions {
-    bottom: calc(var(--bb-safe-bottom) + 47px);
-    grid-template-columns: repeat(4, 40px);
+    bottom: calc(var(--bb-safe-bottom) + 6px);
+    grid-template-columns: repeat(4, 36px);
+    gap: 5px;
   }
-  .mobileActions button { height: 39px; }
+  .mobileActions button { height: 36px; }
+  .mobileActions button svg { width: 15px; height: 15px; }
   .mobileFire {
     right: calc(var(--bb-safe-right) + 100px);
     bottom: calc(var(--bb-safe-bottom) + 10px);
@@ -286,20 +368,25 @@
     bottom: calc(var(--bb-safe-bottom) + 74px);
   }
   .missionHud { display: none !important; }
-  .pilotHud { width: min(190px, 29vw) !important; }
+  .pilotHud { width: min(158px, 24vw) !important; min-height: 56px; padding: 6px !important; }
+  .pilotHud__level { display: none !important; }
+  .pilotHud { grid-template-columns: minmax(0, 1fr) auto !important; }
   .mapHud {
-    top: calc(var(--bb-safe-top) + 38px) !important;
-    width: min(132px, 23vw) !important;
-    padding: 5px !important;
+    top: calc(var(--bb-safe-top) + 37px) !important;
+    width: min(108px, 18vw) !important;
+    padding: 4px !important;
   }
-  .mapHud .minimap { height: min(128px, 31vh) !important; }
-  .waypointHud { bottom: calc(var(--bb-safe-bottom) + 145px) !important; }
+  .mapHud__header { height: 18px !important; }
+  .mapHud .minimap { height: min(106px, 25vh) !important; }
+  .waypointHud { display: none !important; }
   .gameShell:has(.mobileController.is-active) .stationInteraction {
     left: 50% !important;
-    bottom: calc(var(--bb-safe-bottom) + 136px) !important;
-    width: min(420px, 48vw) !important;
-    max-height: min(122px, 31vh);
+    top: var(--bb-safe-top) !important;
+    bottom: auto !important;
+    width: min(350px, 42vw) !important;
   }
+  .mobileDisplayActions span { display: none; }
+  .mobileDisplayActions button { width: 32px; padding: 0; justify-content: center; }
 }
 
 @media (max-width: 390px) and (orientation: portrait) {

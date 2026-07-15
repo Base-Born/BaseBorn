@@ -24,6 +24,7 @@ import { calculateBuildIdentity } from "./game/systems/BuildIdentitySystem";
 import { Leaderboard } from "./game/ui/Leaderboard";
 import { TeamHub } from "./game/ui/TeamHub";
 import { MobileController } from "./game/ui/mobile/MobileController";
+import { requestMobileFullscreen } from "./game/ui/mobile/mobileDisplay";
 
 const defaultCustomization: Customization = {
   name: "Voidseed",
@@ -297,6 +298,7 @@ export default function App() {
   }, [shipName]);
 
   const startGame = () => {
+    void requestMobileFullscreen();
     const launchCustomization = buildLaunchCustomization(shipName);
     setShipName(launchCustomization.name);
     setCustomization(launchCustomization);
