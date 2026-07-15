@@ -9,6 +9,7 @@ import "./styles/evolution-panel.css";
 import "./styles/leaderboard.css";
 import "./game/ui/design/theme.css";
 import "./game/ui/design/adaptive.css";
+import "./game/ui/mobile/mobile-controller.css";
 import "./game/ui/build/build-identity.css";
 
 createRoot(document.getElementById("root")!).render(

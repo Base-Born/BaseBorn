@@ -87,6 +87,18 @@ export class Game {
     this.emitSnapshot();
   }
 
+  setMobileMovement(movement: Vec2) {
+    this.input.setVirtualMovement(movement);
+  }
+
+  setMobileAim(direction: Vec2) {
+    this.input.setVirtualAim(direction);
+  }
+
+  setMobileFiring(active: boolean) {
+    this.input.setVirtualFiring(active);
+  }
+
   pausedByTree = false;
   mode: "playing" | "respawning" | "gameover" = "playing";
   deathState: PlayerDeathState | null = null;

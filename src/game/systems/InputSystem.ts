@@ -6,6 +6,10 @@ export class InputSystem {
   pointerWorld: Vec2 = { x: 0, y: 0 };
   firing = false;
   rightFiring = false;
+  private keyboardFiring = false;
+  private canvasFiring = false;
+  private virtualFiring = false;
+  private virtualMovement: Vec2 = { x: 0, y: 0 };
   private canvas: HTMLCanvasElement;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -29,9 +33,35 @@ export class InputSystem {
   }
 
   movement(): Vec2 {
-    const x = (this.keys.has("d") || this.keys.has("arrowright") ? 1 : 0) - (this.keys.has("a") || this.keys.has("arrowleft") ? 1 : 0);
-    const y = (this.keys.has("s") || this.keys.has("arrowdown") ? 1 : 0) - (this.keys.has("w") || this.keys.has("arrowup") ? 1 : 0);
-    return { x, y };
+    const keyboardX = (this.keys.has("d") || this.keys.has("arrowright") ? 1 : 0) - (this.keys.has("a") || this.keys.has("arrowleft") ? 1 : 0);
+    const keyboardY = (this.keys.has("s") || this.keys.has("arrowdown") ? 1 : 0) - (this.keys.has("w") || this.keys.has("arrowup") ? 1 : 0);
+    const x = Math.max(-1, Math.min(1, keyboardX + this.virtualMovement.x));
+    const y = Math.max(-1, Math.min(1, keyboardY + this.virtualMovement.y));
+    const length = Math.hypot(x, y);
+    return length > 1 ? { x: x / length, y: y / length } : { x, y };
+  }
+
+  setVirtualMovement(movement: Vec2) {
+    this.virtualMovement = {
+      x: Math.max(-1, Math.min(1, movement.x)),
+      y: Math.max(-1, Math.min(1, movement.y)),
+    };
+  }
+
+  setVirtualAim(direction: Vec2) {
+    const magnitude = Math.hypot(direction.x, direction.y);
+    if (magnitude < 0.08) return;
+    const rect = this.canvas.getBoundingClientRect();
+    const reach = Math.max(rect.width, rect.height);
+    this.pointer = {
+      x: rect.width / 2 + (direction.x / magnitude) * reach,
+      y: rect.height / 2 + (direction.y / magnitude) * reach,
+    };
+  }
+
+  setVirtualFiring(active: boolean) {
+    this.virtualFiring = active;
+    this.syncFiring();
   }
 
   consume(key: string) {
@@ -45,7 +75,10 @@ export class InputSystem {
     const key = event.key.toLowerCase();
     if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) event.preventDefault();
     this.keys.add(key);
-    if (key === " ") this.firing = true;
+    if (key === " ") {
+      this.keyboardFiring = true;
+      this.syncFiring();
+    }
   };
 
   private onKeyUp = (event: KeyboardEvent) => {
@@ -53,7 +86,10 @@ export class InputSystem {
     const key = event.key.toLowerCase();
     if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) event.preventDefault();
     this.keys.delete(key);
-    if (key === " ") this.firing = false;
+    if (key === " ") {
+      this.keyboardFiring = false;
+      this.syncFiring();
+    }
   };
 
   private onPointerMove = (event: PointerEvent) => {
@@ -64,14 +100,24 @@ export class InputSystem {
   private onPointerDown = (event: PointerEvent) => {
     this.canvas.setPointerCapture(event.pointerId);
     if (event.button === 2) this.rightFiring = true;
-    else this.firing = true;
+    else {
+      this.canvasFiring = true;
+      this.syncFiring();
+    }
     this.onPointerMove(event);
   };
 
   private onPointerUp = (event: PointerEvent) => {
     if (event.button === 2) this.rightFiring = false;
-    else this.firing = false;
+    else {
+      this.canvasFiring = false;
+      this.syncFiring();
+    }
   };
+
+  private syncFiring() {
+    this.firing = this.keyboardFiring || this.canvasFiring || this.virtualFiring;
+  }
 
   private preventContext = (event: Event) => event.preventDefault();
 

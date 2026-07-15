@@ -23,6 +23,7 @@ import { GameplayHUD } from "./game/ui/hud/GameplayHUD";
 import { calculateBuildIdentity } from "./game/systems/BuildIdentitySystem";
 import { Leaderboard } from "./game/ui/Leaderboard";
 import { TeamHub } from "./game/ui/TeamHub";
+import { MobileController } from "./game/ui/mobile/MobileController";
 
 const defaultCustomization: Customization = {
   name: "Voidseed",
@@ -470,6 +471,18 @@ function GameScreen({
         onOpenGuide={() => setPanel(panel === "guide" ? "none" : "guide")}
         onToggleAutoFire={() => game?.toggleAutoFire()}
         onToggleAutoThrottle={() => game?.toggleAutoThrottle()}
+      />
+      <MobileController
+        snapshot={snapshot}
+        active={snapshot.mode === "playing" && panel === "none" && !corePanelOpen && !stationCommandOpen && !cargoPanelOpen}
+        onMove={(movement) => game?.setMobileMovement(movement)}
+        onAim={(direction) => game?.setMobileAim(direction)}
+        onFire={(active) => game?.setMobileFiring(active)}
+        onInteract={() => game?.performStationPrimaryAction()}
+        onScan={() => game?.scanStationWreck()}
+        onCargo={() => setCargoPanelOpen(true)}
+        onShip={() => setCorePanelOpen(true)}
+        onToggleAutoFire={() => game?.toggleAutoFire()}
       />
       {showShipPanel && (
         <div className="bottomLeftUpgradeDock">
