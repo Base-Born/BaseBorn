@@ -11,6 +11,7 @@ type InstallPromptEvent = Event & {
 type MobileControllerProps = {
   snapshot: GameSnapshot;
   active: boolean;
+  shipUpgradesAvailable: boolean;
   onMove: (movement: Vec2) => void;
   onAim: (direction: Vec2) => void;
   onFire: (active: boolean) => void;
@@ -92,7 +93,7 @@ function VirtualStick({ label, className, onChange, resetOnRelease = true }: Sti
   );
 }
 
-export function MobileController({ snapshot, active, onMove, onAim, onFire, onInteract, onScan, onCargo, onShip, onToggleAutoFire }: MobileControllerProps) {
+export function MobileController({ snapshot, active, shipUpgradesAvailable, onMove, onAim, onFire, onInteract, onScan, onCargo, onShip, onToggleAutoFire }: MobileControllerProps) {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(isInstalledDisplayMode);
   const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
@@ -179,7 +180,7 @@ export function MobileController({ snapshot, active, onMove, onAim, onFire, onIn
         <button type="button" onClick={onInteract} aria-label="Interact"><Hand size={19} /><span>ACT</span></button>
         <button type="button" onClick={onScan} aria-label="Scan for station"><Radar size={19} /><span>SCAN</span></button>
         <button type="button" onClick={onCargo} aria-label="Open cargo"><Boxes size={19} /><span>CARGO</span></button>
-        <button type="button" onClick={onShip} aria-label="Open ship upgrades"><Settings size={19} /><span>SHIP</span></button>
+        <button type="button" disabled={!shipUpgradesAvailable} title={shipUpgradesAvailable ? "Open ship upgrades" : "Dock at your station to upgrade"} onClick={onShip} aria-label="Open ship upgrades"><Settings size={19} /><span>SHIP</span></button>
       </div>
 
       <button

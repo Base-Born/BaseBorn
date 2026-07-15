@@ -485,6 +485,26 @@
   font-size: 1.25rem;
 }
 
+.shipUpgradePanel__headerActions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.shipUpgradePanel__close {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: #bfeaff;
+  border: 1px solid rgba(76, 201, 240, .34);
+  border-radius: 8px;
+  background: rgba(10, 35, 56, .76);
+}
+
+.shipUpgradePanel__close:hover { color: white; border-color: rgba(76, 201, 240, .72); background: rgba(20, 83, 120, .8); }
+
 .baseFrameSelect {
   display: grid;
   gap: 6px;

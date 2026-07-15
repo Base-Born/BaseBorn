@@ -205,12 +205,12 @@ export default function App() {
             setCorePanelOpen(false);
           } else {
             setStationCommandOpen(false);
-            setCorePanelOpen((current) => !current);
+            setCorePanelOpen(false);
           }
         }
         if (key === "y") {
           setStationCommandOpen(false);
-          setCorePanelOpen(true);
+          setCorePanelOpen(Boolean(game.stations.claimedStation && game.player.dockingState === "docked"));
         }
       };
       respawnProgressRef.current = null;
@@ -438,7 +438,8 @@ function GameScreen({
   playAgain: () => void;
   returnToMenu: () => void;
 }) {
-  const showShipPanel = corePanelOpen;
+  const shipUpgradesAvailable = Boolean(snapshot.station.claimed && snapshot.stationInteraction.docked);
+  const showShipPanel = corePanelOpen && shipUpgradesAvailable;
   const openCommand = (tab: StationTabId = "overview") => {
     if (!snapshot.station.claimed || !snapshot.stationInteraction.docked) return;
     setStationCommandTab(tab);
@@ -448,6 +449,7 @@ function GameScreen({
 
   useEffect(() => {
     if (!snapshot.stationInteraction.docked) setStationCommandOpen(false);
+    if (!snapshot.stationInteraction.docked) setCorePanelOpen(false);
   }, [snapshot.stationInteraction.docked, setStationCommandOpen]);
 
 
@@ -467,9 +469,10 @@ function GameScreen({
       />
       <GameplayHUD
         snapshot={snapshot}
+        shipUpgradesAvailable={shipUpgradesAvailable}
         onOpenCargo={() => setCargoPanelOpen(true)}
         onOpenCommand={() => openCommand("overview")}
-        onOpenShip={() => setCorePanelOpen((current) => !current)}
+        onOpenShip={() => { if (shipUpgradesAvailable) setCorePanelOpen((current) => !current); }}
         onOpenGuide={() => setPanel(panel === "guide" ? "none" : "guide")}
         onToggleAutoFire={() => game?.toggleAutoFire()}
         onToggleAutoThrottle={() => game?.toggleAutoThrottle()}
@@ -477,13 +480,14 @@ function GameScreen({
       <MobileController
         snapshot={snapshot}
         active={snapshot.mode === "playing" && panel === "none" && !corePanelOpen && !stationCommandOpen && !cargoPanelOpen}
+        shipUpgradesAvailable={shipUpgradesAvailable}
         onMove={(movement) => game?.setMobileMovement(movement)}
         onAim={(direction) => game?.setMobileAim(direction)}
         onFire={(active) => game?.setMobileFiring(active)}
         onInteract={() => game?.performStationPrimaryAction()}
         onScan={() => game?.scanStationWreck()}
         onCargo={() => setCargoPanelOpen(true)}
-        onShip={() => setCorePanelOpen(true)}
+        onShip={() => { if (shipUpgradesAvailable) setCorePanelOpen(true); }}
         onToggleAutoFire={() => game?.toggleAutoFire()}
       />
       {showShipPanel && (
@@ -493,6 +497,7 @@ function GameScreen({
             frames={BASE_SHIP_FRAMES}
             onSelectFrame={(id) => game?.selectBaseFrame(id)}
             onUpgrade={(key) => game?.upgradeStat(key)}
+            onClose={() => setCorePanelOpen(false)}
           />
         </div>
       )}

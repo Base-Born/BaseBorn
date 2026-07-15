@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import type { CSSProperties } from "react";
 import type { BaseFrameType, BaseShipFrame } from "../data/baseShipFrames";
 import { stats, type StatKey } from "../data/stats";
@@ -12,11 +12,13 @@ export function ShipUpgradePanel({
   frames,
   onSelectFrame,
   onUpgrade,
+  onClose,
 }: {
   snapshot: GameSnapshot;
   frames: BaseShipFrame[];
   onSelectFrame: (frameId: BaseFrameType) => void;
   onUpgrade: (key: StatKey) => void;
+  onClose: () => void;
 }) {
   return (
     <aside className="shipUpgradePanel">
@@ -25,7 +27,10 @@ export function ShipUpgradePanel({
           <h2>Ship Upgrades</h2>
           <span>Lv {snapshot.level} / {snapshot.baseFrame.name}</span>
         </div>
-        <strong>x{snapshot.upgradePoints}</strong>
+        <div className="shipUpgradePanel__headerActions">
+          <strong>x{snapshot.upgradePoints}</strong>
+          <button type="button" className="shipUpgradePanel__close" onClick={onClose} aria-label="Close ship upgrades" title="Close ship upgrades"><X size={18} /></button>
+        </div>
       </header>
       <BaseShipFrameSelectPanel frames={frames} selectedFrameId={snapshot.baseFrame.id} onSelect={onSelectFrame} />
       <BuildIdentityPanel build={snapshot.buildIdentity} />

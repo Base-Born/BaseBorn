@@ -1464,3 +1464,101 @@ html, body, #root, .app, .gameShell, .gameCanvas {
     transform: none;
   }
 }
+
+/* Short, touch-first landscape login used by phones and installed PWAs. */
+@media (hover: none) and (pointer: coarse) and (orientation: landscape), (max-height: 650px) and (max-width: 1100px) {
+  .loginScreen {
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .loginBackdrop { position: fixed; inset: 0; background-position: 68% center; }
+  .loginVignette { position: fixed; background: linear-gradient(90deg, rgba(1,6,14,.95), rgba(1,7,17,.48) 53%, rgba(1,7,17,.18)), linear-gradient(180deg, rgba(0,4,12,.38), transparent 55%, rgba(0,5,14,.78)); }
+
+  .loginSystemStatus,
+  .loginSectorStatus {
+    top: max(8px, env(safe-area-inset-top));
+    min-height: 36px;
+    padding: 6px 8px;
+    border-radius: 8px;
+  }
+  .loginSystemStatus { left: max(8px, env(safe-area-inset-left)); width: auto; }
+  .loginSystemStatus > svg,
+  .loginSystemStatus span { display: none; }
+  .loginSystemStatus strong { font-size: 7px; }
+  .loginSectorStatus { right: max(8px, env(safe-area-inset-right)); min-width: 0; }
+  .loginSectorStatus span { display: none; }
+  .loginSectorStatus small { font-size: 7px; }
+  .loginSectorStatus > svg { width: 27px; height: 27px; padding: 5px; }
+
+  .loginContent {
+    position: absolute;
+    top: max(52px, calc(env(safe-area-inset-top) + 44px));
+    left: max(12px, env(safe-area-inset-left));
+    width: min(380px, 45vw);
+    padding: 0;
+    transform: none;
+  }
+
+  .loginBrand {
+    min-height: 48px;
+    padding: 0 0 0 62px;
+    text-align: left;
+  }
+  .loginBrand__emblem {
+    top: 0;
+    left: 0;
+    width: 48px;
+    height: 48px;
+    transform: none;
+  }
+  .loginBrand__emblem::before { width: 62px; }
+  .loginBrand__emblem::after { height: 62px; }
+  .loginBrand__emblem i:first-of-type { width: 57px; height: 57px; }
+  .loginBrand__emblem i:last-of-type { bottom: -8px; height: 17px; }
+  .loginBrand h1 { font-size: clamp(32px, 5vw, 42px); line-height: .9; }
+  .loginBrand p { margin: 7px 0 0; font-size: 7px; letter-spacing: .3em; text-align: left; }
+
+  .loginCard {
+    width: 100%;
+    margin: 10px 0 0;
+    padding: 12px 14px;
+    gap: 8px;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .loginCard > header { display: flex; align-items: center; justify-content: space-between; }
+  .loginCard > header span { font-size: 12px; }
+  .loginCard > header p { display: none; }
+  .loginField { gap: 4px; }
+  .loginField > div { height: 40px; padding-inline: 10px; }
+  .loginField input { font-size: 12px; }
+  .loginField small { min-height: 10px; font-size: 7px; }
+  .loginLaunch { min-height: 39px; font-size: 10px; }
+  .loginDivider { gap: 7px; font-size: 6px; }
+  .loginActions { gap: 6px; }
+  .loginActions button { min-height: 34px; font-size: 8px; }
+  .loginInlineNotice { padding: 7px; font-size: 7px; }
+
+  .loginFooter {
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: auto;
+    width: min(480px, 48vw);
+    display: block;
+  }
+  .loginFooter__meta { display: none; }
+  .loginPillars { width: 100%; grid-template-columns: repeat(3, 1fr); }
+  .loginPillars article { min-height: 48px; padding: 7px 8px; gap: 7px; }
+  .loginPillars article + article { border-top: 0; border-left: 1px solid rgba(77,151,201,.2); }
+  .loginPillars article > i { width: 30px; height: 30px; }
+  .loginPillars article > i svg { width: 16px; height: 16px; }
+  .loginPillars strong { font-size: 7px; }
+  .loginPillars span { display: none; }
+}
+
+@media (max-width: 760px) and (max-height: 650px) and (orientation: landscape) {
+  .loginContent { width: min(380px, calc(100vw - 24px)); }
+  .loginFooter { display: none; }
+}
