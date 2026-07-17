@@ -107,7 +107,7 @@ export function getShipVisualProfile(nodeOrId: ShipNode | string): ShipVisualPro
   const mother = node.levelRequired >= 100;
   const baseSize = levelSize.get(node.levelRequired) ?? (1 + Math.max(0, node.tier - 1) * 0.18);
   const shape = visualShapeFor(node, visual);
-  return {
+  const profile: ShipVisualProfile = {
     id: node.visualProfileId || visualProfileIdForNode(node),
     branch,
     levelRequired: node.levelRequired,
@@ -128,6 +128,18 @@ export function getShipVisualProfile(nodeOrId: ShipNode | string): ShipVisualPro
     detailLevel: branch === "Core" ? 1 : Math.min(9, Math.max(2, node.tier)),
     silhouetteTags: visual.tags.concat(variantType, mother ? "mothership" : "upgrade"),
   };
+  if (node.id === "space_pod") {
+    profile.id = "starter_pod";
+    profile.sizeScale = 0.76;
+    profile.weaponMounts = [];
+    profile.glowColor = "#70e8ff";
+    profile.primaryColor = "#d6d8d5";
+    profile.secondaryColor = "#20252a";
+    profile.accentColor = "#9ff5ff";
+    profile.detailLevel = 2;
+    profile.silhouetteTags = ["starter", "pod", "mining_laser"];
+  }
+  return profile;
 }
 
 export function getAlienVisualProfile(type: AlienDefenderType): ShipVisualProfile {

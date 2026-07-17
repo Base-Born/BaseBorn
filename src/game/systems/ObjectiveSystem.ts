@@ -14,11 +14,11 @@ export class ObjectiveSystem {
     if (stations.baseLostState?.teamNeedsNewStation) {
       return createObjective({
         id: "rebuild_after_base_loss",
-        title: "Find a New Broken Station",
-        description: "Your base was destroyed. Claim a new station to rebuild your team respawn point.",
+        title: "Find a New Derelict Spacecraft",
+        description: "Your carrier was destroyed. Claim a new derelict spacecraft to rebuild your crew's mobile base.",
         priority: 120,
         category: "station",
-        hint: "All station storage and upgrades were lost with the base.",
+        hint: "All spacecraft storage and upgrades were lost with the carrier.",
       });
     }
 
@@ -26,20 +26,20 @@ export class ObjectiveSystem {
       if (interaction.kind === "claim") {
         return createObjective({
           id: "claim_station",
-          title: "Claim the Broken Station",
-          description: "Press F near the abandoned station to make it your team base.",
+          title: "Land and Claim the Spacecraft",
+          description: "Move directly into the empty cradle, then press F to lock your pod into the derelict spacecraft.",
           priority: 100,
           category: "station",
-          hint: "A claimed station unlocks storage, repairs, crafting, and hull progression.",
+          hint: "The docking sequence is intentionally close-range. Once claimed, the spacecraft becomes your upgrade and storage hub.",
         });
       }
       return createObjective({
         id: "find_station",
-        title: "Find a Broken Station",
-        description: "Travel through the station belt and look for abandoned station markers.",
+        title: "Find the Derelict Spacecraft",
+        description: "Fly the Survey Pod toward the nearby derelict spacecraft signal.",
         priority: 100,
         category: "discovery",
-        hint: "Station markers appear on the minimap as diamond icons.",
+        hint: "Press V for a waypoint. Your pod laser can already break nearby asteroids and collect Ether.",
       });
     }
 
@@ -47,13 +47,13 @@ export class ObjectiveSystem {
     if (healthWarning) {
       return createObjective({
         id: "defend_base",
-        title: "Defend Your Base Station",
+        title: "Defend Your Spacecraft",
         description: healthWarning,
         priority: 115,
         category: "combat",
         currentAmount: Math.max(0, claimed.health),
         targetAmount: claimed.maxHealth,
-        hint: "If the base is destroyed, station storage, upgrades, and respawn access are lost.",
+        hint: "If the carrier is destroyed, its storage, upgrades, and respawn access are lost.",
       });
     }
 
@@ -71,7 +71,7 @@ export class ObjectiveSystem {
           category: "cargo",
           currentAmount: current,
           targetAmount: amount,
-          hint: "Mine asteroid belts, then return to your station and deposit the cargo.",
+          hint: "Use the pod laser to mine asteroids, then dock with your spacecraft and deposit the cargo.",
         });
       }
 
@@ -82,31 +82,35 @@ export class ObjectiveSystem {
         );
         return createObjective({
           id: convertible > 0 ? "convert_station_fuel" : "gather_fuel_ether",
-          title: convertible > 0 ? "Convert Ether to Station Fuel" : "Gather Ether for Station Fuel",
-          description: "Repairing " + nextStage.name + " requires " + nextStage.fuelCost.toLocaleString() + " Station Fuel.",
+          title: convertible > 0 ? "Convert Ether to Spacecraft Fuel" : "Mine Ether with the Pod Laser",
+          description: convertible > 0
+            ? "Convert deposited Ether into fuel for the claimed spacecraft."
+            : "Fire the Survey Pod laser at nearby asteroids, collect the Ether, then return and dock with your spacecraft.",
           priority: 92,
           category: convertible > 0 ? "station" : "cargo",
           currentAmount: claimed.fuel.currentFuel,
           targetAmount: nextStage.fuelCost,
-          hint: convertible > 0 ? "Dock, open Fuel Conversion, and convert stored Ether." : "Mine any Ether quality, return, deposit it, then convert it.",
+          hint: convertible > 0 ? "Dock, open Fuel Conversion, and convert stored Ether." : "Aim with the pointer, fire the laser, fly over drops to collect them, then press F at the cradle.",
         });
       }
 
       return createObjective({
         id: "repair_" + nextStage.id,
         title: "Repair " + nextStage.name,
-        description: "Station Fuel and components are ready. Repair the next station system.",
+        description: "Spacecraft fuel and components are ready. Repair the next onboard system.",
         priority: 88,
         category: "repair",
         currentAmount: claimed.repairStageIndex,
         targetAmount: claimed.repairStages.length,
-        hint: "Dock inside the station, then click Repair Stage or press R.",
+        hint: "Dock inside the spacecraft, then click Repair Stage or press R.",
       });
-    }    if (!player.loadout.craftedModuleIds.length && claimed.craftingTier > 0) {
+    }
+
+    if (!player.loadout.craftedModuleIds.length && claimed.craftingTier > 0) {
       return createObjective({
         id: "craft_first_module",
         title: "Craft Your First Module",
-        description: "Use station storage to craft a weapon, shield, engine, or utility module.",
+        description: "Use spacecraft storage to craft a weapon, shield, engine, or utility module.",
         priority: 80,
         category: "crafting",
         hint: "Crafted modules provide the real ship power in the new progression.",
@@ -134,7 +138,7 @@ export class ObjectiveSystem {
         category: "hull",
         currentAmount: player.level,
         targetAmount: nextHull.levelRequirement,
-        hint: "Leveling unlocks hull eligibility, but station storage pays the upgrade cost.",
+        hint: "Leveling unlocks hull eligibility, but spacecraft storage pays the upgrade cost.",
       });
     }
 
@@ -142,11 +146,11 @@ export class ObjectiveSystem {
     if (firstDefense && firstDefense.level <= 0) {
       return createObjective({
         id: "build_first_turret",
-        title: "Build Station Defense",
-        description: "Install Kinetic Auto Turrets so your station can defend itself.",
+        title: "Build Spacecraft Defense",
+        description: "Install Kinetic Auto Turrets so your carrier spacecraft can defend itself.",
         priority: 70,
         category: "defense",
-        hint: "A claimed station should not be helpless while you farm.",
+        hint: "A claimed spacecraft should not be helpless while you mine.",
       });
     }
 

@@ -33,7 +33,7 @@ export function StationInteractionPanel({
         </div>
         <div>
           <header>
-            <strong>{interaction.stationName || "Station Signal"}</strong>
+            <strong>{interaction.stationName || "Spacecraft Signal"}</strong>
             <span>{Math.round(interaction.distance)}m</span>
           </header>
           <p>{interaction.stationState} / {interaction.repairStageLabel}</p>
@@ -56,7 +56,7 @@ export function StationInteractionPanel({
           </section>
           <section>
             <header>
-              <span>Station Storage</span>
+              <span>Spacecraft Storage</span>
               <b>{interaction.storageUsed.toLocaleString()} / {interaction.storageCapacity.toLocaleString()}</b>
             </header>
             <StationResourceRows ether={interaction.storageEther} />

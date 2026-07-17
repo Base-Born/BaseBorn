@@ -92,6 +92,18 @@ const defaults: ShipBehaviorProfile = {
 };
 
 function miningStatsForNode(node: ShipNode): MiningStats {
+  if (node.id === "space_pod") {
+    return {
+      ...defaults.mining,
+      miningPower: 2.2,
+      miningEfficiency: 1.15,
+      asteroidDamageMultiplier: 1.45,
+      cargoCapacityBonus: -55,
+      etherYieldMultiplier: 1.05,
+      pickupRadius: 92,
+      tractorBeamStrength: 1.35,
+    };
+  }
   const miningName = `${node.id} ${node.name}`.toLowerCase();
   if (miningName.includes("mining") || miningName.includes("miner") || miningName.includes("harvester") || miningName.includes("excavator") || miningName.includes("refinery")) {
     const tierPower = Math.max(1, node.tier);
@@ -123,7 +135,7 @@ export function getBehaviorProfileForNode(nodeOrId: ShipNode | string): ShipBeha
   const node = typeof nodeOrId === "string" ? getShipNode(nodeOrId) : nodeOrId;
   const weapon = weaponBase[node.weaponType] ?? {};
   const variant = variantMods[node.variantType] ?? {};
-  return {
+  const profile = {
     ...defaults,
     ...weapon,
     ...variant,
@@ -133,4 +145,14 @@ export function getBehaviorProfileForNode(nodeOrId: ShipNode | string): ShipBeha
     orbitCannons: node.weaponType === "force_field" ? Math.min(8, (weapon.orbitCannons ?? 1) + Math.floor(node.tier / 2)) : weapon.orbitCannons,
     mining: miningStatsForNode(node),
   };
+  if (node.id === "space_pod") {
+    profile.cannons = 1;
+    profile.fireRate = 1.2;
+    profile.damage = 0.58;
+    profile.speed = 1.22;
+    profile.healthScale = 0.72;
+    profile.radiusScale = 0.76;
+    profile.projectile = "rail";
+  }
+  return profile;
 }

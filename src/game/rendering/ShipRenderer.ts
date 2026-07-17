@@ -14,15 +14,20 @@ type DrawArgs = {
 
 export class ShipRenderer {
   private readonly baseShipSprite: HTMLImageElement | null;
+  private readonly spacePodSprite: HTMLImageElement | null;
 
   constructor() {
     if (typeof Image === "undefined") {
       this.baseShipSprite = null;
+      this.spacePodSprite = null;
       return;
     }
     this.baseShipSprite = new Image();
     this.baseShipSprite.decoding = "async";
     this.baseShipSprite.src = "/assets/ships/base-ship-topdown.png";
+    this.spacePodSprite = new Image();
+    this.spacePodSprite.decoding = "async";
+    this.spacePodSprite.src = "/assets/starter/space-pod.png";
   }
 
   drawShip(args: DrawArgs) {
@@ -36,12 +41,57 @@ export class ShipRenderer {
     ctx.rotate(rotation);
     ctx.shadowColor = glow;
     ctx.shadowBlur = 3 + profile.detailLevel * 0.8;
+    if (profile.id.startsWith("starter_pod")) {
+      this.drawSpacePod(ctx, baseRadius, glow, animationTime);
+      ctx.restore();
+      return;
+    }
     drawShipEffects(ctx, profile, baseRadius, animationTime);
     if (profile.variantType.toString().startsWith("mother")) this.drawMothership(ctx, profile, baseRadius, primary, accent);
     else if (profile.branch === "Core") this.drawBaseShip(ctx, profile, baseRadius, primary, accent, animationTime);
     else this.drawBranchShip(ctx, profile, baseRadius, primary, accent);
     this.drawBuildIdentity(ctx, profile, baseRadius, animationTime);
     this.drawWeaponMounts(ctx, profile, baseRadius, accent);
+    ctx.restore();
+  }
+
+  private drawSpacePod(ctx: CanvasRenderingContext2D, r: number, glow: string, animationTime: number) {
+    const spriteReady = Boolean(this.spacePodSprite?.complete && this.spacePodSprite.naturalWidth > 0);
+    const pulse = 0.72 + Math.sin(animationTime * 0.004) * 0.16;
+    ctx.save();
+    ctx.rotate(Math.PI / 2);
+    if (spriteReady && this.spacePodSprite) {
+      const height = r * 4.55;
+      const width = height * (this.spacePodSprite.naturalWidth / this.spacePodSprite.naturalHeight);
+      ctx.shadowColor = "rgba(0,0,0,.9)";
+      ctx.shadowBlur = r * 0.34;
+      ctx.drawImage(this.spacePodSprite, -width / 2, -height / 2, width, height);
+    } else {
+      ctx.fillStyle = "#d8dcdd";
+      ctx.strokeStyle = "#19242b";
+      ctx.lineWidth = Math.max(1.5, r * 0.08);
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 2.1);
+      ctx.bezierCurveTo(r, -r * 1.35, r, r * 1.25, 0, r * 2.15);
+      ctx.bezierCurveTo(-r, r * 1.25, -r, -r * 1.35, 0, -r * 2.1);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // A compact nose emitter makes the pod's mining tool readable without
+    // changing the supplied hull silhouette.
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = "#dffcff";
+    ctx.strokeStyle = glow;
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = r * 0.55;
+    ctx.lineWidth = Math.max(1.2, r * 0.07);
+    ctx.beginPath();
+    ctx.arc(r * 1.64, 0, r * 0.14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
     ctx.restore();
   }
 

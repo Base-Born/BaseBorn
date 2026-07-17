@@ -112,6 +112,7 @@ export class Game {
   private stationScannerActiveUntil = 0;
   private stationScannerCooldownUntil = 0;
   private stationWaypointActiveUntil = 0;
+  private autoDockedStarterCraftIds = new Set<string>();
   onUiShortcut: ((key: "u" | "y") => void) | null = null;
 
   constructor(private canvas: HTMLCanvasElement, customization: Customization, private onSnapshot: (snapshot: GameSnapshot) => void, respawnProgress?: RespawnProgress) {
@@ -391,7 +392,7 @@ export class Game {
       level: this.player.level,
       score: this.player.score,
       shipClassId: this.player.currentShipId,
-      shipClass: this.player.ship.name,
+      shipClass: this.player.currentShipId === "space_pod" ? "Survey Pod" : this.player.ship.name,
       docked: this.player.dockingState === "docked",
     }, now);
     this.multiplayer.updateInterpolation(dt);
@@ -401,6 +402,13 @@ export class Game {
     this.stations.syncSharedStations(this.multiplayer.getSharedStations());
     const networkTeam = this.multiplayer.getTeams().find((team) => team.id === this.multiplayer.getTeamId()) ?? null;
     this.stations.syncNetworkTeam(networkTeam, this.player);
+    const claimedCraft = this.stations.claimedStation;
+    if (claimedCraft && claimedCraft.ownerPlayerId === this.player.id && !this.autoDockedStarterCraftIds.has(claimedCraft.id)) {
+      this.autoDockedStarterCraftIds.add(claimedCraft.id);
+      if (this.player.dockingState === "free" && distance(this.player.pos, claimedCraft.pos) <= STATION_CONFIG.claimRadius * 1.25) {
+        this.stations.dockPlayerAtStation(this.player, claimedCraft);
+      }
+    }
     this.asteroidSystem.syncSharedDestroyed(this.multiplayer.getDestroyedAsteroids());
     if (this.multiplayer.isOnline()) this.etherDrops.syncSharedDrops(this.multiplayer.getSharedDrops());
     for (const award of this.multiplayer.consumeLootAwards()) addEtherToCombinedCargo(this.player.cargo, award.etherType, award.amount);
@@ -538,7 +546,7 @@ export class Game {
     }
     if (this.input.consume("v")) {
       this.stationWaypointActiveUntil = performance.now() + 30_000;
-      this.zoneNotificationText = this.stations.claimedStation ? "Waypoint locked: team station" : "Waypoint locked: nearest broken station";
+      this.zoneNotificationText = this.stations.claimedStation ? "Waypoint locked: claimed spacecraft" : "Waypoint locked: nearest derelict spacecraft";
       this.zoneNotificationUntil = performance.now() + 1800;
       this.emitSnapshot();
     }
@@ -580,7 +588,7 @@ export class Game {
     const nearest = this.stations.getNearestUnclaimedStation(this.player);
     this.zoneNotificationText = nearest
       ? `Scanner ping: ${nearest.station.name} ${Math.round(nearest.distance).toLocaleString()}m`
-      : "Scanner ping: no unclaimed stations detected";
+      : "Scanner ping: no derelict spacecraft detected";
     this.zoneNotificationUntil = now + 2800;
     this.emitSnapshot();
   }
@@ -845,7 +853,7 @@ export class Game {
       maxHealth: this.player.maxHealth,
       shieldHealth: Math.max(0, this.player.shieldHealth),
       maxShield: this.player.maxShield,
-      shipClass: this.player.ship.name,
+      shipClass: this.player.currentShipId === "space_pod" ? "Survey Pod" : this.player.ship.name,
       shipClassId: this.player.currentShipId,
       currentBranch: this.player.currentBranch,
       availableUpgradeIds: availableEvolutionChoices.map((choice) => choice.node.id),
@@ -993,7 +1001,7 @@ export class Game {
       bearingLabel: indicator?.bearingLabel ?? "",
       scannerActive,
       pulseReady: now >= this.stationScannerCooldownUntil,
-      hint: visible ? "Arrow locked. Press V to refresh the waypoint." : "Press V to locate your station waypoint.",
+      hint: visible ? "Arrow locked. Press V to refresh the waypoint." : "Press V to locate your spacecraft waypoint.",
     };
   }
 }

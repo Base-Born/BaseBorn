@@ -36,7 +36,7 @@ import { canUpgradeShipStat } from "./ShipUpgradeSystem";
 import { canAffordStationFuelCost, convertEtherToStationFuel, createStationFuelState, spendStationFuel } from "./StationFuelSystem";
 import { ETHER_CONFIG } from "../data/etherConfig";
 
-const STATION_NAMES = ["Hollow Lattice", "Kestrel Wreck", "Orion Cradle", "Rustwake", "Pale Anchor", "Foundry Husk", "Eidolon Yard", "Broken Halo"];
+const STATION_NAMES = ["Hollow Runner", "Kestrel Hull", "Orion Courier", "Rustwake", "Pale Voyager", "Foundry Skiff", "Eidolon Craft", "Broken Halo"];
 
 export type StationInteraction = {
   station: Station | null;
@@ -140,7 +140,7 @@ export class StationSystem {
     if (!nearest) return { station: null, kind: null, prompt: "", distance: Infinity };
     const owned = nearest.ownerTeamId === this.team.id;
     if (nearest.claimState === "unclaimed" && nearestDistance <= STATION_CONFIG.claimRadius) {
-      return { station: nearest, kind: "claim", prompt: "Press F to Claim Station", distance: nearestDistance };
+      return { station: nearest, kind: "claim", prompt: "Press F to Land and Claim Spacecraft", distance: nearestDistance };
     }
     if (owned && nearestDistance <= STATION_CONFIG.depositRadius) {
       return {
@@ -467,6 +467,7 @@ export class StationSystem {
     station.health = Math.max(station.health, station.maxHealth * 0.22);
     station.movementLockReason = getStationMovementLockReason(station, player);
     this.team.stationId = station.id;
+    this.dockPlayerAtStation(player, station);
     return true;
   }
 
@@ -972,7 +973,7 @@ export class StationSystem {
     const station = existing ?? this.createBrokenStation(pos, 0);
     station.pos = pos;
     station.vel = { x: 0, y: 0 };
-    station.name = "Starter Wreck";
+    station.name = "Derelict Survey Craft";
     if (!existing) this.stations.unshift(station);
   }
 

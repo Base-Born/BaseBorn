@@ -13,7 +13,7 @@ export function StationOverviewPanel({
   const station = snapshot.station.claimed;
   const [stationName, setStationName] = useState(station?.name ?? "");
   useEffect(() => setStationName(station?.name ?? ""), [station?.id, station?.name]);
-  if (!station) return <p className="stationEmptyState">Claim a station to open command overview.</p>;
+  if (!station) return <p className="stationEmptyState">Claim a derelict spacecraft to open its onboard systems.</p>;
 
   const healthPct = station.maxHealth > 0 ? Math.round((station.health / station.maxHealth) * 100) : 0;
   const subsystemCounts = Object.values(station.subsystemStates).reduce((acc, subsystem) => {
@@ -26,7 +26,7 @@ export function StationOverviewPanel({
   return (
     <div className="stationCommandGrid">
       <article>
-        <span>Station Status</span>
+        <span>Spacecraft Status</span>
         <strong>{station.name}</strong>
         <p>
           Lv {station.level} / Hull {healthPct}% / Shield {Math.round(station.shield)} / Power Core {powerCoreTierName}
@@ -35,13 +35,13 @@ export function StationOverviewPanel({
         </p>
       </article>
       <article className="stationRenameCard">
-        <span>Station Callsign</span>
+        <span>Spacecraft Callsign</span>
         <form onSubmit={(event) => {
           event.preventDefault();
           const name = stationName.trim();
           if (name) onRename(name);
         }}>
-          <input value={stationName} onChange={(event) => setStationName(event.target.value)} maxLength={32} aria-label="Station name" />
+          <input value={stationName} onChange={(event) => setStationName(event.target.value)} maxLength={32} aria-label="Spacecraft name" />
           <button type="submit">Rename</button>
         </form>
         <p>New claims automatically use your pilot callsign.</p>
@@ -49,7 +49,7 @@ export function StationOverviewPanel({
       <article>
         <span>Current Objective</span>
         <strong>{snapshot.currentObjective?.title ?? "Free roam"}</strong>
-        <p>{snapshot.objectiveHint || snapshot.currentObjective?.description || "Choose your next station task."}</p>
+        <p>{snapshot.objectiveHint || snapshot.currentObjective?.description || "Choose your next spacecraft task."}</p>
       </article>
       <article>
         <span>Repair Progress</span>
@@ -57,7 +57,7 @@ export function StationOverviewPanel({
         <p>{station.currentRepairStage ? `Next: ${station.currentRepairStage.name}` : "Fully restored."}</p>
       </article>
       <article>
-        <span>Station Fuel</span>
+        <span>Spacecraft Fuel</span>
         <strong>{Math.floor(station.fuel.currentFuel).toLocaleString()} / {station.fuel.maxFuel.toLocaleString()}</strong>
         <p>Primary currency for repairs, ships, modules, defenses, and travel.</p>
       </article>
@@ -79,7 +79,7 @@ export function StationOverviewPanel({
         <p>{subsystemCounts.damaged} damaged / {subsystemCounts.disabled} disabled</p>
       </article>
       <article>
-        <span>Station Booster</span>
+        <span>Carrier Thrusters</span>
         <strong>{station.localRelocationAvailable ? "Pilot online" : "Core offline"}</strong>
         <p>{station.localRelocationReason}</p>
       </article>

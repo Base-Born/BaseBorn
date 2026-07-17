@@ -7,8 +7,29 @@ export type StationRenderOptions = {
 };
 
 export class StationRenderer {
+  private readonly derelictSprite: HTMLImageElement | null;
+  private readonly claimedSprite: HTMLImageElement | null;
+
+  constructor() {
+    if (typeof Image === "undefined") {
+      this.derelictSprite = null;
+      this.claimedSprite = null;
+      return;
+    }
+    this.derelictSprite = new Image();
+    this.derelictSprite.decoding = "async";
+    this.derelictSprite.src = "/assets/starter/derelict-spacecraft.png";
+    this.claimedSprite = new Image();
+    this.claimedSprite.decoding = "async";
+    this.claimedSprite.src = "/assets/starter/claimed-spacecraft.png";
+  }
+
   renderStation(ctx: CanvasRenderingContext2D, station: Station, options: StationRenderOptions) {
     const profile = getStationVisualProfile(station);
+    if (this.renderStarterSpacecraft(ctx, station, profile, options)) {
+      this.renderStationLabel(ctx, station, profile);
+      return;
+    }
     ctx.save();
     ctx.translate(station.pos.x, station.pos.y);
     ctx.rotate((profile.seed % 628) / 100);
@@ -29,6 +50,57 @@ export class StationRenderer {
     }
     ctx.restore();
     this.renderStationLabel(ctx, station, profile);
+  }
+
+  private renderStarterSpacecraft(ctx: CanvasRenderingContext2D, station: Station, profile: StationVisualProfile, options: StationRenderOptions) {
+    const hasDockedPod = station.landingPads.some((pad) => Boolean(pad.occupiedByPlayerId));
+    const sprite = station.claimState === "claimed" && hasDockedPod ? this.claimedSprite : this.derelictSprite;
+    if (!sprite?.complete || sprite.naturalWidth <= 0) return false;
+
+    const size = station.radius * 2.66;
+    const speed = Math.hypot(station.vel.x, station.vel.y);
+    ctx.save();
+    ctx.translate(station.pos.x, station.pos.y);
+
+    if (speed > 5) {
+      const opposite = Math.atan2(station.vel.y, station.vel.x) + Math.PI;
+      const power = Math.min(1, speed / Math.max(1, STATION_CONFIG.stationBasePilotSpeed));
+      ctx.save();
+      ctx.rotate(opposite);
+      const start = station.radius * 0.82;
+      const end = station.radius * (1.18 + power * 0.62);
+      const plume = ctx.createLinearGradient(start, 0, end, 0);
+      plume.addColorStop(0, "rgba(236,253,255,.95)");
+      plume.addColorStop(0.18, "rgba(72,209,255,.9)");
+      plume.addColorStop(1, "rgba(38,155,255,0)");
+      ctx.strokeStyle = plume;
+      ctx.lineWidth = 12 + power * 9;
+      ctx.lineCap = "round";
+      ctx.shadowColor = "#46d8ff";
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.moveTo(start, 0);
+      ctx.lineTo(end, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.globalAlpha = station.claimState === "unclaimed" ? 0.84 : 1;
+    ctx.shadowColor = station.underAttack ? "#ff6b78" : station.claimState === "claimed" ? "rgba(74,220,255,.7)" : "rgba(0,0,0,.9)";
+    ctx.shadowBlur = station.claimState === "claimed" ? 12 : 24;
+    ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
+
+    if (station.claimState === "claimed") {
+      const pulse = 0.5 + Math.sin(options.now * 0.004) * 0.12;
+      ctx.globalAlpha = pulse;
+      ctx.strokeStyle = station.underAttack ? "#ff6b78" : "#70e8ff";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, station.radius * 0.93, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+    return true;
   }
 
   private renderStationShield(ctx: CanvasRenderingContext2D, station: Station, profile: StationVisualProfile, options: StationRenderOptions) {
@@ -475,7 +547,7 @@ export class StationRenderer {
     ctx.font = "800 15px Inter, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const label = profile.isMothership ? `Mothership Core Lv ${station.level}` : profile.isClaimed ? `Team Base Lv ${station.level}` : "Abandoned Station";
+    const label = profile.isMothership ? `Mothership Core Lv ${station.level}` : profile.isClaimed ? `Claimed Spacecraft Lv ${station.level}` : "Derelict Spacecraft";
     const y = station.pos.y - profile.outerRadius - 46;
     ctx.strokeText(label, station.pos.x, y);
     ctx.fillText(label, station.pos.x, y);

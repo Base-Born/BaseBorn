@@ -43,9 +43,9 @@ export class Player {
   frameLevel = 1;
   upgradePointsSpent = 0;
   hyperUpgradeUnlocked = false;
-  currentShipId = "base_ship";
+  currentShipId = "space_pod";
   currentBranch = "Core";
-  upgradeHistory: string[] = ["base_ship"];
+  upgradeHistory: string[] = ["space_pod"];
   fireCooldown = 0;
   heat = 0;
   private buildIdentityCache: { signature: string; value: BuildIdentitySnapshot } | null = null;

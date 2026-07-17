@@ -58,10 +58,10 @@ export function StationCommandPanel({
   if (!station) return null;
   return (
     <div className="stationCommandBackdrop">
-      <section className="stationCommandPanel" role="dialog" aria-modal="true" aria-label="Station Command">
+      <section className="stationCommandPanel" role="dialog" aria-modal="true" aria-label="Spacecraft Systems">
         <header className="stationCommandHeader">
           <div>
-            <span>Station Command</span>
+            <span>Spacecraft Systems</span>
             <strong>{station.name}</strong>
           </div>
           <div className="stationCommandHeader__stats">
@@ -69,7 +69,7 @@ export function StationCommandPanel({
             <span>{Math.round(station.health)} / {Math.round(station.maxHealth)} Hull</span>
             <span>{station.repairStageIndex}/{station.repairStageCount} Repairs</span>
           </div>
-          <button onClick={onClose} aria-label="Close station command"><X size={18} /></button>
+          <button onClick={onClose} aria-label="Close spacecraft systems"><X size={18} /></button>
         </header>
         <div className="stationCommandBody">
           <StationTabs active={activeTab} onChange={onTabChange} />

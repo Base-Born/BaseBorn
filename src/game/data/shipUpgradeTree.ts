@@ -330,9 +330,36 @@ function buildTree() {
 export const shipUpgradeTree: ShipNode[] = buildTree();
 export const shipNodeById = new Map(shipUpgradeTree.map((node) => [node.id, node]));
 export const coreShipNode = shipNodeById.get("base_ship")!;
+export const spacePodNode: ShipNode = {
+  id: "space_pod",
+  name: "Survey Pod",
+  levelRequired: 0,
+  branch: "Core",
+  tier: 0,
+  parentIds: [],
+  childIds: ["base_ship"],
+  weaponType: "laser",
+  role: "starter",
+  variantType: "light",
+  description: "A compact survival pod with precise maneuvering thrusters, a mining laser, and a small Ether hold.",
+  strengths: ["Responsive movement", "Mining laser", "Compact profile"],
+  weaknesses: ["Light hull", "Small cargo hold", "No upgrade bay"],
+  recommendedStats: ["Thrusters", "Weapon Output", "Cargo Capacity"],
+  modelShape: "survey_pod",
+  visualProfileId: "starter_pod",
+  colorTheme: "silver_cyan",
+  branchColor: "#70e8ff",
+  iconType: "laser",
+  displayPriority: -1,
+  branchIndex: -1,
+  laneIndex: 1,
+  abilityTags: ["starter", "pod", "mining_laser"],
+  isMotherShipOption: false,
+  implementationStatus: "playable",
+};
 const legacyCoreShipId = ["core", "sk" + "iff"].join("_");
 export const normalizeShipNodeId = (id: string) => id === legacyCoreShipId ? "base_ship" : id;
-export const getShipNode = (id: string) => shipNodeById.get(normalizeShipNodeId(id)) ?? coreShipNode;
+export const getShipNode = (id: string) => id === spacePodNode.id ? spacePodNode : shipNodeById.get(normalizeShipNodeId(id)) ?? coreShipNode;
 export const getBranchDefinitions = () => branchDefinitions;
 
 if (import.meta.env.DEV) {

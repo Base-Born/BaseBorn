@@ -71,9 +71,12 @@ try {
     .sort((left, right) => distance(left, alpha.welcome.spawn) - distance(right, alpha.welcome.spawn))[0];
   await moveClient(alpha,alpha.welcome.spawn,{x:alphaStation.x+300,y:alphaStation.y});
   alpha.socket.send(JSON.stringify({ type:"claim_station", stationId:alphaStation.id }));
+  await waitForMessage(alpha,(message)=>message.type==="action_error"&&/cradle/i.test(message.message));
+  await moveClient(alpha,{x:alphaStation.x+300,y:alphaStation.y},{x:alphaStation.x+120,y:alphaStation.y});
+  alpha.socket.send(JSON.stringify({ type:"claim_station", stationId:alphaStation.id }));
   const claimedSnapshot = await waitForSnapshot(alpha, (message) => message.teams.some((team) => team.id===alphaTeam.id&&team.stationId===alphaStation.id));
   const claimedStation = claimedSnapshot.stations.find((station) => station.id===alphaStation.id);
-  await moveClient(alpha,{x:alphaStation.x+300,y:alphaStation.y},{x:claimedStation.x,y:claimedStation.y});
+  await moveClient(alpha,{x:alphaStation.x+120,y:alphaStation.y},{x:claimedStation.x,y:claimedStation.y});
   alpha.socket.send(JSON.stringify({type:"state",state:{x:claimedStation.x,y:claimedStation.y,vx:0,vy:0,angle:0,thrustForward:0,thrustStrafe:0,docked:true,healthRatio:1,level:1,score:0,shipClassId:"base_ship",shipClass:"Base Ship"}}));
   await waitForSnapshot(alpha,(message)=>message.stations.find((station)=>station.id===alphaStation.id)?.dockedPlayerIds.includes(alpha.id));
   alpha.socket.send(JSON.stringify({type:"station_input",stationId:alphaStation.id,x:1,y:0}));
@@ -89,7 +92,7 @@ try {
   beta.socket.send(JSON.stringify({ type:"accept_invite", inviteId:invite.id, spawnAtBase:true }));
   const teamSpawn = await waitForMessage(beta, (message) => message.type === "team_spawn");
   const stationBase = claimedSnapshot.stations.find((station) => station.id===alphaStation.id);
-  assert.equal(stationBase.name, "Alpha");
+  assert.equal(stationBase.name, "Alpha's Craft");
   assert(distance(teamSpawn.spawn, stationBase) <= 1600);
   await waitForSnapshot(beta, (message) => message.teamId===alphaTeam.id&&message.teams.some((team) => team.id===alphaTeam.id&&team.memberIds.includes(alpha.id)&&team.memberIds.includes(beta.id)));
   beta.socket.send(JSON.stringify({type:"drop_cargo",etherType:"rawEther",amount:99999}));

@@ -32,7 +32,7 @@ export function BottomXPBar({
       <div className="xpTrack"><span style={{ width: `${progress}%` }} /></div>
       <div className="hudButtons">
         <button className={coreOpen ? "active" : ""} onClick={onToggleCore}><Factory size={16} /> Ship</button>
-        <button className={evolutionReady ? "pulseButton" : ""} title="Interact with nearby station" onClick={onOpenTree}><Hand size={16} /> F Interact</button>
+        <button className={evolutionReady ? "pulseButton" : ""} title="Interact with nearby spacecraft" onClick={onOpenTree}><Hand size={16} /> F Interact</button>
         <button className={buildsOpen ? "active" : ""} onClick={onToggleBuilds}><Shield size={16} /> Guide</button>
       </div>
     </div>

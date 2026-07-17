@@ -9,7 +9,7 @@ export type ControlledVehicleSnapshot = {
 export function normalizeControlledVehicle(snapshot: GameSnapshot): ControlledVehicleSnapshot {
   const station = snapshot.station.claimed;
   const controlsStation = Boolean(station && snapshot.stationInteraction.docked && station.localRelocationAvailable);
-  if (controlsStation && station) return { id: station.id, type: station.mothershipUnlocked ? "mothership" : "station", name: station.name, model: station.mothershipUnlocked ? "Personal Mothership" : "Mobile Station", health: station.health, maxHealth: station.maxHealth, shield: station.shield, maxShield: Math.max(1, station.defenseStats.shieldCapacity), fuel: station.fuel.currentFuel, status: station.underAttack ? "Under attack" : "Command linked", speed: 0 };
+  if (controlsStation && station) return { id: station.id, type: station.mothershipUnlocked ? "mothership" : "station", name: station.name, model: station.mothershipUnlocked ? "Personal Mothership" : "Carrier Spacecraft", health: station.health, maxHealth: station.maxHealth, shield: station.shield, maxShield: Math.max(1, station.defenseStats.shieldCapacity), fuel: station.fuel.currentFuel, status: station.underAttack ? "Under attack" : "Pod integrated", speed: 0 };
   return { id: snapshot.fleet.activeShipId, type: "ship", name: snapshot.shipClass, model: snapshot.baseFrame.name, health: snapshot.health, maxHealth: snapshot.maxHealth, shield: snapshot.shieldHealth, maxShield: Math.max(1, snapshot.maxShield), fuel: 0, status: snapshot.stationInteraction.docked ? "Docked" : "Flight control", speed: 0 };
 }
 
