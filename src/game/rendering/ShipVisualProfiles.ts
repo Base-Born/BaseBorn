@@ -130,7 +130,9 @@ export function getShipVisualProfile(nodeOrId: ShipNode | string): ShipVisualPro
   };
   if (node.id === "space_pod") {
     profile.id = "starter_pod";
-    profile.sizeScale = 0.76;
+    // The standalone pod texture has transparent padding. Match its visible
+    // hull to the pod's footprint inside the claimed spacecraft sprite.
+    profile.sizeScale = 2.24;
     profile.weaponMounts = [];
     profile.glowColor = "#70e8ff";
     profile.primaryColor = "#d6d8d5";
