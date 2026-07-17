@@ -83,7 +83,7 @@ export class Asteroid {
     const computed = getAsteroidComputedValues(sizeTier, quality);
     const random = randomFromSeed(options.seed ?? Math.floor(Math.random() * 2 ** 31));
     const radius = options.radius ?? randomRange(random, size.radiusRange[0], size.radiusRange[1]);
-    const vertexCount = quality === "unique" ? 13 : quality === "epic" || quality === "legendary" ? 11 : 9;
+    const vertexCount = quality === "common" ? 9 : quality === "uncommon" ? 12 : quality === "rare" ? 8 : quality === "epic" ? 10 : 12;
     this.id = options.id ?? `asteroid-${Math.floor(random() * 1e9).toString(36)}`;
     this.kind = kind;
     this.typeId = quality;
@@ -108,8 +108,12 @@ export class Asteroid {
     this.rotation = randomRange(random, 0, Math.PI * 2);
     this.chunkId = options.chunkId;
     this.polygonPoints = Array.from({ length: vertexCount }, (_, i) => {
-      const jag = quality === "rare" || quality === "epic" ? 0.2 : 0.28;
-      return 0.78 + random() * jag + (i % 3 === 0 ? 0.08 : 0);
+      if (entry.shape === "crag") return 0.74 + random() * 0.28 + (i % 3 === 0 ? 0.08 : 0);
+      if (entry.shape === "cluster") return (i % 2 === 0 ? 0.98 : 0.76) + random() * 0.1;
+      if (entry.shape === "crystal") return (i % 2 === 0 ? 1.08 : 0.62) + random() * 0.06;
+      if (entry.shape === "shard") return (i % 2 === 0 ? 1.13 : 0.56) + random() * 0.08;
+      if (entry.shape === "crown") return (i % 3 === 0 ? 1.12 : i % 3 === 1 ? 0.7 : 0.88) + random() * 0.05;
+      return (i % 2 === 0 ? 1.02 : 0.88) + random() * 0.025;
     });
   }
 

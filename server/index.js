@@ -22,6 +22,7 @@ const simulationIntervalMs = 25;
 const maxMovementSpeed = 1800;
 const pickupDistance = 180;
 const stationClaimDistance = 760;
+const asteroidChunkSize = 1600;
 const projectileSpeed = 720;
 const projectileLifetimeMs = 1800;
 const projectileDamage = 14;
@@ -248,7 +249,7 @@ function validAsteroidReport(message,player){
   if(!Number.isSafeInteger(chunkX)||!Number.isSafeInteger(chunkY)||!Number.isSafeInteger(index)||index<0||index>64)return false;
   const x=finite(message.x,NaN,-worldLimit,worldLimit),y=finite(message.y,NaN,-worldLimit,worldLimit);
   if(!Number.isFinite(x)||!Number.isFinite(y)||distance(player,{x,y})>420)return false;
-  return Math.floor(x/3200)===chunkX&&Math.floor(y/3200)===chunkY;
+  return Math.floor(x/asteroidChunkSize)===chunkX&&Math.floor(y/asteroidChunkSize)===chunkY;
 }
 function createProjectile(room,websocket,angle,now){
   if(websocket.playerState.docked||websocket.playerState.healthRatio<=0||now-(websocket.lastFireAt||0)<120)return null;
@@ -358,7 +359,7 @@ websocketServer.on("connection",(websocket)=>{
       websocket.lastAsteroidAt=now;
       const pos={x:finite(message.x,websocket.playerState.x,-worldLimit,worldLimit),y:finite(message.y,websocket.playerState.y,-worldLimit,worldLimit)};
       if(distance(pos,websocket.playerState)>2400)return;
-      const respawnMs=Math.round(finite(message.respawnMs,270000,30000,300000));
+      const respawnMs=300000;
       room.destroyedAsteroids.set(asteroidId,now+respawnMs);
       const type=etherTypes.has(message.etherType)?message.etherType:"rawEther";
       let remaining=Math.round(finite(message.amount,1,1,500));

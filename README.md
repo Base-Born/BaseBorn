@@ -294,15 +294,14 @@ Players spawn in safe outer corner regions. The starter station is placed near t
 
 Loot quality improves toward the center. The safe outer zone is PvE, while inner zones are designed as higher-risk areas.
 
-Asteroid belt examples:
+Asteroids now populate the whole map. Belts add a small local density and rarity bias, while distance from the center remains the primary rarity rule.
 
-| Belt | Normalized Radius | Spawn Range | Main Loot Direction |
-| --- | --- | ---: | --- |
-| Outer Sparse Belt | 0.78-0.91 | 16-28 | Mostly Common, some Uncommon/Rare |
-| Station Resource Belt | 0.55-0.82 | 24-40 | Common through Epic |
-| Mid Conflict Belt | 0.34-0.55 | 30-50 | Uncommon/Rare with some Epic |
-| Inner Rich Belt | 0.17-0.34 | 36-60 | Rare/Epic with Legendary chance |
-| Core Ether Belt | 0.035-0.12 | 44-72 | Epic/Legendary/Core |
+| Region | Base Asteroids Per Chunk | Main Loot Direction |
+| --- | ---: | --- |
+| Outer | 18-26 | Mostly Common, with some Uncommon/Rare |
+| Mid | 22-30 | Uncommon/Rare with some Epic |
+| Inner | 26-36 | Rare/Epic with a Legendary chance |
+| Center | 32-44 | Epic/Legendary/Core |
 
 The minimap shows belt rings and sectors, not zone-name labels. Zone changes appear as on-screen notifications.
 
@@ -327,14 +326,14 @@ Every asteroid is mineable. Difficulty and rewards depend on size and rarity.
 
 ### Asteroid Rarities
 
-| Rarity | Ether | Health | XP | Ether | Mining Resistance | Required Mining Power |
-| --- | --- | ---: | ---: | ---: | ---: | ---: |
-| Common | Raw Ether | 1x | 1x | 1x | 1 | 1 |
-| Uncommon | Refined Ether | 1.8x | 2.5x | 2.25x | 1.4 | 2 |
-| Rare | Charged Ether | 3.2x | 6x | 5x | 2.1 | 4 |
-| Epic | Radiant Ether | 6x | 14x | 11x | 3.5 | 7 |
-| Legendary | Primal Ether | 11x | 35x | 26x | 6 | 11 |
-| Core | Core Ether | 22x | 90x | 65x | 10 | 16 |
+| Rarity | Shape | Ether Type | Health | XP | Ether Yield | Mining Resistance | Required Mining Power |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Common | Irregular cratered crag | Raw Ether | 1x | 1x | 1x | 1 | 1 |
+| Uncommon | Multi-lobed cluster | Refined Ether | 1.8x | 2.5x | 2.25x | 1.4 | 2 |
+| Rare | Four-point crystal | Charged Ether | 3.2x | 6x | 5x | 2.1 | 4 |
+| Epic | Sharp radiant shard | Radiant Ether | 6x | 14x | 11x | 3.5 | 7 |
+| Legendary | Six-rayed crown | Primal Ether | 11x | 35x | 26x | 6 | 11 |
+| Core | Armored reactor core | Core Ether | 22x | 90x | 65x | 10 | 16 |
 
 Asteroid values are computed from base values plus size and rarity modifiers. Current base values are:
 
@@ -345,7 +344,9 @@ Asteroid values are computed from base values plus size and rarity modifiers. Cu
 | Ether | 8 |
 | Score | 10 |
 
-Mining resistance reduces damage if the ship's effective hit damage or mining power is too low. Bigger and rarer asteroids are intentionally slower to break.
+Mining resistance reduces damage if the ship's effective hit damage or mining power is too low. Bigger and rarer asteroids are intentionally slower to break. Every destroyed asteroid respawns after five minutes, and its destroyed state is shared by the multiplayer server.
+
+High-speed asteroid impacts use relative velocity and approximate ship/asteroid mass. An unarmored starter hull takes the full crash damage and cannot mine by ramming. Reconstructed hulls, Max Health plating, and installed defense modules add hull armor: armored ships still take impact damage, but at a reduced amount, and fast rams deal mining damage to the asteroid. Body Damage further strengthens ramming and collision resistance. Autonomous Repair restores hull after its damage delay, with each invested level increasing the repair rate.
 
 ## Ether And Cargo
 

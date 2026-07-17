@@ -68,8 +68,8 @@ export function getEffectivePlayerStats(stats: NumericCoreStats, baseFrameId = "
 
   return {
     autonomousRepair: {
-      regenFlat: flatValue(stats, "autonomousRepair", 0.35, 0.65, baseFrameId),
-      delayMs: Math.max(1500, 4000 - repairDelayReduction),
+      regenFlat: flatValue(stats, "autonomousRepair", 0.5, 0.9, baseFrameId),
+      delayMs: Math.max(1200, 4000 - repairDelayReduction),
     },
     maxHealth: {
       multiplier: statMultiplier(stats, "maxHealth", 0.08, 0.12, baseFrameId) * frame.statBias.healthMultiplier,

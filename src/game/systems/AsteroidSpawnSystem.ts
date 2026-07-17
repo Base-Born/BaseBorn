@@ -1,4 +1,4 @@
-import { ASTEROID_SIZE_BY_ID, pickAsteroidSize, type AsteroidQuality, type AsteroidSizeTier } from "../data/asteroidTypes";
+import { ASTEROID_QUALITY_WEIGHTS, ASTEROID_SIZE_BY_ID, getAsteroidRegionForPosition, pickAsteroidSize, type AsteroidQuality, type AsteroidRegion, type AsteroidSizeTier } from "../data/asteroidTypes";
 import { getBestAsteroidBeltAtPosition, OPEN_SPACE_QUALITY_DISTRIBUTION, OPEN_SPACE_SPAWN_COUNT_RANGE, type AsteroidBelt } from "../data/asteroidBelts";
 import { MAP_CONFIG } from "../data/mapConfig";
 import { Asteroid } from "../entities/Asteroid";
@@ -14,9 +14,9 @@ type AsteroidSpec = {
   seed: number;
 };
 
-const CHUNK_SIZE = 3200;
-const ACTIVE_RADIUS = 9800;
-const SPAWN_PROTECTION_RADIUS = 360;
+const CHUNK_SIZE = 1600;
+const ACTIVE_RADIUS = 6200;
+const SPAWN_PROTECTION_RADIUS = 280;
 
 function hashToUint(input: string) {
   let hash = 2166136261;
@@ -45,8 +45,8 @@ function distance(a: Vec2, b: Vec2) {
 }
 
 function inCornerSpawnBuffer(pos: Vec2, radius: number) {
-  const nearExtremeX = Math.abs(pos.x) >= MAP_CONFIG.halfWidth * 0.94 - radius;
-  const nearExtremeY = Math.abs(pos.y) >= MAP_CONFIG.halfHeight * 0.94 - radius;
+  const nearExtremeX = Math.abs(pos.x) >= MAP_CONFIG.halfWidth * 0.985 - radius;
+  const nearExtremeY = Math.abs(pos.y) >= MAP_CONFIG.halfHeight * 0.985 - radius;
   return nearExtremeX && nearExtremeY;
 }
 
@@ -78,7 +78,21 @@ export function getBeltAsteroidSpawnProfile(belt: AsteroidBelt): AsteroidSpawnPr
 
 export function getChunkAsteroidSpawnProfile(chunkCenter: Vec2): AsteroidSpawnProfile {
   const belt = getBestAsteroidBeltAtPosition(chunkCenter);
-  return belt ? getBeltAsteroidSpawnProfile(belt) : getOpenSpaceAsteroidSpawnProfile();
+  const region = getAsteroidRegionForPosition(chunkCenter);
+  const regionRanges: Record<AsteroidRegion, [number, number]> = {
+    outer: [18, 26],
+    mid: [22, 30],
+    inner: [26, 36],
+    center: [32, 44],
+  };
+  const density = Math.min(1.1, Math.max(1, belt?.densityMultiplier ?? 1));
+  const baseRange = regionRanges[region];
+  const countRange: [number, number] = [Math.round(baseRange[0] * density), Math.round(baseRange[1] * density)];
+  const radialDistribution = ASTEROID_QUALITY_WEIGHTS[region];
+  const qualityDistribution = belt
+    ? Object.fromEntries((Object.keys(radialDistribution) as AsteroidQuality[]).map((quality) => [quality, radialDistribution[quality] * 0.72 + belt.qualityDistribution[quality] * 0.28])) as Record<AsteroidQuality, number>
+    : radialDistribution;
+  return { countRange, qualityDistribution, belt };
 }
 
 export function pickAsteroidQualityFromBeltProfile(random: () => number, profile: AsteroidSpawnProfile) {

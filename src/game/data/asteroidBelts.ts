@@ -31,7 +31,7 @@ export const OPEN_SPACE_QUALITY_DISTRIBUTION: Record<AsteroidQuality, number> = 
   unique: 0,
 };
 
-export const OPEN_SPACE_SPAWN_COUNT_RANGE: [number, number] = [0, 3];
+export const OPEN_SPACE_SPAWN_COUNT_RANGE: [number, number] = [18, 26];
 
 export function generateAsteroidBelts(mapConfig: MapConfig): AsteroidBelt[] {
   const maxRadius = Math.hypot(mapConfig.halfWidth, mapConfig.halfHeight);

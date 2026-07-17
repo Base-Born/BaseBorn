@@ -31,12 +31,12 @@ export const ASTEROID_QUALITY_BALANCE: Record<AsteroidQuality, {
   requiredMiningPower: number;
   respawnSecondsRange: [number, number];
 }> = {
-  common: { xpMultiplier: 1, etherMultiplier: 1, healthMultiplier: 1, miningResistance: 1, scoreMultiplier: 1, stationXpMultiplier: 1, requiredMiningPower: 1, respawnSecondsRange: [240, 300] },
-  uncommon: { xpMultiplier: 2.5, etherMultiplier: 2.25, healthMultiplier: 1.8, miningResistance: 1.4, scoreMultiplier: 2, stationXpMultiplier: 2, requiredMiningPower: 2, respawnSecondsRange: [300, 360] },
-  rare: { xpMultiplier: 6, etherMultiplier: 5, healthMultiplier: 3.2, miningResistance: 2.1, scoreMultiplier: 5, stationXpMultiplier: 4.5, requiredMiningPower: 4, respawnSecondsRange: [360, 480] },
-  epic: { xpMultiplier: 14, etherMultiplier: 11, healthMultiplier: 6, miningResistance: 3.5, scoreMultiplier: 12, stationXpMultiplier: 10, requiredMiningPower: 7, respawnSecondsRange: [480, 720] },
-  legendary: { xpMultiplier: 35, etherMultiplier: 26, healthMultiplier: 11, miningResistance: 6, scoreMultiplier: 30, stationXpMultiplier: 24, requiredMiningPower: 11, respawnSecondsRange: [900, 1500] },
-  unique: { xpMultiplier: 90, etherMultiplier: 65, healthMultiplier: 22, miningResistance: 10, scoreMultiplier: 80, stationXpMultiplier: 60, requiredMiningPower: 16, respawnSecondsRange: [1800, 2700] },
+  common: { xpMultiplier: 1, etherMultiplier: 1, healthMultiplier: 1, miningResistance: 1, scoreMultiplier: 1, stationXpMultiplier: 1, requiredMiningPower: 1, respawnSecondsRange: [300, 300] },
+  uncommon: { xpMultiplier: 2.5, etherMultiplier: 2.25, healthMultiplier: 1.8, miningResistance: 1.4, scoreMultiplier: 2, stationXpMultiplier: 2, requiredMiningPower: 2, respawnSecondsRange: [300, 300] },
+  rare: { xpMultiplier: 6, etherMultiplier: 5, healthMultiplier: 3.2, miningResistance: 2.1, scoreMultiplier: 5, stationXpMultiplier: 4.5, requiredMiningPower: 4, respawnSecondsRange: [300, 300] },
+  epic: { xpMultiplier: 14, etherMultiplier: 11, healthMultiplier: 6, miningResistance: 3.5, scoreMultiplier: 12, stationXpMultiplier: 10, requiredMiningPower: 7, respawnSecondsRange: [300, 300] },
+  legendary: { xpMultiplier: 35, etherMultiplier: 26, healthMultiplier: 11, miningResistance: 6, scoreMultiplier: 30, stationXpMultiplier: 24, requiredMiningPower: 11, respawnSecondsRange: [300, 300] },
+  unique: { xpMultiplier: 90, etherMultiplier: 65, healthMultiplier: 22, miningResistance: 10, scoreMultiplier: 80, stationXpMultiplier: 60, requiredMiningPower: 16, respawnSecondsRange: [300, 300] },
 };
 
 export const ASTEROID_SIZE_BALANCE: Record<AsteroidSizeTier, { rewardMultiplier: number; healthMultiplier: number }> = {

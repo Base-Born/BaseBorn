@@ -8,10 +8,21 @@ import type { LevelSystem } from "./LevelSystem";
 import { getEffectivePlayerStats, getTotalEffectiveStatLevel } from "./StatScalingSystem";
 import { getAsteroidDamage, getAsteroidMiningPowerRatio } from "./AsteroidMiningSystem";
 import { getMassMovementModifiers } from "./MassSystem";
+import { getHullTier } from "../data/hullTiers";
+import type { AsteroidQuality } from "../data/asteroidTypes";
 
-const MIN_BODY_DAMAGE_IMPACT_SPEED = 95;
-const ASTEROID_BOUNCE_RESTITUTION = 0.82;
-const ASTEROID_CONTACT_PUSH = 0.64;
+const MIN_RAM_IMPACT_SPEED = 85;
+const ASTEROID_CONTACT_PUSH = 0.62;
+const ASTEROID_QUALITY_IMPACT: Record<AsteroidQuality, number> = { common: 1, uncommon: 1.12, rare: 1.28, epic: 1.48, legendary: 1.75, unique: 2.1 };
+
+export function getPlayerHullArmorProfile(player: Player) {
+  const hullTier = getHullTier(player.loadout.hullTier).tier;
+  const maxHealthLevel = getTotalEffectiveStatLevel(player.stats, "maxHealth");
+  const defenseModules = player.loadout.installedModules.filter((module) => module.slotType === "defense").length;
+  const hullReduction = hullTier <= 1 ? 0 : 0.24 + (hullTier - 2) * 0.085;
+  const damageReduction = clamp(hullReduction + maxHealthLevel * 0.02 + defenseModules * 0.1, 0, 0.78);
+  return { hasArmor: hullTier > 1 || maxHealthLevel > 0 || defenseModules > 0, damageReduction, hullTier, maxHealthLevel, defenseModules };
+}
 
 export class CollisionSystem {
   resolve(
@@ -129,8 +140,8 @@ export class CollisionSystem {
     for (const asteroid of asteroids) {
       if (playerActive && distance(player.pos, asteroid.pos) < player.radius + asteroid.radius) {
         const effective = getEffectivePlayerStats(player.stats, player.baseFrameId);
-        const collisionDamage = this.impactPlayerAsteroid(player, asteroid, effective.bodyDamage.resistance);
-        if (collisionDamage > 0) {
+        const impact = this.impactPlayerAsteroid(player, asteroid, effective.bodyDamage.resistance);
+        if (impact.ramDamage > 0) {
           const wasAlive = !asteroid.dead;
 
           if (onMiningInefficient) {
@@ -141,7 +152,7 @@ export class CollisionSystem {
             }
           }
 
-          asteroid.takeDamage(getAsteroidDamage(player, asteroid, collisionDamage * effective.bodyDamage.damageMultiplier * getMassMovementModifiers(player.buildIdentity.budgets.mass).collision, 1.25));
+          asteroid.takeDamage(getAsteroidDamage(player, asteroid, impact.ramDamage * effective.bodyDamage.damageMultiplier * getMassMovementModifiers(player.buildIdentity.budgets.mass).collision, 1.25));
           if (wasAlive && asteroid.dead) level.award(player, asteroid.xp, asteroid.score);
         }
       }
@@ -194,33 +205,43 @@ export class CollisionSystem {
     const ny = dy / dist;
     const overlap = Math.max(0, player.radius + asteroid.radius - dist);
 
-    player.pos.x += nx * (overlap * ASTEROID_CONTACT_PUSH + 1.5);
-    player.pos.y += ny * (overlap * ASTEROID_CONTACT_PUSH + 1.5);
+    const armor = getPlayerHullArmorProfile(player);
+    const shipMass = Math.max(1, player.buildIdentity.budgets.mass / 32);
+    const qualityMass = ASTEROID_QUALITY_IMPACT[asteroid.quality];
+    const asteroidMass = Math.max(0.75, (asteroid.radius / Math.max(18, player.radius)) ** 2 * qualityMass);
+    const totalMass = shipMass + asteroidMass;
+    const playerPushShare = asteroidMass / totalMass;
+    player.pos.x += nx * (overlap * ASTEROID_CONTACT_PUSH * playerPushShare + 1.25);
+    player.pos.y += ny * (overlap * ASTEROID_CONTACT_PUSH * playerPushShare + 1.25);
+    asteroid.pos.x -= nx * overlap * (1 - playerPushShare) * 0.38;
+    asteroid.pos.y -= ny * overlap * (1 - playerPushShare) * 0.38;
 
     const relativeNormalSpeed = (player.vel.x - asteroid.vel.x) * nx + (player.vel.y - asteroid.vel.y) * ny;
     const impactSpeed = Math.max(0, -relativeNormalSpeed);
     if (relativeNormalSpeed < 0) {
-      const impulse = -(1 + ASTEROID_BOUNCE_RESTITUTION) * relativeNormalSpeed;
-      player.vel.x += nx * impulse;
-      player.vel.y += ny * impulse;
-      asteroid.vel.x = clamp(asteroid.vel.x - nx * impulse * 0.035, -42, 42);
-      asteroid.vel.y = clamp(asteroid.vel.y - ny * impulse * 0.035, -42, 42);
+      const restitution = 0.28 + armor.damageReduction * 0.18;
+      const impulse = -(1 + restitution) * relativeNormalSpeed / (1 / shipMass + 1 / asteroidMass);
+      player.vel.x += nx * impulse / shipMass;
+      player.vel.y += ny * impulse / shipMass;
+      asteroid.vel.x = clamp(asteroid.vel.x - nx * impulse / asteroidMass, -86, 86);
+      asteroid.vel.y = clamp(asteroid.vel.y - ny * impulse / asteroidMass, -86, 86);
     } else {
-      player.vel.x += nx * 18;
-      player.vel.y += ny * 18;
+      player.vel.x += nx * 12;
+      player.vel.y += ny * 12;
     }
 
     const bodyDamageLevel = getTotalEffectiveStatLevel(player.stats, "bodyDamage");
-    const shieldImpact = Math.max(0, impactSpeed - 80) * 0.025 * (1 - platingResistance);
-    if (shieldImpact > 0.2) player.damage(shieldImpact);
-    if (!this.canRamAsteroids(player) || bodyDamageLevel <= 0 || impactSpeed < MIN_BODY_DAMAGE_IMPACT_SPEED) return 0;
+    const totalReduction = clamp(armor.damageReduction + platingResistance * 0.35, 0, 0.82);
+    const impactSeverity = Math.max(0, impactSpeed - 45) / 55;
+    const massThreat = Math.sqrt(clamp(asteroidMass / shipMass, 0.45, 8));
+    const incomingDamage = impactSeverity * (2.4 + massThreat * 2.2) * qualityMass * (1 - totalReduction);
+    if (incomingDamage > 0.15) player.damage(incomingDamage);
 
-    const impactFactor = clamp((impactSpeed - MIN_BODY_DAMAGE_IMPACT_SPEED) / 340, 0.15, 1.65);
-    return (2.6 + bodyDamageLevel * 2.4) * impactFactor;
-  }
-
-  private canRamAsteroids(player: Player) {
-    return player.ship.node.branch === "Tank" || player.ship.node.weaponType === "tank" || player.buildIdentity.activeSynergies.some((synergy) => synergy.id === "reinforced_ram");
+    const reinforcedRam = player.ship.node.branch === "Tank" || player.ship.node.weaponType === "tank" || player.buildIdentity.activeSynergies.some((synergy) => synergy.id === "reinforced_ram");
+    if ((!armor.hasArmor && !reinforcedRam) || impactSpeed < MIN_RAM_IMPACT_SPEED) return { ramDamage: 0, incomingDamage };
+    const impactEnergy = (impactSpeed - 70) / 35;
+    const armorForce = 1 + armor.damageReduction * 1.6;
+    return { ramDamage: (3 + bodyDamageLevel * 1.8) * impactEnergy * armorForce, incomingDamage };
   }
 
 }

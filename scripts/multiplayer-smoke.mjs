@@ -58,6 +58,12 @@ try {
   assert.equal(validatedBeta.name, "Beta");
   assert(distance(validatedBeta,beta.welcome.spawn)<200,"teleport must be clamped");
   assert.equal(validatedBeta.level,1);assert.equal(validatedBeta.score,0);assert.equal(validatedBeta.healthRatio,1);assert.equal(validatedBeta.docked,false);
+  const asteroidChunkX=Math.floor(alpha.welcome.spawn.x/1600),asteroidChunkY=Math.floor(alpha.welcome.spawn.y/1600);
+  const asteroidId=`asteroid-${asteroidChunkX}:${asteroidChunkY}-0`;
+  alpha.socket.send(JSON.stringify({type:"asteroid_destroyed",asteroidId,x:alpha.welcome.spawn.x,y:alpha.welcome.spawn.y,etherType:"rawEther",amount:1,respawnMs:30000}));
+  const asteroidSnapshot=await waitForSnapshot(alpha,(message)=>message.destroyedAsteroids?.some((entry)=>entry.id===asteroidId));
+  const asteroidRespawn=asteroidSnapshot.destroyedAsteroids.find((entry)=>entry.id===asteroidId);
+  assert(asteroidRespawn.until-Date.now()>295000,"server must enforce the five-minute asteroid respawn");
   const initialTeamSnapshot = await waitForSnapshot(alpha, (message) => message.teams.some((team) => team.memberIds.includes(alpha.id)));
   const alphaTeam = initialTeamSnapshot.teams.find((team) => team.memberIds.includes(alpha.id));
   const alphaStation = initialTeamSnapshot.stations
@@ -111,7 +117,7 @@ try {
   const resumedSnapshot=await waitForSnapshot(alphaResumed,(message)=>message.players.length===2);
   assert.equal(resumedSnapshot.stations.length,stationsBeforeReconnect,"reconnect must not create another starter station");
   alphaResumed.socket.close(); beta.socket.close();
-  console.log("Multiplayer smoke test passed: validation, shared station driving, projectiles/damage, anti-mint cargo, stable reconnects, teams, claims, spawning, leadership, removal, and leave.");
+  console.log("Multiplayer smoke test passed: validation, five-minute shared asteroid respawns, station driving, projectiles/damage, anti-mint cargo, reconnects, teams, claims, and leadership.");
 } finally {
   server.kill("SIGTERM");
   await Promise.race([new Promise((resolve)=>server.once("exit",resolve)),wait(3000)]);
