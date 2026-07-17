@@ -66,6 +66,17 @@ try {
   await moveClient(alpha,alpha.welcome.spawn,{x:alphaStation.x+300,y:alphaStation.y});
   alpha.socket.send(JSON.stringify({ type:"claim_station", stationId:alphaStation.id }));
   const claimedSnapshot = await waitForSnapshot(alpha, (message) => message.teams.some((team) => team.id===alphaTeam.id&&team.stationId===alphaStation.id));
+  const claimedStation = claimedSnapshot.stations.find((station) => station.id===alphaStation.id);
+  await moveClient(alpha,{x:alphaStation.x+300,y:alphaStation.y},{x:claimedStation.x,y:claimedStation.y});
+  alpha.socket.send(JSON.stringify({type:"state",state:{x:claimedStation.x,y:claimedStation.y,vx:0,vy:0,angle:0,thrustForward:0,thrustStrafe:0,docked:true,healthRatio:1,level:1,score:0,shipClassId:"base_ship",shipClass:"Base Ship"}}));
+  await waitForSnapshot(alpha,(message)=>message.stations.find((station)=>station.id===alphaStation.id)?.dockedPlayerIds.includes(alpha.id));
+  alpha.socket.send(JSON.stringify({type:"station_input",stationId:alphaStation.id,x:1,y:0}));
+  const drivenSnapshot = await waitForSnapshot(alpha,(message)=>message.stations.some((station)=>station.id===alphaStation.id&&station.x>claimedStation.x+2&&station.driverPlayerId===alpha.id));
+  const drivenStation = drivenSnapshot.stations.find((station)=>station.id===alphaStation.id);
+  assert(drivenStation.vx>0,"station drive input should produce shared server velocity");
+  alpha.socket.send(JSON.stringify({type:"station_input",stationId:alphaStation.id,x:0,y:0}));
+  alpha.socket.send(JSON.stringify({type:"state",state:{x:drivenStation.x,y:drivenStation.y,vx:0,vy:0,angle:0,thrustForward:0,thrustStrafe:0,docked:false,healthRatio:1,level:1,score:0,shipClassId:"base_ship",shipClass:"Base Ship"}}));
+  await waitForSnapshot(alpha,(message)=>message.players.some((player)=>player.id===alpha.id&&!player.docked));
   alpha.socket.send(JSON.stringify({ type:"invite_player", playerId:beta.id }));
   const inviteSnapshot = await waitForSnapshot(beta, (message) => message.invites.some((invite) => invite.teamId===alphaTeam.id));
   const invite = inviteSnapshot.invites.find((entry) => entry.teamId===alphaTeam.id);
@@ -100,7 +111,7 @@ try {
   const resumedSnapshot=await waitForSnapshot(alphaResumed,(message)=>message.players.length===2);
   assert.equal(resumedSnapshot.stations.length,stationsBeforeReconnect,"reconnect must not create another starter station");
   alphaResumed.socket.close(); beta.socket.close();
-  console.log("Multiplayer smoke test passed: validation, shared projectiles/damage, anti-mint cargo, stable reconnects, teams, claims, spawning, leadership, removal, and leave.");
+  console.log("Multiplayer smoke test passed: validation, shared station driving, projectiles/damage, anti-mint cargo, stable reconnects, teams, claims, spawning, leadership, removal, and leave.");
 } finally {
   server.kill("SIGTERM");
   await Promise.race([new Promise((resolve)=>server.once("exit",resolve)),wait(3000)]);

@@ -49,6 +49,7 @@ export class StationSystem {
   stations: Station[] = [];
   team: Team;
   baseLostState: BaseLostState | null = null;
+  private lastNetworkStationStates = new Map<string, NetworkStationState>();
 
   constructor(player: Player) {
     this.team = this.createLocalTeam(player);
@@ -61,9 +62,14 @@ export class StationSystem {
     const existing = new Map(this.stations.map((station) => [station.id, station]));
     this.stations = states.map((state, index) => {
       const station = existing.get(state.id) ?? this.createBrokenStation({ x: state.x, y: state.y }, index);
+      const isFreshSnapshot = this.lastNetworkStationStates.get(state.id) !== state;
+      this.lastNetworkStationStates.set(state.id, state);
       station.id = state.id;
       station.name = state.name;
-      station.pos = { x: state.x, y: state.y };
+      if (isFreshSnapshot) {
+        station.pos = { x: state.x, y: state.y };
+        station.vel = { x: state.vx ?? station.vel.x, y: state.vy ?? station.vel.y };
+      }
       station.claimState = state.claimState;
       station.ownerTeamId = state.ownerTeamId;
       station.ownerPlayerId = state.ownerPlayerId;
@@ -77,6 +83,8 @@ export class StationSystem {
       if (state.claimState === "claimed" && station.lifecycleState === "unclaimed") station.lifecycleState = "claimed";
       return station;
     });
+    const liveIds = new Set(states.map((state) => state.id));
+    for (const id of this.lastNetworkStationStates.keys()) if (!liveIds.has(id)) this.lastNetworkStationStates.delete(id);
   }
 
   syncNetworkTeam(networkTeam: NetworkTeam | null, player: Player) {
@@ -237,24 +245,20 @@ export class StationSystem {
   pilotClaimedStation(player: Player, move: Vec2, dt: number, station = this.claimedStation) {
     if (!station || !canPilotStation(station, player)) return false;
     const magnitude = Math.hypot(move.x, move.y);
-    if (magnitude <= 0) {
-      player.pos = { ...station.pos };
-      player.vel = { x: 0, y: 0 };
-      return false;
-    }
-    const direction = { x: move.x / magnitude, y: move.y / magnitude };
-    const boosterLevel = Math.max(1, station.upgradeState.boosterLevel);
+    const direction = magnitude > 0.001 ? { x: move.x / magnitude, y: move.y / magnitude } : { x: 0, y: 0 };
     const maxSpeed = getStationPilotMaxSpeed(station);
-    const accel = STATION_CONFIG.stationPilotAcceleration * (1 + boosterLevel * 0.14);
-    station.vel.x += direction.x * accel * dt;
-    station.vel.y += direction.y * accel * dt;
+    const response = magnitude > 0.001 ? STATION_CONFIG.stationPilotResponse : STATION_CONFIG.stationPilotBrakeResponse;
+    const blend = 1 - Math.exp(-response * Math.min(dt, 0.1));
+    station.vel.x += (direction.x * maxSpeed - station.vel.x) * blend;
+    station.vel.y += (direction.y * maxSpeed - station.vel.y) * blend;
+    if (magnitude <= 0.001 && Math.hypot(station.vel.x, station.vel.y) < 0.5) station.vel = { x: 0, y: 0 };
     clampStationVelocity(station, maxSpeed);
     player.pos = { ...station.pos };
     player.vel = { x: 0, y: 0 };
     station.isMobile = true;
     station.lifecycleState = "active";
     station.lastActiveAt = performance.now();
-    station.localRelocationReason = `Basic booster online. Heavy station speed ${Math.round(maxSpeed)} u/s.`;
+    station.localRelocationReason = `Command drive online. WASD moves the station at up to ${Math.round(maxSpeed)} u/s.`;
     return true;
   }
 
@@ -1263,7 +1267,6 @@ export function getLocalStationRelocationLockReason(station: Station, ownerPlaye
   if (station.health <= 0 || station.lifecycleState === "destroyed") return "Base disabled.";
   if (station.hyperdrive.hyperdriveState === "charging") return "Hyperdrive charging. Station control locked.";
   if (station.hyperdrive.hyperdriveState === "warping") return "Hyperdrive warping. Station control locked.";
-  if (!isRepairStageCompleteForStation(station, "coreSystems")) return "Repair Core Systems Online to unlock the basic station booster.";
   if (distance(ownerPlayer.pos, station.pos) > STATION_CONFIG.dockRadius) return "Dock at the landing pad to control and move the base.";
   if (ownerPlayer.dockedStationId !== station.id || ownerPlayer.dockingState !== "docked" || !station.landingPads.some((pad) => pad.occupiedByPlayerId === ownerPlayer.id)) return "Dock inside the station before piloting the base.";
   return "";

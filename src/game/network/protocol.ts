@@ -32,6 +32,9 @@ export type NetworkStationState = {
   name: string;
   x: number;
   y: number;
+  vx?: number;
+  vy?: number;
+  driverPlayerId?: string | null;
   claimState: "unclaimed" | "claimed";
   ownerTeamId: string | null;
   ownerPlayerId: string | null;

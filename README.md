@@ -182,7 +182,7 @@ Current architectural boundary: alien PvE combat and advanced station crafting/r
 8. Convert deposited Ether into Station Fuel; rarer Ether produces dramatically more.
 9. Spend Station Fuel on repairs, ships, modules, defenses, and travel.
 10. Repair `Core Systems Online` for 120 Raw Ether.
-11. After the first repair, stay docked and use `WASD` to pilot the station with its basic booster.
+11. Once the team leader docks, use `WASD` to pilot the station with its command drive.
 12. Move inward to farm better materials, upgrade the base, craft modules, and improve defenses.
 13. Later progression prepares the station for advanced upgrades, mothership systems, and hyperdrive.
 
@@ -192,7 +192,7 @@ There is no fixed win screen yet. The current goal is to grow from a weak ship a
 
 | Input | Action |
 | --- | --- |
-| WASD / Arrow Keys | Move ship while undocked; pilot station while docked and booster is online |
+| WASD / Arrow Keys | Move the ship while undocked; directly pilot the station while its owner is docked |
 | Mouse | Aim |
 | Left Click / Space | Fire or command drones |
 | Right Click | Repel drones from cursor |
@@ -226,15 +226,16 @@ The first repair stage is:
 
 | Stage | Cost | Unlocks |
 | --- | --- | --- |
-| Core Systems Online | 120 Raw Ether | Ownership beacon, basic docking, basic station booster |
+| Core Systems Online | 120 Raw Ether | Ownership beacon, docking support, and the first repair milestone |
 
-Once `Core Systems Online` is repaired:
+After the station is claimed:
 
 - The team leader / station owner can pilot the base.
 - The leader must be fully docked inside the station.
-- `WASD` moves the entire station like a slow, heavy spacecraft with acceleration, drag, and collision response.
+- `WASD` moves the entire station like a spacecraft with normalized diagonal input, responsive acceleration, strong release braking, collision response, and visible directional thrusters.
+- Station position and velocity are simulated by the multiplayer server, so every connected pilot sees the same moving base and docked crew travel with it.
 - Basic booster speed starts at `stationBasePilotSpeed + boosterLevel * stationPilotSpeedPerBoosterLevel`.
-- Current values are `135 + 1 * 34 = 169 units/second` for the first booster level.
+- Current values are `210 + 1 * 20 = 230 units/second` for the first booster level.
 - Normal booster movement collides with asteroids and enemies. Hyperdrive/warp is the special phased movement mode intended to pass through asteroids.
 
 Future booster upgrades can increase `boosterLevel`; hyperdrive remains the intended late-game long-distance movement system.

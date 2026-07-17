@@ -445,7 +445,10 @@ export class Game {
     this.stations.updateDockingAnimation(this.player, now);
     this.handleStationDockingFailure();
     if (this.mode === "playing" && this.player.dockingState === "docked") {
-      const piloted = this.stations.pilotClaimedStation(this.player, this.input.movement(), dt);
+      const stationMovement = this.input.movement();
+      const piloted = this.stations.pilotClaimedStation(this.player, stationMovement, dt);
+      const pilotedStation = this.stations.claimedStation;
+      if (piloted && pilotedStation && this.multiplayer.isOnline()) this.multiplayer.driveStation(pilotedStation.id, stationMovement);
       if (piloted) this.updateZoneState();
     }
     const playerActive = this.mode === "playing" && !this.player.isInsideStation;
