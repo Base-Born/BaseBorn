@@ -17,7 +17,7 @@ import type { Projectile } from "../entities/Projectile";
 import type { EtherDrop } from "../entities/EtherDrop";
 import type { Station } from "../data/stationTypes";
 import type { Planet, Vec2 } from "../types";
-import type { RemotePlayerState } from "../network/protocol";
+import type { NetworkProjectileState, RemotePlayerState } from "../network/protocol";
 
 export type Camera = { x: number; y: number; zoom: number };
 
@@ -33,7 +33,7 @@ export class RenderSystem {
     this.ctx = ctx;
   }
 
-  render(player: Player, enemies: Enemy[], asteroids: Asteroid[], projectiles: Projectile[], camera: Camera, planets: Planet[] = [], etherDrops: EtherDrop[] = [], stations: Station[] = [], remotePlayers: RemotePlayerState[] = []) {
+  render(player: Player, enemies: Enemy[], asteroids: Asteroid[], projectiles: Projectile[], camera: Camera, planets: Planet[] = [], etherDrops: EtherDrop[] = [], stations: Station[] = [], remotePlayers: RemotePlayerState[] = [], networkProjectiles: NetworkProjectileState[] = []) {
     const ctx = this.ctx;
     const dpr = Math.min(window.devicePixelRatio || 1, SPACE_BACKGROUND_CONFIG.maxDevicePixelRatio);
     const w = this.canvas.width / dpr;
@@ -60,6 +60,7 @@ export class RenderSystem {
     etherDrops.forEach((drop) => this.visible(drop.pos, camera, w, h, 140) && drawEtherDrop(ctx, drop));
     stations.forEach((station) => this.visible(station.pos, camera, w, h, station.radius + 360) && this.stationRenderer.renderStation(ctx, station, { now }));
     projectiles.forEach((p) => this.visible(p.pos, camera, w, h, 160) && this.drawProjectile(p));
+    networkProjectiles.forEach((projectile) => this.visible(projectile, camera, w, h, 160) && this.drawNetworkProjectile(projectile));
     enemies.forEach((e) => {
       if (!this.visible(e.pos, camera, w, h, 140)) return;
       this.shipRenderer.drawShip({ ctx, x: e.pos.x, y: e.pos.y, rotation: e.angle, visualProfile: getAlienVisualProfile(e.alienType), animationTime: performance.now() });
@@ -100,6 +101,20 @@ export class RenderSystem {
     }
     ctx.restore();
     this.drawVignette(w, h);
+  }
+
+  private drawNetworkProjectile(projectile: NetworkProjectileState) {
+    const ctx = this.ctx;
+    const remaining = clamp((projectile.expiresAt - Date.now()) / Math.max(1, projectile.expiresAt - projectile.createdAt), 0.2, 1);
+    ctx.save();
+    ctx.globalAlpha = remaining;
+    ctx.fillStyle = projectile.color;
+    ctx.shadowColor = projectile.color;
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(projectile.x, projectile.y, projectile.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   destroy() {

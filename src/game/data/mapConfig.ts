@@ -1,17 +1,17 @@
 import type { Vec2 } from "../types";
 
 export const MAP_CONFIG = {
-  worldWidth: 1000000,
-  worldHeight: 1000000,
-  halfWidth: 500000,
-  halfHeight: 500000,
+  worldWidth: 400000,
+  worldHeight: 400000,
+  halfWidth: 200000,
+  halfHeight: 200000,
   centerX: 0,
   centerY: 0,
   sectorCount: 4,
   planetCount: 0,
-  centerZoneRadius: 45000,
-  asteroidBeltInnerRadius: 17500,
-  asteroidBeltOuterRadius: 42500,
+  centerZoneRadius: 18000,
+  asteroidBeltInnerRadius: 7000,
+  asteroidBeltOuterRadius: 17000,
   minimapSize: 320,
 };
 

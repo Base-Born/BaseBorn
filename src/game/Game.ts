@@ -374,7 +374,7 @@ export class Game {
     this.last = now;
     this.update(dt);
     this.syncMultiplayer(now, dt);
-    this.renderer.render(this.player, this.enemies, this.asteroids, this.projectiles, this.camera, this.planets, this.etherDrops.drops, this.stations.stations, this.multiplayer.getRemotePlayers());
+    this.renderer.render(this.player, this.enemies, this.asteroids, this.projectiles, this.camera, this.planets, this.etherDrops.drops, this.stations.stations, this.multiplayer.getRemotePlayers(), this.multiplayer.getProjectiles());
     this.raf = requestAnimationFrame(this.frame);
   };
 
@@ -404,6 +404,11 @@ export class Game {
     this.asteroidSystem.syncSharedDestroyed(this.multiplayer.getDestroyedAsteroids());
     if (this.multiplayer.isOnline()) this.etherDrops.syncSharedDrops(this.multiplayer.getSharedDrops());
     for (const award of this.multiplayer.consumeLootAwards()) addEtherToCombinedCargo(this.player.cargo, award.etherType, award.amount);
+    const authoritativeHealthRatio = this.multiplayer.consumeAuthoritativeHealthRatio();
+    if (authoritativeHealthRatio !== null) {
+      this.player.health = Math.min(this.player.health, this.player.maxHealth * authoritativeHealthRatio);
+      if (authoritativeHealthRatio <= 0 && this.mode === "playing") this.beginRespawnCountdown();
+    }
     const respawnSpawn = this.multiplayer.consumeRespawnSpawn();
     if (respawnSpawn && this.mode === "playing") {
       this.player.pos = clampToWorld(respawnSpawn, 500);
@@ -424,7 +429,7 @@ export class Game {
   }
   private update(dt: number) {
     if (this.mode === "playing") this.handleHotkeys();
-    if (this.pausedByTree && this.mode === "playing") {
+    if (this.pausedByTree && this.mode === "playing" && !this.multiplayer.isOnline()) {
       this.emitSnapshot();
       return;
     }
@@ -448,7 +453,12 @@ export class Game {
       const move = this.input.movement();
       const throttleMove = this.autoThrottle && move.y === 0 ? { ...move, y: -1 } : move;
       const directFire = !this.player.usesDroneControls && (this.input.firing || this.autoFire);
+      const projectileCountBeforeUpdate = this.projectiles.length;
       this.player.update(dt, throttleMove, aimWorld, directFire, this.projectiles);
+      if (this.multiplayer.isOnline() && this.projectiles.length > projectileCountBeforeUpdate) {
+        const projectile = this.projectiles[projectileCountBeforeUpdate];
+        this.multiplayer.fire(Math.atan2(projectile.vel.y, projectile.vel.x));
+      }
       const droneCommands = this.getDroneCommands(aimWorld);
       this.player.updateDroneRespawns(dt);
       this.player.drones.forEach((drone) => drone.update(dt, this.player.pos, droneCommands.get(drone.id) ?? { mode: "orbit", droneCount: this.player.drones.length }, this.player.drones, { now }));

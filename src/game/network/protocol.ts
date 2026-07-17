@@ -40,6 +40,7 @@ export type NetworkStationState = {
   maxHealth: number;
   isMobile: boolean;
   mothershipUnlocked: boolean;
+  dockedPlayerIds: string[];
 };
 export type NetworkEtherDropState = {
   id: string;
@@ -55,6 +56,18 @@ export type NetworkEtherDropState = {
   ownerId?: string;
 };
 export type NetworkDestroyedAsteroid = { id: string; until: number };
+export type NetworkProjectileState = {
+  id: string;
+  ownerId: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  color: string;
+  createdAt: number;
+  expiresAt: number;
+};
 export type NetworkTeamMember = { id: string; name: string; online: boolean };
 export type NetworkTeam = {
   id: string;

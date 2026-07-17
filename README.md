@@ -56,11 +56,11 @@ Your choices define what you become.
 
 ## Current Status
 
-Baseborn.io is a deployable browser game with a Railway-ready Node.js service. Multiplayer rooms synchronize player presence, ship movement, appearance, health, level, score, minimap markers, and leaderboard state over WebSockets; local PvE simulation and progression remain browser-owned.
+Baseborn.io is a deployable browser game with a Railway-ready Node.js service. Multiplayer rooms synchronize player presence, validated movement, appearance, server-owned PvP projectiles and damage, shared Ether drops, asteroid destruction, station ownership, teams, minimap markers, and leaderboard state over WebSockets. PvE enemies and the deeper station crafting simulation remain browser-owned while those systems are migrated incrementally.
 
 Implemented gameplay includes:
 
-- 1,000,000 x 1,000,000 world map
+- 400,000 x 400,000 shared world map, tuned for denser multiplayer encounters
 - Safe outer PvE zone and richer inner belts
 - Mineable asteroid sizes and rarities
 - Ether drops and cargo management
@@ -77,6 +77,12 @@ Implemented gameplay includes:
 - Basic station booster movement after first repair
 - Station storage, crafting, loadout, defense, team, landing pad, and hyperdrive command tabs
 - Local minimap, sector readout, objective tracker, cargo panel, and leaderboard
+- Server-batched 20 Hz multiplayer snapshots instead of per-input room broadcasts
+- Shared server-simulated PvP projectiles with teammate friendly-fire protection
+- Server cargo ledgers, close-range pickups, validated asteroid reports, and anti-mint checks
+- Stable browser multiplayer identity across refreshes and reconnects
+- Responsive phone, tablet, desktop, and ultrawide HUD layouts
+- Installable fullscreen PWA shell with runtime asset caching
 
 ## Tech Stack
 
@@ -137,20 +143,32 @@ This repository is ready for a single Railway service deployed from GitHub:
 4. Set the service healthcheck path to `/health` if Railway has not imported it automatically.
 5. Do not set a fixed port. Railway injects `PORT`; the server binds it on `0.0.0.0`.
 
-Optional environment variable: `MAX_PLAYERS_PER_ROOM` (default `64`). The frontend and WebSocket server share one origin, so Railway HTTPS automatically uses secure `wss://` connections without a second service or CORS configuration.
+Optional environment variables:
+
+- `MAX_PLAYERS_PER_ROOM` (default `64`).
+- `WORLD_STATE_PATH` enables atomic world persistence. On Railway, mount a persistent volume and set this to a file inside that mount, such as `/data/baseborn-world.json`.
+
+The frontend and WebSocket server share one origin, so Railway HTTPS automatically uses secure `wss://` connections without a second service or CORS configuration.
 
 Useful endpoints:
 
 - `/health` returns deployment health plus current room/player counts.
 - `/api/status` returns multiplayer capacity and presence information.
 
-Run the multiplayer relay smoke test before deployment:
+Run the complete verification suite before deployment:
 
 ```bash
-npm run test:multiplayer
+npm test
+npm run build
 ```
 
-Multiplayer currently synchronizes player presence and ship state. PvE enemies, station progression, inventory, and combat damage remain local client simulations; authoritative shared-world combat is a separate server-side milestone.
+The suite type-checks the client, tests state validation, shared projectiles and damage, cargo anti-mint behavior, station claim contention, team workflows, stable reconnects, and exercises 24 simultaneous clients at 20 input updates per second.
+
+### Multiplayer trust model
+
+The server owns player identity, bounded movement reconciliation, PvP health, projectile simulation, cargo balances, shared drops, score awarded by shared events, team membership, and station claims. Clients retain immediate movement and firing prediction so controls remain responsive, then consume fixed-rate server snapshots. Modified clients cannot directly submit arbitrary health, level, leaderboard score, cargo, teleport positions, or station ownership.
+
+Current architectural boundary: alien PvE combat and advanced station crafting/repair internals are still local systems. File-backed shared-world persistence is available for a Railway volume; account progression would still benefit from a transactional database before adding permanent competitive rewards.
 
 ## Core Game Loop
 
@@ -164,9 +182,9 @@ Multiplayer currently synchronizes player presence and ship state. PvE enemies, 
 8. Convert deposited Ether into Station Fuel; rarer Ether produces dramatically more.
 9. Spend Station Fuel on repairs, ships, modules, defenses, and travel.
 10. Repair `Core Systems Online` for 120 Raw Ether.
-8. After the first repair, stay docked and use `WASD` to pilot the station with its basic booster.
-9. Move inward to farm better materials, upgrade the base, craft modules, and improve defenses.
-10. Later progression prepares the station for advanced upgrades, mothership systems, and hyperdrive.
+11. After the first repair, stay docked and use `WASD` to pilot the station with its basic booster.
+12. Move inward to farm better materials, upgrade the base, craft modules, and improve defenses.
+13. Later progression prepares the station for advanced upgrades, mothership systems, and hyperdrive.
 
 There is no fixed win screen yet. The current goal is to grow from a weak ship and broken station into a mobile fortified base economy.
 

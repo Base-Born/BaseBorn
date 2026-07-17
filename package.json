@@ -9,10 +9,14 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview --host 127.0.0.1",
     "start": "node server/index.js",
     "start:local": "npm run build && node server/index.js",
-    "test:multiplayer": "node scripts/multiplayer-smoke.mjs"
+    "test:multiplayer": "node scripts/multiplayer-smoke.mjs",
+    "test:load": "node scripts/multiplayer-load.mjs",
+    "test:persistence": "node scripts/persistence-smoke.mjs",
+    "test": "npm run typecheck && npm run test:multiplayer && npm run test:load && npm run test:persistence"
   },
   "dependencies": {
     "@types/react": "^19.2.17",
@@ -23,7 +27,7 @@
     "react-dom": "^19.1.0",
     "typescript": "^5.8.3",
     "vite": "^7.0.0",
-    "ws": "^8.21.0"
+    "ws": "^8.21.1"
   },
   "devDependencies": {
     "playwright": "^1.61.1"

@@ -7,6 +7,7 @@ import type {
   NetworkDestroyedAsteroid,
   NetworkEtherDropState,
   NetworkPlayerState,
+  NetworkProjectileState,
   NetworkStationState,
   NetworkTeam,
   NetworkTeamInvite,
@@ -28,11 +29,13 @@ export class MultiplayerClient {
   private stations: NetworkStationState[] = [];
   private drops: NetworkEtherDropState[] = [];
   private destroyedAsteroids: NetworkDestroyedAsteroid[] = [];
+  private projectiles: NetworkProjectileState[] = [];
   private teams: NetworkTeam[] = [];
   private invites: NetworkTeamInvite[] = [];
   private lootAwards: LootAward[] = [];
   private respawnSpawn: { x: number; y: number } | null = null;
   private teamSpawn: TeamSpawn | null = null;
+  private authoritativeHealthRatio: number | null = null;
   private status: MultiplayerStatus = "offline";
   private message = "Offline";
   private actionError = "";
@@ -40,6 +43,7 @@ export class MultiplayerClient {
   private teamId: string | null = null;
   private joinedWorld = false;
   readonly room = "public";
+  private readonly sessionId = MultiplayerClient.getSessionId();
 
   constructor(private customization: Customization, private onWorldJoined?: (world: { id: string; seed: number; spawn: { x: number; y: number } }) => void) {}
 
@@ -50,7 +54,7 @@ export class MultiplayerClient {
     this.socket = new WebSocket(`${protocol}//${window.location.host}/multiplayer`);
     this.socket.addEventListener("open", () => {
       this.reconnectAttempt = 0;
-      this.send({ type: "join", room: this.room, customization: this.customization, state: this.joinedWorld ? this.localState : null });
+      this.send({ type: "join", room: this.room, sessionId: this.sessionId, customization: this.customization, state: this.joinedWorld ? this.localState : null });
     });
     this.socket.addEventListener("message", (event) => this.onMessage(event.data));
     this.socket.addEventListener("close", () => this.onClose());
@@ -82,12 +86,14 @@ export class MultiplayerClient {
   getSharedStations() { return this.stations; }
   getSharedDrops() { return this.drops; }
   getDestroyedAsteroids() { return this.destroyedAsteroids; }
+  getProjectiles() { return this.projectiles.filter((projectile) => projectile.ownerId !== this.playerId); }
   getTeams() { return this.teams; }
   getTeamId() { return this.teamId; }
   isOnline() { return this.status === "online" && Boolean(this.playerId); }
   consumeLootAwards() { return this.lootAwards.splice(0); }
   consumeRespawnSpawn() { const spawn = this.respawnSpawn; this.respawnSpawn = null; return spawn; }
   consumeTeamSpawn() { const spawn = this.teamSpawn; this.teamSpawn = null; return spawn; }
+  consumeAuthoritativeHealthRatio() { const ratio = this.authoritativeHealthRatio; this.authoritativeHealthRatio = null; return ratio; }
 
   getSnapshot(): MultiplayerSnapshot {
     return {
@@ -104,6 +110,7 @@ export class MultiplayerClient {
   }
 
   requestRespawn() { this.send({ type: "request_respawn" }); }
+  fire(angle: number) { this.send({ type: "fire", angle }); }
   dropCargo(etherType: EtherType, amount: number) { this.send({ type: "drop_cargo", etherType, amount }); }
   requestLootPickup(dropId: string, amount: number) { this.send({ type: "pickup_drop", dropId, amount }); }
   reportAsteroidDestroyed(args: { asteroidId: string; x: number; y: number; etherType: EtherType; amount: number; respawnMs: number }) {
@@ -145,6 +152,7 @@ export class MultiplayerClient {
       stations?: NetworkStationState[];
       drops?: NetworkEtherDropState[];
       destroyedAsteroids?: NetworkDestroyedAsteroid[];
+      projectiles?: NetworkProjectileState[];
       teams?: NetworkTeam[];
       teamId?: string | null;
       invites?: NetworkTeamInvite[];
@@ -152,6 +160,7 @@ export class MultiplayerClient {
       etherType?: EtherType;
       amount?: number;
       message?: string;
+      healthRatio?: number;
     };
     try { message = JSON.parse(String(raw)); } catch { return; }
     if (message.type === "welcome" && message.playerId) {
@@ -181,6 +190,10 @@ export class MultiplayerClient {
       this.lootAwards.push({ dropId: message.dropId, etherType: message.etherType, amount: Math.max(0, Math.floor(message.amount as number)) });
       return;
     }
+    if (message.type === "player_damaged" && Number.isFinite(message.healthRatio)) {
+      this.authoritativeHealthRatio = clamp(message.healthRatio as number, 0, 1);
+      return;
+    }
     if (message.type !== "snapshot" || !Array.isArray(message.players)) return;
 
     const now = performance.now();
@@ -201,6 +214,7 @@ export class MultiplayerClient {
     this.stations = Array.isArray(message.stations) ? message.stations : [];
     this.drops = Array.isArray(message.drops) ? message.drops : [];
     this.destroyedAsteroids = Array.isArray(message.destroyedAsteroids) ? message.destroyedAsteroids : [];
+    this.projectiles = Array.isArray(message.projectiles) ? message.projectiles : [];
     this.teams = Array.isArray(message.teams) ? message.teams : [];
     this.teamId = typeof message.teamId === "string" ? message.teamId : null;
     this.invites = Array.isArray(message.invites) ? message.invites : [];
@@ -222,5 +236,14 @@ export class MultiplayerClient {
   private setStatus(status: MultiplayerStatus, message: string) {
     this.status = status;
     this.message = message;
+  }
+
+  private static getSessionId() {
+    const key = "baseborn.multiplayer.session";
+    const existing = window.localStorage.getItem(key);
+    if (existing && /^[0-9a-f-]{36}$/i.test(existing)) return existing;
+    const created = crypto.randomUUID();
+    window.localStorage.setItem(key, created);
+    return created;
   }
 }

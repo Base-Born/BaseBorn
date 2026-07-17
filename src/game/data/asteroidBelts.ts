@@ -1,5 +1,5 @@
 import type { AsteroidQuality } from "./asteroidTypes";
-import type { MapConfig } from "./mapConfig";
+import { MAP_CONFIG, type MapConfig } from "./mapConfig";
 import type { Vec2 } from "../types";
 
 export type AsteroidBeltType = "outer_sparse_belt" | "station_resource_belt" | "mid_conflict_belt" | "inner_rich_belt" | "core_ether_belt";
@@ -125,20 +125,7 @@ export function generateAsteroidBelts(mapConfig: MapConfig): AsteroidBelt[] {
   ];
 }
 
-export const ASTEROID_BELTS = generateAsteroidBelts({
-  worldWidth: 1000000,
-  worldHeight: 1000000,
-  halfWidth: 500000,
-  halfHeight: 500000,
-  centerX: 0,
-  centerY: 0,
-  sectorCount: 4,
-  planetCount: 0,
-  centerZoneRadius: 45000,
-  asteroidBeltInnerRadius: 17500,
-  asteroidBeltOuterRadius: 42500,
-  minimapSize: 320,
-});
+export const ASTEROID_BELTS = generateAsteroidBelts(MAP_CONFIG);
 
 function normalizeAngle(angle: number) {
   let next = angle;

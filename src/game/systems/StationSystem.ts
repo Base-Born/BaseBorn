@@ -72,6 +72,8 @@ export class StationSystem {
       station.maxHealth = state.maxHealth;
       station.isMobile = state.isMobile;
       station.mothershipUnlocked = state.mothershipUnlocked;
+      const dockedPlayerIds = Array.isArray(state.dockedPlayerIds) ? state.dockedPlayerIds : [];
+      station.landingPads.forEach((pad, padIndex) => { pad.occupiedByPlayerId = dockedPlayerIds[padIndex] ?? null; });
       if (state.claimState === "claimed" && station.lifecycleState === "unclaimed") station.lifecycleState = "claimed";
       return station;
     });

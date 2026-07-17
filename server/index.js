@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer, WebSocket } from "ws";
+import { loadWorldState, saveWorldState } from "./worldPersistence.js";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const dist = join(root, "dist");
@@ -13,7 +14,17 @@ const rooms = new Map();
 const publicWorldId = "baseborn-prime";
 const publicWorldSeed = 0x5ba5e0d1;
 const startedAt = Date.now();
+const worldStatePath = process.env.WORLD_STATE_PATH || "";
 const etherTypes = new Set(["rawEther", "refinedEther", "chargedEther", "radiantEther", "primalEther", "coreEther"]);
+const worldLimit = 200000;
+const snapshotIntervalMs = 50;
+const simulationIntervalMs = 25;
+const maxMovementSpeed = 1800;
+const pickupDistance = 180;
+const stationClaimDistance = 760;
+const projectileSpeed = 720;
+const projectileLifetimeMs = 1800;
+const projectileDamage = 14;
 const contentTypes = { ".css":"text/css; charset=utf-8", ".html":"text/html; charset=utf-8", ".ico":"image/x-icon", ".js":"text/javascript; charset=utf-8", ".json":"application/json; charset=utf-8", ".map":"application/json; charset=utf-8", ".png":"image/png", ".svg":"image/svg+xml", ".webp":"image/webp", ".woff2":"font/woff2" };
 
 function sendJson(response, status, body) {
@@ -52,25 +63,42 @@ server.on("upgrade",(request,socket,head)=>{
 function cleanText(value,fallback,maxLength){if(typeof value!=="string")return fallback;const clean=value.replace(/[<>\u0000-\u001f]/g,"").trim().slice(0,maxLength);return clean||fallback;}
 function finite(value,fallback,min,max){return typeof value==="number"&&Number.isFinite(value)?Math.max(min,Math.min(max,value)):fallback;}
 function cleanCustomization(value){const source=value&&typeof value==="object"?value:{};const color=(key,fallback)=>/^#[0-9a-f]{6}$/i.test(source[key])?source[key]:fallback;const choice=(key,allowed,fallback)=>allowed.includes(source[key])?source[key]:fallback;return{name:cleanText(source.name,"Nova Pilot",16),shipColor:color("shipColor","#2fbce1"),glowColor:color("glowColor","#4cc9f0"),trailColor:color("trailColor","#4cc9f0"),projectileColor:color("projectileColor","#eef7ff"),wingVariant:choice("wingVariant",["delta","swept","fork"],"delta"),cockpitVariant:choice("cockpitVariant",["needle","dome","split"],"needle"),decalPattern:choice("decalPattern",["none","stripe","chevron"],"chevron"),thrusterStyle:choice("thrusterStyle",["ion","flare","pulse"],"ion"),glowIntensity:finite(source.glowIntensity,0.8,0,2)};}
-function cleanState(value,previous,identity){const source=value&&typeof value==="object"?value:{};return{id:identity.id,name:identity.customization.name,customization:identity.customization,x:finite(source.x,previous?.x||0,-500000,500000),y:finite(source.y,previous?.y||0,-500000,500000),vx:finite(source.vx,0,-5000,5000),vy:finite(source.vy,0,-5000,5000),thrustForward:finite(source.thrustForward,0,-1,1),thrustStrafe:finite(source.thrustStrafe,0,-1,1),angle:finite(source.angle,0,-Math.PI*4,Math.PI*4),healthRatio:finite(source.healthRatio,1,0,1),level:Math.round(finite(source.level,1,1,100)),score:Math.round(finite(source.score,0,0,2_000_000_000)),shipClassId:cleanText(source.shipClassId,"base_ship",64),shipClass:cleanText(source.shipClass,"Base Ship",48),docked:Boolean(source.docked),updatedAt:Date.now()};}
+function cleanState(value,previous,identity,now=Date.now()){
+  const source=value&&typeof value==="object"?value:{};
+  const elapsed=Math.max(0.02,Math.min(0.25,(now-(previous?.updatedAt||now-50))/1000));
+  const requested={x:finite(source.x,previous?.x||0,-worldLimit,worldLimit),y:finite(source.y,previous?.y||0,-worldLimit,worldLimit)};
+  let x=requested.x,y=requested.y;
+  if(previous){
+    const dx=x-previous.x,dy=y-previous.y,magnitude=Math.hypot(dx,dy),allowed=maxMovementSpeed*elapsed+80;
+    if(magnitude>allowed){x=previous.x+dx/magnitude*allowed;y=previous.y+dy/magnitude*allowed;}
+  }
+  const score=previous?.score??0;
+  const level=previous?.level??1;
+  return{id:identity.id,name:identity.customization.name,customization:identity.customization,x,y,vx:finite(source.vx,0,-maxMovementSpeed,maxMovementSpeed),vy:finite(source.vy,0,-maxMovementSpeed,maxMovementSpeed),thrustForward:finite(source.thrustForward,0,-1,1),thrustStrafe:finite(source.thrustStrafe,0,-1,1),angle:finite(source.angle,0,-Math.PI*4,Math.PI*4),healthRatio:previous?.healthRatio??1,level,score,shipClassId:cleanText(source.shipClassId,previous?.shipClassId||"base_ship",64),shipClass:cleanText(source.shipClass,previous?.shipClass||"Base Ship",48),docked:previous?.docked??false,updatedAt:now};
+}
+function teleportState(previous,identity,position,now=Date.now()){
+  const next=cleanState({...previous,...position,vx:0,vy:0,thrustForward:0,thrustStrafe:0},null,identity,now);
+  if(previous){next.score=previous.score;next.level=previous.level;next.shipClassId=previous.shipClassId;next.shipClass=previous.shipClass;}
+  return next;
+}
 function distance(a,b){return Math.hypot((a?.x||0)-(b?.x||0),(a?.y||0)-(b?.y||0));}
 function randomSpawn(room){
   const corners=[[-1,-1],[1,-1],[-1,1],[1,1]];
   const occupied=[...room.clients].map(client=>client.playerState).filter(Boolean);
   for(let attempt=0;attempt<16;attempt+=1){
     const [sx,sy]=corners[Math.floor(Math.random()*corners.length)];
-    const spawn={x:sx*(450000+Math.random()*36000),y:sy*(450000+Math.random()*36000)};
+    const spawn={x:sx*(180000+Math.random()*14400),y:sy*(180000+Math.random()*14400)};
     if(occupied.every(player=>distance(player,spawn)>12000))return spawn;
   }
   const [sx,sy]=corners[Math.floor(Math.random()*corners.length)];
-  return{x:sx*(450000+Math.random()*36000),y:sy*(450000+Math.random()*36000)};
+  return{x:sx*(180000+Math.random()*14400),y:sy*(180000+Math.random()*14400)};
 }
 function createTeam(playerId,name){
   return{id:crypto.randomUUID(),name:`${name}'s Crew`,leaderPlayerId:playerId,memberIds:[playerId],maxMembers:6,stationId:null,createdAt:Date.now()};
 }
 function createStarterStation(spawn,playerId){
   const sx=Math.sign(spawn.x)||1,sy=Math.sign(spawn.y)||1;
-  return{id:crypto.randomUUID(),name:"Broken Station",x:spawn.x-sx*1400,y:spawn.y-sy*1400,claimState:"unclaimed",ownerTeamId:null,ownerPlayerId:null,reservedForPlayerId:playerId,level:1,health:360,maxHealth:2200,isMobile:false,mothershipUnlocked:false};
+  return{id:crypto.randomUUID(),name:"Broken Station",x:spawn.x-sx*1400,y:spawn.y-sy*1400,claimState:"unclaimed",ownerTeamId:null,ownerPlayerId:null,reservedForPlayerId:playerId,level:1,health:360,maxHealth:2200,isMobile:false,mothershipUnlocked:false,dockedPlayerIds:[]};
 }
 function spawnNearStation(station){
   const angle=Math.random()*Math.PI*2;
@@ -79,7 +107,12 @@ function spawnNearStation(station){
 }
 function getPublicRoom(){
   let room=rooms.get(publicWorldId);
-  if(!room){room={id:publicWorldId,seed:publicWorldSeed,clients:new Set(),stations:new Map(),drops:new Map(),destroyedAsteroids:new Map(),teams:new Map(),invites:new Map()};rooms.set(publicWorldId,room);}
+  if(!room){
+    const persisted=loadWorldState(worldStatePath);
+    room={id:publicWorldId,seed:publicWorldSeed,clients:new Set(),stations:new Map(persisted?.stations||[]),drops:new Map(),destroyedAsteroids:new Map(persisted?.destroyedAsteroids||[]),teams:new Map(persisted?.teams||[]),invites:new Map(),projectiles:new Map(),playerRecords:new Map(persisted?.playerRecords||[]),dirty:true,persistenceDirty:false};
+    for(const station of room.stations.values())if(!Array.isArray(station.dockedPlayerIds))station.dockedPlayerIds=[];
+    rooms.set(publicWorldId,room);
+  }
   return room;
 }
 function teamForPlayer(room,playerId){return[...room.teams.values()].find(team=>team.memberIds.includes(playerId))||null;}
@@ -88,6 +121,7 @@ function pruneWorld(room,now=Date.now()){
   for(const [id,drop] of room.drops)if(drop.expiresAt<=now||drop.amount<=0)room.drops.delete(id);
   for(const [id,until] of room.destroyedAsteroids)if(until<=now)room.destroyedAsteroids.delete(id);
   for(const [id,invite] of room.invites)if(invite.expiresAt<=now)room.invites.delete(id);
+  for(const [id,projectile] of room.projectiles)if(projectile.expiresAt<=now)room.projectiles.delete(id);
 }
 function broadcastRoom(roomId){
   const room=rooms.get(roomId);if(!room)return;
@@ -96,14 +130,23 @@ function broadcastRoom(roomId){
   const stations=[...room.stations.values()];
   const drops=[...room.drops.values()];
   const destroyedAsteroids=[...room.destroyedAsteroids].map(([id,until])=>({id,until}));
+  const projectiles=[...room.projectiles.values()];
   const teams=[...room.teams.values()].map(team=>publicTeam(team,room));
   for(const client of room.clients){
     if(client.readyState!==WebSocket.OPEN)continue;
     const playerId=client.identity?.id;
     const team=teamForPlayer(room,playerId);
     const invites=[...room.invites.values()].filter(invite=>invite.targetPlayerId===playerId);
-    client.send(JSON.stringify({type:"snapshot",worldId:room.id,serverTime:Date.now(),players,stations,drops,destroyedAsteroids,teams,teamId:team?.id||null,invites}));
+    client.send(JSON.stringify({type:"snapshot",worldId:room.id,serverTime:Date.now(),players,stations,drops,destroyedAsteroids,projectiles,teams,teamId:team?.id||null,invites}));
   }
+  room.dirty=false;
+}
+function markDirty(room){room.dirty=true;room.persistenceDirty=true;}
+function persistRoom(room){
+  if(!worldStatePath||!room.persistenceDirty)return;
+  for(const client of room.clients){if(client.identity?.id&&client.playerState)room.playerRecords.set(client.identity.id,{state:client.playerState,inventory:[...inventoryFor(client)]});}
+  saveWorldState(worldStatePath,{stations:[...room.stations],destroyedAsteroids:[...room.destroyedAsteroids],teams:[...room.teams],playerRecords:[...room.playerRecords]});
+  room.persistenceDirty=false;
 }
 function sendError(websocket,message){if(websocket.readyState===WebSocket.OPEN)websocket.send(JSON.stringify({type:"action_error",message}));}
 function removeFromTeam(room,playerId){
@@ -134,7 +177,7 @@ function spawnAtTeamBase(room,websocket,team){
   const station=team?.stationId?room.stations.get(team.stationId):null;
   if(!station)return null;
   const spawn=spawnNearStation(station);
-  websocket.playerState=cleanState({...websocket.playerState,x:spawn.x,y:spawn.y,vx:0,vy:0,thrustForward:0,thrustStrafe:0},websocket.playerState,websocket.identity);
+  websocket.playerState=teleportState(websocket.playerState,websocket.identity,spawn);
   moveStarterStationNearPlayer(room,websocket,spawn);
   return spawn;
 }
@@ -189,9 +232,53 @@ function makeDrop(room,args){
   const drop={id,type:args.type,amount:args.amount,x:args.x-Math.cos(angle)*44,y:args.y-Math.sin(angle)*44,velocityX:Math.cos(angle)*120,velocityY:Math.sin(angle)*120,createdAt:now,pickupDelayMs:args.pickupDelayMs??350,expiresAt:now+120000,ownerId:args.ownerId};
   room.drops.set(id,drop);return drop;
 }
+function inventoryFor(websocket){
+  if(!websocket.inventory)websocket.inventory=new Map();
+  return websocket.inventory;
+}
+function addInventory(websocket,type,amount){const inventory=inventoryFor(websocket);inventory.set(type,(inventory.get(type)||0)+amount);}
+function removeInventory(websocket,type,amount){const inventory=inventoryFor(websocket);const available=inventory.get(type)||0;const removed=Math.min(available,amount);inventory.set(type,available-removed);return removed;}
+function validAsteroidReport(message,player){
+  const match=/^asteroid-(-?\d+):(-?\d+)-(\d+)$/.exec(String(message.asteroidId||""));
+  if(!match)return false;
+  const chunkX=Number(match[1]),chunkY=Number(match[2]),index=Number(match[3]);
+  if(!Number.isSafeInteger(chunkX)||!Number.isSafeInteger(chunkY)||!Number.isSafeInteger(index)||index<0||index>64)return false;
+  const x=finite(message.x,NaN,-worldLimit,worldLimit),y=finite(message.y,NaN,-worldLimit,worldLimit);
+  if(!Number.isFinite(x)||!Number.isFinite(y)||distance(player,{x,y})>420)return false;
+  return Math.floor(x/3200)===chunkX&&Math.floor(y/3200)===chunkY;
+}
+function createProjectile(room,websocket,angle,now){
+  if(websocket.playerState.docked||websocket.playerState.healthRatio<=0||now-(websocket.lastFireAt||0)<120)return null;
+  websocket.lastFireAt=now;
+  const id=crypto.randomUUID();
+  const projectile={id,ownerId:websocket.identity.id,x:websocket.playerState.x+Math.cos(angle)*34,y:websocket.playerState.y+Math.sin(angle)*34,vx:Math.cos(angle)*projectileSpeed,vy:Math.sin(angle)*projectileSpeed,radius:7,color:websocket.identity.customization.projectileColor,createdAt:now,expiresAt:now+projectileLifetimeMs};
+  room.projectiles.set(id,projectile);return projectile;
+}
+function simulateRoom(room,now,dt){
+  pruneWorld(room,now);
+  let changed=false;
+  for(const [id,projectile] of room.projectiles){
+    projectile.x+=projectile.vx*dt;projectile.y+=projectile.vy*dt;
+    changed=true;
+    if(Math.abs(projectile.x)>worldLimit+200||Math.abs(projectile.y)>worldLimit+200){room.projectiles.delete(id);changed=true;continue;}
+    const owner=[...room.clients].find(client=>client.identity?.id===projectile.ownerId);
+    const ownerTeam=owner?teamForPlayer(room,owner.identity.id):null;
+    for(const target of room.clients){
+      if(!target.playerState||target.identity.id===projectile.ownerId||target.playerState.docked||target.playerState.healthRatio<=0)continue;
+      const targetTeam=teamForPlayer(room,target.identity.id);if(ownerTeam&&targetTeam?.id===ownerTeam.id)continue;
+      if(distance(projectile,target.playerState)>26+projectile.radius)continue;
+      target.playerState.healthRatio=Math.max(0,target.playerState.healthRatio-projectileDamage/120);
+      room.projectiles.delete(id);changed=true;
+      if(target.readyState===WebSocket.OPEN)target.send(JSON.stringify({type:"player_damaged",healthRatio:target.playerState.healthRatio,sourcePlayerId:projectile.ownerId}));
+      if(target.playerState.healthRatio<=0&&owner?.playerState){owner.playerState.score+=500;owner.playerState.level=Math.min(100,Math.max(owner.playerState.level,1+Math.floor(owner.playerState.score/1200)));}
+      break;
+    }
+  }
+  if(changed)markDirty(room);
+}
 
 websocketServer.on("connection",(websocket)=>{
-  websocket.isAlive=true;websocket.lastStateAt=0;
+  websocket.isAlive=true;websocket.lastStateAt=0;websocket.lastAsteroidAt=0;websocket.lastFireAt=0;websocket.lastRespawnAt=0;websocket.inventory=new Map();
   websocket.on("pong",()=>{websocket.isAlive=true;});
   websocket.on("message",(raw)=>{
     const now=Date.now();
@@ -201,82 +288,109 @@ websocketServer.on("connection",(websocket)=>{
       const room=getPublicRoom();
       if(room.clients.size>=maxPlayersPerRoom){websocket.send(JSON.stringify({type:"error",code:"room_full",message:"This world is full."}));websocket.close(1013,"World full");return;}
       const customization=cleanCustomization(message.customization);
-      websocket.roomId=room.id;websocket.identity={id:crypto.randomUUID(),customization};
-      const spawn=randomSpawn(room);
-      websocket.playerState=cleanState({...message.state,x:spawn.x,y:spawn.y},null,websocket.identity);
+      const requestedSessionId=typeof message.sessionId==="string"&&/^[0-9a-f-]{36}$/i.test(message.sessionId)?message.sessionId:null;
+      const playerId=requestedSessionId||crypto.randomUUID();
+      const duplicate=[...room.clients].find(client=>client.identity?.id===playerId);
+      if(duplicate){duplicate.superseded=true;duplicate.close(4001,"Session resumed elsewhere");room.clients.delete(duplicate);}
+      const record=room.playerRecords.get(playerId);
+      websocket.roomId=room.id;websocket.identity={id:playerId,customization};
+      const spawn=record?{x:record.state.x,y:record.state.y}:randomSpawn(room);
+      websocket.playerState=record?{...record.state,name:customization.name,customization,updatedAt:now}:cleanState({...message.state,x:spawn.x,y:spawn.y},null,websocket.identity);
+      websocket.inventory=new Map(record?.inventory||[]);
       room.clients.add(websocket);
-      const team=createPersonalTeam(room,websocket);
-      const station=createStarterStation(spawn,websocket.identity.id);room.stations.set(station.id,station);
+      if(!teamForPlayer(room,playerId))createPersonalTeam(room,websocket);
+      const hasStation=[...room.stations.values()].some(station=>station.reservedForPlayerId===playerId||station.ownerPlayerId===playerId);
+      if(!hasStation){const station=createStarterStation(spawn,websocket.identity.id);room.stations.set(station.id,station);}
       websocket.send(JSON.stringify({type:"welcome",playerId:websocket.identity.id,room:"public",worldId:room.id,worldSeed:room.seed,spawn,serverTime:now}));
-      websocket.lastStateAt=0;broadcastRoom(room.id);return;
+      websocket.lastStateAt=0;markDirty(room);return;
     }
     const room=rooms.get(websocket.roomId);if(!room)return;
     const playerId=websocket.identity.id;
-    if(message?.type==="state"){if(now-websocket.lastStateAt<20)return;websocket.lastStateAt=now;websocket.playerState=cleanState(message.state,websocket.playerState,websocket.identity);broadcastRoom(room.id);return;}
-    if(message?.type==="request_respawn"){const respawn=randomSpawn(room);websocket.playerState=cleanState({...websocket.playerState,x:respawn.x,y:respawn.y,vx:0,vy:0,thrustForward:0,thrustStrafe:0},websocket.playerState,websocket.identity);websocket.send(JSON.stringify({type:"respawn",respawn}));broadcastRoom(room.id);return;}
+    if(message?.type==="state"){
+      if(now-websocket.lastStateAt<40)return;websocket.lastStateAt=now;
+      const next=cleanState(message.state,websocket.playerState,websocket.identity,now);
+      const nearestStation=[...room.stations.values()].reduce((best,station)=>distance(next,station)<distance(next,best)?station:best,{x:Infinity,y:Infinity});
+      const team=teamForPlayer(room,playerId);const requestedDock=Boolean(message.state?.docked&&team?.stationId&&nearestStation.id===team.stationId&&distance(next,nearestStation)<=620&&Math.hypot(next.vx,next.vy)<=180);
+      const alreadyDocked=Array.isArray(nearestStation.dockedPlayerIds)&&nearestStation.dockedPlayerIds.includes(playerId);
+      const canDock=requestedDock&&(alreadyDocked||nearestStation.dockedPlayerIds.length<6);
+      for(const station of room.stations.values())station.dockedPlayerIds=station.dockedPlayerIds.filter(id=>id!==playerId);
+      if(canDock)nearestStation.dockedPlayerIds.push(playerId);
+      next.docked=canDock;websocket.playerState=next;markDirty(room);return;
+    }
+    if(message?.type==="fire"){const angle=finite(message.angle,websocket.playerState.angle,-Math.PI*4,Math.PI*4);if(createProjectile(room,websocket,angle,now))markDirty(room);return;}
+    if(message?.type==="request_respawn"){if(websocket.playerState.healthRatio>0&&now-websocket.lastRespawnAt<8000)return;websocket.lastRespawnAt=now;const respawn=randomSpawn(room);websocket.playerState=teleportState(websocket.playerState,websocket.identity,respawn,now);websocket.playerState.healthRatio=1;websocket.send(JSON.stringify({type:"respawn",respawn}));markDirty(room);return;}
     if(message?.type==="drop_cargo"){
       const type=etherTypes.has(message.etherType)?message.etherType:null;
-      const amount=Math.round(finite(message.amount,0,1,100000));
-      if(!type||!amount)return;
-      makeDrop(room,{type,amount,x:websocket.playerState.x,y:websocket.playerState.y,ownerId:playerId,pickupDelayMs:2000});broadcastRoom(room.id);return;
+      const requested=Math.round(finite(message.amount,0,1,100000));
+      if(!type||!requested)return;
+      const amount=removeInventory(websocket,type,requested);if(!amount){sendError(websocket,"Server inventory does not contain that cargo.");return;}
+      makeDrop(room,{type,amount,x:websocket.playerState.x,y:websocket.playerState.y,ownerId:playerId,pickupDelayMs:2000});markDirty(room);return;
     }
     if(message?.type==="pickup_drop"){
       const drop=room.drops.get(String(message.dropId||""));if(!drop)return;
-      if(now<drop.createdAt+drop.pickupDelayMs||distance(websocket.playerState,drop)>1200)return;
+      if(now<drop.createdAt+drop.pickupDelayMs||distance(websocket.playerState,drop)>pickupDistance)return;
       const amount=Math.min(drop.amount,Math.round(finite(message.amount,drop.amount,1,drop.amount)));
-      drop.amount-=amount;if(drop.amount<=0)room.drops.delete(drop.id);
-      websocket.send(JSON.stringify({type:"loot_collected",dropId:drop.id,etherType:drop.type,amount}));broadcastRoom(room.id);return;
+      drop.amount-=amount;if(drop.amount<=0)room.drops.delete(drop.id);addInventory(websocket,drop.type,amount);
+      websocket.send(JSON.stringify({type:"loot_collected",dropId:drop.id,etherType:drop.type,amount}));markDirty(room);return;
     }
     if(message?.type==="asteroid_destroyed"){
-      const asteroidId=cleanText(message.asteroidId,"",96);if(!asteroidId||room.destroyedAsteroids.get(asteroidId)>now)return;
-      const pos={x:finite(message.x,websocket.playerState.x,-500000,500000),y:finite(message.y,websocket.playerState.y,-500000,500000)};
+      const asteroidId=cleanText(message.asteroidId,"",96);if(!asteroidId||room.destroyedAsteroids.get(asteroidId)>now||now-websocket.lastAsteroidAt<300||!validAsteroidReport(message,websocket.playerState))return;
+      websocket.lastAsteroidAt=now;
+      const pos={x:finite(message.x,websocket.playerState.x,-worldLimit,worldLimit),y:finite(message.y,websocket.playerState.y,-worldLimit,worldLimit)};
       if(distance(pos,websocket.playerState)>2400)return;
       const respawnMs=Math.round(finite(message.respawnMs,270000,30000,300000));
       room.destroyedAsteroids.set(asteroidId,now+respawnMs);
       const type=etherTypes.has(message.etherType)?message.etherType:"rawEther";
-      let remaining=Math.round(finite(message.amount,1,1,10000));
+      let remaining=Math.round(finite(message.amount,1,1,500));
+      websocket.playerState.score=Math.min(2_000_000_000,websocket.playerState.score+remaining*5);
+      websocket.playerState.level=Math.min(100,1+Math.floor(Math.sqrt(websocket.playerState.score/180)));
       const shards=Math.min(12,Math.max(2,Math.ceil(Math.sqrt(remaining))));
       for(let i=0;i<shards&&remaining>0;i+=1){const amount=i===shards-1?remaining:Math.max(1,Math.round(remaining/(shards-i)));remaining-=amount;makeDrop(room,{type,amount,x:pos.x+(Math.random()-.5)*80,y:pos.y+(Math.random()-.5)*80,ownerId:playerId});}
-      broadcastRoom(room.id);return;
+      markDirty(room);return;
     }
     if(message?.type==="claim_station"){
       const station=room.stations.get(String(message.stationId||""));const team=teamForPlayer(room,playerId);
-      if(!station||!team||station.claimState!=="unclaimed"||team.stationId||distance(websocket.playerState,station)>2200){sendError(websocket,"This station is unavailable or already claimed.");return;}
-      station.claimState="claimed";station.ownerTeamId=team.id;station.ownerPlayerId=playerId;station.name=websocket.identity.customization.name;station.reservedForPlayerId=null;team.stationId=station.id;broadcastRoom(room.id);return;
+      if(!station||!team||station.claimState!=="unclaimed"||team.stationId||distance(websocket.playerState,station)>stationClaimDistance){sendError(websocket,"Move directly over the station before claiming it.");return;}
+      station.claimState="claimed";station.ownerTeamId=team.id;station.ownerPlayerId=playerId;station.name=websocket.identity.customization.name;station.reservedForPlayerId=null;team.stationId=station.id;markDirty(room);return;
     }
     if(message?.type==="rename_station"){
       const station=room.stations.get(String(message.stationId||""));const team=teamForPlayer(room,playerId);
       if(!station||!team||station.ownerTeamId!==team.id||team.leaderPlayerId!==playerId){sendError(websocket,"Only the team leader can rename this station.");return;}
-      station.name=cleanText(message.name,station.name,28);broadcastRoom(room.id);return;
+      station.name=cleanText(message.name,station.name,28);markDirty(room);return;
     }
-    if(message?.type==="join_team"){const team=room.teams.get(String(message.teamId||""));if(joinTeam(room,websocket,team,Boolean(message.spawnAtBase)))broadcastRoom(room.id);return;}
+    if(message?.type==="join_team"){const team=room.teams.get(String(message.teamId||""));if(joinTeam(room,websocket,team,Boolean(message.spawnAtBase)))markDirty(room);return;}
     if(message?.type==="invite_player"){
       const team=teamForPlayer(room,playerId);const targetId=String(message.playerId||"");
       if(!team||team.leaderPlayerId!==playerId||team.memberIds.length>=team.maxMembers||team.memberIds.includes(targetId)){sendError(websocket,"Only the team leader can invite available pilots.");return;}
       if(![...room.clients].some(client=>client.identity?.id===targetId))return;
       for(const [id,invite] of room.invites)if(invite.teamId===team.id&&invite.targetPlayerId===targetId)room.invites.delete(id);
       const invite={id:crypto.randomUUID(),teamId:team.id,teamName:team.name,invitedByPlayerId:playerId,invitedByName:websocket.identity.customization.name,targetPlayerId:targetId,createdAt:now,expiresAt:now+120000};
-      room.invites.set(invite.id,invite);broadcastRoom(room.id);return;
+      room.invites.set(invite.id,invite);markDirty(room);return;
     }
     if(message?.type==="accept_invite"){
       const invite=room.invites.get(String(message.inviteId||""));if(!invite||invite.targetPlayerId!==playerId)return;
-      const team=room.teams.get(invite.teamId);if(joinTeam(room,websocket,team,Boolean(message.spawnAtBase))){for(const [id,item] of room.invites)if(item.targetPlayerId===playerId)room.invites.delete(id);broadcastRoom(room.id);}return;
+      const team=room.teams.get(invite.teamId);if(joinTeam(room,websocket,team,Boolean(message.spawnAtBase))){for(const [id,item] of room.invites)if(item.targetPlayerId===playerId)room.invites.delete(id);markDirty(room);}return;
     }
-    if(message?.type==="leave_team"){if(leaveTeam(room,websocket))broadcastRoom(room.id);return;}
-    if(message?.type==="remove_member"){if(removeMember(room,websocket,String(message.playerId||"")))broadcastRoom(room.id);return;}
-    if(message?.type==="transfer_leader"){if(transferLeadership(room,websocket,String(message.playerId||"")))broadcastRoom(room.id);return;}
-    if(message?.type==="decline_invite"){const invite=room.invites.get(String(message.inviteId||""));if(invite?.targetPlayerId===playerId){room.invites.delete(invite.id);broadcastRoom(room.id);}return;}
+    if(message?.type==="leave_team"){if(leaveTeam(room,websocket))markDirty(room);return;}
+    if(message?.type==="remove_member"){if(removeMember(room,websocket,String(message.playerId||"")))markDirty(room);return;}
+    if(message?.type==="transfer_leader"){if(transferLeadership(room,websocket,String(message.playerId||"")))markDirty(room);return;}
+    if(message?.type==="decline_invite"){const invite=room.invites.get(String(message.inviteId||""));if(invite?.targetPlayerId===playerId){room.invites.delete(invite.id);markDirty(room);}return;}
   });
   websocket.on("close",()=>{
     const room=rooms.get(websocket.roomId);if(!room)return;
     room.clients.delete(websocket);
     const playerId=websocket.identity?.id;const team=teamForPlayer(room,playerId);
-    if(team&&team.memberIds.length===1&&!team.stationId)room.teams.delete(team.id);
+    if(playerId&&!websocket.superseded)room.playerRecords.set(playerId,{state:websocket.playerState,inventory:[...inventoryFor(websocket)]});
+    for(const station of room.stations.values())station.dockedPlayerIds=station.dockedPlayerIds.filter(id=>id!==playerId);
     for(const [id,invite] of room.invites)if(invite.targetPlayerId===playerId||invite.invitedByPlayerId===playerId)room.invites.delete(id);
-    if(room.clients.size===0)rooms.delete(websocket.roomId);else broadcastRoom(room.id);
+    markDirty(room);
   });
 });
+let lastSimulationAt=Date.now();
+const simulation=setInterval(()=>{const now=Date.now(),dt=Math.min(0.1,(now-lastSimulationAt)/1000);lastSimulationAt=now;for(const room of rooms.values())simulateRoom(room,now,dt);},simulationIntervalMs);simulation.unref();
+const snapshots=setInterval(()=>{for(const room of rooms.values())if(room.clients.size&&room.dirty)broadcastRoom(room.id);},snapshotIntervalMs);snapshots.unref();
+const persistence=setInterval(()=>{for(const room of rooms.values())persistRoom(room);},5000);persistence.unref();
 const heartbeat=setInterval(()=>{for(const websocket of websocketServer.clients){if(!websocket.isAlive){websocket.terminate();continue;}websocket.isAlive=false;websocket.ping();}},30_000);heartbeat.unref();
 server.listen(port,host,()=>console.log(`Baseborn.io listening on http://${host}:${port}`));
-function shutdown(signal){console.log(`${signal} received; closing Baseborn.io server`);clearInterval(heartbeat);for(const client of websocketServer.clients)client.close(1001,"Server restarting");server.close(()=>process.exit(0));setTimeout(()=>process.exit(1),10_000).unref();}
+function shutdown(signal){console.log(`${signal} received; closing Baseborn.io server`);clearInterval(heartbeat);clearInterval(simulation);clearInterval(snapshots);clearInterval(persistence);for(const room of rooms.values())persistRoom(room);for(const client of websocketServer.clients)client.close(1001,"Server restarting");server.close(()=>process.exit(0));setTimeout(()=>process.exit(1),10_000).unref();}
 process.on("SIGTERM",()=>shutdown("SIGTERM"));process.on("SIGINT",()=>shutdown("SIGINT"));

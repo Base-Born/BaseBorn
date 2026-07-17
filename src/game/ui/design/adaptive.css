@@ -14,6 +14,32 @@ html, body, #root, .app, .gameShell, .gameCanvas {
   min-height: 0;
 }
 
+@media (min-width: 2400px) and (min-height: 1000px) {
+  .pilotHud,
+  .missionHud,
+  .vehicleHudSlot,
+  .bottomLeftUpgradeDock {
+    transform: scale(1.18);
+    transform-origin: left center;
+  }
+
+  .mapHud,
+  .cargoCompact,
+  .stationCompact,
+  .leaderboard,
+  .teamHubButton {
+    transform: scale(1.18);
+    transform-origin: right center;
+  }
+
+  .combatBar,
+  .waypointHud,
+  .stationInteraction {
+    transform: translateX(-50%) scale(1.18);
+    transform-origin: center bottom;
+  }
+}
+
 .app, .gameShell {
   overflow: clip;
 }
