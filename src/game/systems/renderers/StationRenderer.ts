@@ -59,30 +59,43 @@ export class StationRenderer {
 
     const size = station.radius * 2.66;
     const speed = Math.hypot(station.vel.x, station.vel.y);
+    const stationRotation = speed > 5 ? Math.atan2(station.vel.x, -station.vel.y) : 0;
     ctx.save();
     ctx.translate(station.pos.x, station.pos.y);
+    ctx.rotate(stationRotation);
 
     if (speed > 5) {
-      const opposite = Math.atan2(station.vel.y, station.vel.x) + Math.PI;
+      const boosterLevel = Math.max(1, station.upgradeState.boosterLevel);
+      const upgradeScale = Math.min(2.1, 1 + (boosterLevel - 1) * 0.16 + station.level * 0.002 + profile.repairProgress * 0.18);
       const power = Math.min(1, speed / Math.max(1, STATION_CONFIG.stationBasePilotSpeed));
-      ctx.save();
-      ctx.rotate(opposite);
-      const start = station.radius * 0.82;
-      const end = station.radius * (1.18 + power * 0.62);
-      const plume = ctx.createLinearGradient(start, 0, end, 0);
-      plume.addColorStop(0, "rgba(236,253,255,.95)");
-      plume.addColorStop(0.18, "rgba(72,209,255,.9)");
+      const start = station.radius * 1.02;
+      const end = station.radius * (1.32 + power * 0.74) * upgradeScale;
+      const plume = ctx.createLinearGradient(0, start, 0, end);
+      plume.addColorStop(0, "rgba(236,253,255,.98)");
+      plume.addColorStop(0.16, "rgba(72,209,255,.94)");
+      plume.addColorStop(0.58, "rgba(38,155,255,.64)");
       plume.addColorStop(1, "rgba(38,155,255,0)");
       ctx.strokeStyle = plume;
-      ctx.lineWidth = 12 + power * 9;
+      ctx.lineWidth = (18 + power * 12) * upgradeScale;
       ctx.lineCap = "round";
       ctx.shadowColor = "#46d8ff";
-      ctx.shadowBlur = 18;
+      ctx.shadowBlur = 22 * upgradeScale;
       ctx.beginPath();
-      ctx.moveTo(start, 0);
-      ctx.lineTo(end, 0);
+      ctx.moveTo(0, start);
+      ctx.lineTo(0, end);
       ctx.stroke();
-      ctx.restore();
+
+      if (boosterLevel >= 2) {
+        ctx.globalAlpha = 0.72 + power * 0.2;
+        ctx.strokeStyle = "rgba(223,252,255,.92)";
+        ctx.lineWidth = Math.max(3, ctx.lineWidth * 0.22);
+        for (const offset of [-station.radius * 0.16, station.radius * 0.16]) {
+          ctx.beginPath();
+          ctx.moveTo(offset, start - station.radius * 0.03);
+          ctx.lineTo(offset, end * 0.82);
+          ctx.stroke();
+        }
+      }
     }
 
     ctx.globalAlpha = station.claimState === "unclaimed" ? 0.84 : 1;
