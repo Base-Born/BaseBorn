@@ -362,11 +362,14 @@ export class RenderSystem {
     const forwardPower = player.thrustLocal.forward;
     const strafePower = player.thrustLocal.strafe;
     const effective = getEffectivePlayerStats(player.stats, player.baseFrameId);
+    const visualProfile = getPlayerVisualProfile(player);
     this.drawThrusterPlumes({
       x: player.pos.x,
       y: player.pos.y,
       angle: player.angle,
-      radius: player.radius,
+      // Thrusters attach to the rendered hull, which can be larger than the
+      // gameplay collision radius for visually scaled ships.
+      radius: 24 * visualProfile.sizeScale,
       forwardPower,
       strafePower,
       visualScale: effective.movementSpeed.thrusterVisualScale,
