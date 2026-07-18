@@ -1,5 +1,6 @@
 import { branchVisuals, type CockpitShapeType, type HullShapeType, type ShieldStyleType, type ShipAnimationStyle, type TrailStyleType, type WeaponMountDefinition, type WingShapeType } from "./ShipModelDefinitions";
 import { getShipNode, type ShipNode, type ShipVariantType, type WeaponBranch } from "../data/shipUpgradeTree";
+import { STARTER_POD_SIZE_SCALE } from "../data/shipBehaviorProfiles";
 import type { AlienDefenderType } from "../types";
 import type { BuildVisualIdentity } from "./VehicleVisualProfile";
 
@@ -132,7 +133,7 @@ export function getShipVisualProfile(nodeOrId: ShipNode | string): ShipVisualPro
     profile.id = "starter_pod";
     // The standalone pod texture has transparent padding. Match its visible
     // hull to the pod's footprint inside the claimed spacecraft sprite.
-    profile.sizeScale = 2.24;
+    profile.sizeScale = STARTER_POD_SIZE_SCALE;
     profile.weaponMounts = [];
     profile.glowColor = "#70e8ff";
     profile.primaryColor = "#d6d8d5";

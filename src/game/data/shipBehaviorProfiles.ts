@@ -27,6 +27,8 @@ export type MiningStats = {
   tractorBeamStrength: number;
 };
 
+export const STARTER_POD_SIZE_SCALE = 2.24;
+
 const weaponProjectile: Record<WeaponType, ProjectileKind> = {
   plasma: "plasma",
   rockets: "missile",
@@ -151,7 +153,7 @@ export function getBehaviorProfileForNode(nodeOrId: ShipNode | string): ShipBeha
     profile.damage = 0.58;
     profile.speed = 1.22;
     profile.healthScale = 0.72;
-    profile.radiusScale = 0.76;
+    profile.radiusScale = STARTER_POD_SIZE_SCALE;
     profile.projectile = "rail";
   }
   return profile;

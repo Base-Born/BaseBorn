@@ -75,6 +75,7 @@ export class Player {
   constructor(customization: Customization) {
     this.customization = customization;
     this.name = customization.name || "Nova Pilot";
+    this.recalculate();
   }
 
   resetSpawnProtection(durationMs = 9000) {
@@ -216,7 +217,10 @@ export class Player {
     });
     const speed = projectileStats.speed;
     projectiles.push(new Projectile({
-      pos: { x: this.pos.x + Math.cos(angle) * 34, y: this.pos.y + Math.sin(angle) * 34 },
+      pos: {
+        x: this.pos.x + Math.cos(angle) * (projectileKind === "laser" ? this.radius * 1.64 : 34),
+        y: this.pos.y + Math.sin(angle) * (projectileKind === "laser" ? this.radius * 1.64 : 34),
+      },
       angle,
       speed,
       radius: projectileKind === "laser" ? 6 : projectileKind === "rail" ? 5 : projectileKind === "mine" ? 18 : projectileKind === "gravity" ? 24 : 7,

@@ -63,8 +63,8 @@ export class RenderSystem {
       if (!this.visible(p.pos, camera, w, h, 160)) return;
       const laserOrigin = p.kind === "laser" && p.ownerId === player.id
         ? {
-            x: player.pos.x + Math.cos(player.angle) * (24 * getPlayerVisualProfile(player).sizeScale * 1.64),
-            y: player.pos.y + Math.sin(player.angle) * (24 * getPlayerVisualProfile(player).sizeScale * 1.64),
+            x: player.pos.x + Math.cos(player.angle) * (player.radius * 1.64),
+            y: player.pos.y + Math.sin(player.angle) * (player.radius * 1.64),
           }
         : undefined;
       this.drawProjectile(p, laserOrigin);
