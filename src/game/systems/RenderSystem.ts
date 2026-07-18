@@ -80,6 +80,7 @@ export class RenderSystem {
         visualScale: 1,
         trailLength: 1,
         glowScale: 1,
+        layout: remote.shipClassId === "space_pod" ? "pod" : "dual",
       });
       this.shipRenderer.drawShip({ ctx, x: remote.renderX, y: remote.renderY, rotation: remote.renderAngle, visualProfile, playerCustomization: remote.customization, animationTime: now });
       this.drawRemotePlayerLabel(remote);
@@ -375,6 +376,7 @@ export class RenderSystem {
       visualScale: effective.movementSpeed.thrusterVisualScale,
       trailLength: effective.movementSpeed.thrusterTrailLength,
       glowScale: effective.movementSpeed.thrusterGlowIntensity,
+      layout: player.currentShipId === "space_pod" ? "pod" : "dual",
     });
   }
 
@@ -388,8 +390,9 @@ export class RenderSystem {
     visualScale: number;
     trailLength: number;
     glowScale: number;
+    layout: "pod" | "dual";
   }) {
-    const { x, y, angle, radius: r, forwardPower, strafePower, visualScale, trailLength, glowScale } = args;
+    const { x, y, angle, radius: r, forwardPower, strafePower, visualScale, trailLength, glowScale, layout } = args;
     if (Math.abs(forwardPower) < 0.05 && Math.abs(strafePower) < 0.05) return;
     const ctx = this.ctx;
     const blue = "#39c8ff";
@@ -416,6 +419,24 @@ export class RenderSystem {
       ctx.lineTo(endX, endY);
       ctx.stroke();
     };
+
+    if (layout === "pod") {
+      if (forwardPower > 0.05) {
+        plume(-r * 1.92, 0, -r * (2.35 + forwardPower * 1.35) * trailLength, 0, forwardPower, r * 0.13);
+      }
+      if (forwardPower < -0.05) {
+        plume(r * 1.48, 0, r * (1.88 + Math.abs(forwardPower) * 0.62), 0, forwardPower, r * 0.075);
+      }
+      if (strafePower > 0.05) {
+        plume(-r * 0.42, -r * 0.46, -r * 0.42, -r * (0.78 + strafePower * 0.32), strafePower, r * 0.055);
+      }
+      if (strafePower < -0.05) {
+        plume(-r * 0.42, r * 0.46, -r * 0.42, r * (0.78 + Math.abs(strafePower) * 0.32), strafePower, r * 0.055);
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+      return;
+    }
 
     if (forwardPower > 0.05) {
       plume(-r * 1.72, -r * 0.29, -r * (2.15 + forwardPower * 1.15) * trailLength, -r * 0.34, forwardPower, 6);
