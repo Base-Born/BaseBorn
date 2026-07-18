@@ -889,20 +889,22 @@ html, body, #root, .app, .gameShell, .gameCanvas {
   position: absolute;
   z-index: 2;
   top: clamp(100px, 12vh, 150px);
-  left: clamp(42px, 7.4vw, 132px);
+  left: 50%;
   width: min(460px, 40vw);
+  transform: translateX(-50%);
 }
 .loginBrand {
   position: relative;
   padding-top: 54px;
-  text-align: left;
+  text-align: center;
 }
 .loginBrand__emblem {
   position: absolute;
   top: 0;
-  left: 126px;
+  left: 50%;
   width: 70px;
   height: 70px;
+  transform: translateX(-50%);
   display: grid;
   place-items: center;
   color: #dff7ff;
@@ -946,7 +948,7 @@ html, body, #root, .app, .gameShell, .gameCanvas {
 .loginCard {
   width: min(440px, 100%);
   max-height: none;
-  margin: 24px 0 0 72px;
+  margin: 24px auto 0;
   padding: 26px 30px;
   gap: 16px;
   overflow: visible;
@@ -1099,8 +1101,8 @@ html, body, #root, .app, .gameShell, .gameCanvas {
 }
 
 @media (max-width: 1180px) {
-  .loginContent { left: 42px; width: 430px; }
-  .loginCard { margin-left: 28px; }
+  .loginContent { width: min(440px, calc(100vw - 48px)); }
+  .loginCard { margin-left: auto; }
   .loginPillars { width: 470px; }
   .loginPillars article { padding: 11px; }
 }
@@ -1109,7 +1111,6 @@ html, body, #root, .app, .gameShell, .gameCanvas {
   .loginVignette { background: linear-gradient(90deg, rgba(1,6,14,.94), rgba(1,7,17,.56) 58%, rgba(1,7,17,.15)), linear-gradient(180deg, rgba(0,4,12,.45), transparent 60%, rgba(0,5,14,.85)); }
   .loginContent { top: 105px; width: min(430px, calc(100vw - 56px)); }
   .loginBrand h1 { font-size: 54px; }
-  .loginBrand__emblem { left: 108px; }
   .loginFooter__meta { display: none; }
   .loginPillars { margin-left: auto; width: min(520px, calc(100vw - 48px)); }
 }
@@ -1143,6 +1144,7 @@ html, body, #root, .app, .gameShell, .gameCanvas {
     left: 0;
     width: auto;
     padding: 82px 14px 18px;
+    transform: none;
   }
   .loginBrand { padding-top: 44px; text-align: center; }
   .loginBrand__emblem { top: 0; left: 50%; width: 58px; height: 58px; transform: translateX(-50%); }
@@ -1177,7 +1179,7 @@ html, body, #root, .app, .gameShell, .gameCanvas {
   .loginCard { padding: 19px 16px; }
 }
 @media (min-width: 641px) and (max-height: 760px) {
-  .loginContent { top: 74px; transform: scale(.86); transform-origin: top left; }
+  .loginContent { top: 74px; transform: translateX(-50%) scale(.86); transform-origin: top center; }
   .loginSystemStatus, .loginSectorStatus { top: 16px; }
   .loginFooter { bottom: 16px; }
   .loginPillars article { min-height: 62px; padding-top: 8px; padding-bottom: 8px; }
@@ -1521,30 +1523,30 @@ html, body, #root, .app, .gameShell, .gameCanvas {
   .loginContent {
     position: absolute;
     top: max(52px, calc(env(safe-area-inset-top) + 44px));
-    left: max(12px, env(safe-area-inset-left));
+    left: 50%;
     width: min(380px, 45vw);
     padding: 0;
-    transform: none;
+    transform: translateX(-50%);
   }
 
   .loginBrand {
     min-height: 48px;
-    padding: 0 0 0 62px;
-    text-align: left;
+    padding: 0;
+    text-align: center;
   }
   .loginBrand__emblem {
     top: 0;
-    left: 0;
+    left: 50%;
     width: 48px;
     height: 48px;
-    transform: none;
+    transform: translateX(-50%);
   }
   .loginBrand__emblem::before { width: 62px; }
   .loginBrand__emblem::after { height: 62px; }
   .loginBrand__emblem i:first-of-type { width: 57px; height: 57px; }
   .loginBrand__emblem i:last-of-type { bottom: -8px; height: 17px; }
   .loginBrand h1 { font-size: clamp(32px, 5vw, 42px); line-height: .9; }
-  .loginBrand p { margin: 7px 0 0; font-size: 7px; letter-spacing: .3em; text-align: left; }
+  .loginBrand p { margin: 7px 0 0; font-size: 7px; letter-spacing: .3em; text-align: center; }
 
   .loginCard {
     width: 100%;
