@@ -66,6 +66,7 @@ export class CollisionSystem {
             break;
           }
         }
+        if (projectile.kind === "laser") continue;
         for (const enemy of enemies) {
           if (projectile.penetration <= 0) break;
           if (distance(projectile.pos, enemy.pos) < projectile.radius + enemy.radius) {
