@@ -16,7 +16,7 @@ export type Vec2 = { x: number; y: number };
 export type Owner = "player" | "enemy";
 export type BotRole = "farmer" | "aggressor" | "sniper" | "rammer" | "carrier" | "coward";
 export type AlienDefenderType = "sentinel" | "interceptor" | "beam_guard" | "mine_warden" | "carrier" | "core_guardian";
-export type ProjectileKind = "plasma" | "laser" | "rail" | "missile" | "mine" | "drone" | "orbit" | "split" | "gravity";
+export type ProjectileKind = "plasma" | "rail" | "missile" | "mine" | "drone" | "orbit" | "split" | "gravity";
 
 export type PlanetOwner = "neutral" | "player" | "enemy";
 export type MinimapShipOwner = "player" | "teammate" | "enemy";

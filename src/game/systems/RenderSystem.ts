@@ -9,6 +9,7 @@ import { StationRenderer } from "./renderers/StationRenderer";
 import { SpaceBackgroundRenderer } from "../rendering/SpaceBackgroundRenderer";
 import { SPACE_BACKGROUND_CONFIG } from "../data/spaceBackgroundConfig";
 import { getEffectivePlayerStats } from "./StatScalingSystem";
+import { TUNING } from "../config";
 import type { Asteroid } from "../entities/Asteroid";
 import type { Drone } from "../entities/Drone";
 import type { Enemy } from "../entities/Enemy";
@@ -59,16 +60,8 @@ export class RenderSystem {
     asteroids.forEach((a) => this.visible(a.pos, camera, w, h, a.radius + 120) && drawAsteroid(ctx, a));
     etherDrops.forEach((drop) => this.visible(drop.pos, camera, w, h, 140) && drawEtherDrop(ctx, drop));
     stations.forEach((station) => this.visible(station.pos, camera, w, h, station.radius + 360) && this.stationRenderer.renderStation(ctx, station, { now }));
-    projectiles.forEach((p) => {
-      if (!this.visible(p.pos, camera, w, h, 160)) return;
-      const laserOrigin = p.kind === "laser" && p.ownerId === player.id
-        ? {
-            x: player.pos.x + Math.cos(player.angle) * (player.radius * 1.64),
-            y: player.pos.y + Math.sin(player.angle) * (player.radius * 1.64),
-          }
-        : undefined;
-      this.drawProjectile(p, laserOrigin);
-    });
+    projectiles.forEach((p) => this.visible(p.pos, camera, w, h, 160) && this.drawProjectile(p));
+    if (player.miningLaserActive && !player.destroyed && !player.isInsideStation) this.drawMiningLaser(player);
     networkProjectiles.forEach((projectile) => this.visible(projectile, camera, w, h, 160) && this.drawNetworkProjectile(projectile));
     enemies.forEach((e) => {
       if (!this.visible(e.pos, camera, w, h, 140)) return;
@@ -217,7 +210,7 @@ export class RenderSystem {
     ctx.restore();
   }
 
-  private drawProjectile(p: Projectile, laserOrigin?: Vec2) {
+  private drawProjectile(p: Projectile) {
     const ctx = this.ctx;
     ctx.save();
     ctx.shadowColor = p.color;
@@ -225,33 +218,7 @@ export class RenderSystem {
     ctx.strokeStyle = p.color;
     ctx.fillStyle = p.color;
     ctx.globalAlpha = clamp(p.lifetime / p.maxLifetime + 0.25, 0.2, 1);
-    if (p.kind === "laser") {
-      const start = laserOrigin ?? p.origin;
-      const dx = p.pos.x - start.x;
-      const dy = p.pos.y - start.y;
-      const beamLength = Math.hypot(dx, dy);
-      if (beamLength > 1) {
-        const nx = dx / beamLength;
-        const ny = dy / beamLength;
-        ctx.lineCap = "round";
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 18;
-        ctx.strokeStyle = p.color;
-        ctx.lineWidth = 8;
-        ctx.beginPath();
-        ctx.moveTo(start.x, start.y);
-        ctx.lineTo(p.pos.x, p.pos.y);
-        ctx.stroke();
-        ctx.shadowColor = "#fff4e8";
-        ctx.shadowBlur = 7;
-        ctx.strokeStyle = "#fff4e8";
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(start.x + nx * 12, start.y + ny * 12);
-        ctx.lineTo(p.pos.x, p.pos.y);
-        ctx.stroke();
-      }
-    } else if (p.kind === "rail") {
+    if (p.kind === "rail") {
       ctx.lineWidth = 5;
       ctx.beginPath();
       ctx.moveTo(p.pos.x - p.vel.x * 0.035, p.pos.y - p.vel.y * 0.035);
@@ -310,6 +277,38 @@ export class RenderSystem {
       ctx.arc(p.pos.x, p.pos.y, p.radius, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.restore();
+  }
+
+  private drawMiningLaser(player: Player) {
+    const ctx = this.ctx;
+    const direction = { x: Math.cos(player.miningLaserAngle), y: Math.sin(player.miningLaserAngle) };
+    const start = {
+      x: player.pos.x + direction.x * player.radius * 1.64,
+      y: player.pos.y + direction.y * player.radius * 1.64,
+    };
+    const end = {
+      x: start.x + direction.x * TUNING.miningLaserRange,
+      y: start.y + direction.y * TUNING.miningLaserRange,
+    };
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.shadowColor = "#ff7a3d";
+    ctx.shadowBlur = 20;
+    ctx.strokeStyle = "rgba(255, 122, 61, .84)";
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+    ctx.shadowColor = "#fff4e8";
+    ctx.shadowBlur = 8;
+    ctx.strokeStyle = "#fff4e8";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(start.x + direction.x * 12, start.y + direction.y * 12);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
     ctx.restore();
   }
 

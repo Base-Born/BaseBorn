@@ -10,6 +10,7 @@ import { getAsteroidDamage, getAsteroidMiningPowerRatio } from "./AsteroidMining
 import { getMassMovementModifiers } from "./MassSystem";
 import { getHullTier } from "../data/hullTiers";
 import type { AsteroidQuality } from "../data/asteroidTypes";
+import { TUNING } from "../config";
 
 const MIN_RAM_IMPACT_SPEED = 85;
 const ASTEROID_CONTACT_PUSH = 0.62;
@@ -45,6 +46,33 @@ export class CollisionSystem {
       level.award(player, 220 + enemy.level * 12, 600 + enemy.score);
     };
 
+    if (playerActive && player.miningLaserActive) {
+      const direction = { x: Math.cos(player.miningLaserAngle), y: Math.sin(player.miningLaserAngle) };
+      const origin = { x: player.pos.x + direction.x * player.radius * 1.64, y: player.pos.y + direction.y * player.radius * 1.64 };
+      let target: Asteroid | null = null;
+      let targetDistance = TUNING.miningLaserRange;
+      for (const asteroid of asteroids) {
+        if (asteroid.dead) continue;
+        const offsetX = asteroid.pos.x - origin.x;
+        const offsetY = asteroid.pos.y - origin.y;
+        const alongRay = offsetX * direction.x + offsetY * direction.y;
+        if (alongRay <= 0 || alongRay >= targetDistance) continue;
+        const distanceFromRay = Math.abs(offsetX * direction.y - offsetY * direction.x);
+        if (distanceFromRay <= asteroid.radius + 8) {
+          target = asteroid;
+          targetDistance = alongRay;
+        }
+      }
+      if (target) {
+        if (onMiningInefficient) {
+          const ratio = getAsteroidMiningPowerRatio(player, target);
+          if (ratio < 0.25) onMiningInefficient(ratio);
+        }
+        target.takeDamage(getAsteroidDamage(player, target, TUNING.baseDamage * player.ship.behavior.damage * 3.5 * dt));
+        if (target.dead) level.award(player, target.xp, target.score);
+      }
+    }
+
     for (const projectile of projectiles) {
       if (projectile.owner === "player") {
         for (const asteroid of asteroids) {
@@ -66,7 +94,6 @@ export class CollisionSystem {
             break;
           }
         }
-        if (projectile.kind === "laser") continue;
         for (const enemy of enemies) {
           if (projectile.penetration <= 0) break;
           if (distance(projectile.pos, enemy.pos) < projectile.radius + enemy.radius) {

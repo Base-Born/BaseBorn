@@ -16,7 +16,6 @@ export class Projectile {
   color: string;
   splitDone = false;
   target?: Vec2;
-  origin: Vec2;
 
   constructor(args: {
     pos: Vec2;
@@ -44,7 +43,6 @@ export class Projectile {
     this.kind = args.kind;
     this.color = args.color;
     this.target = args.target;
-    this.origin = { ...args.pos };
     if (this.kind === "mine") this.vel = fromAngle(args.angle + Math.PI, args.speed * 0.18);
   }
 

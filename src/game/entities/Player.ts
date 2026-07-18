@@ -66,6 +66,8 @@ export class Player {
   dockingAnimationDurationMs = 950;
   dockingFrom = { x: 0, y: 0 };
   dockingTo = { x: 0, y: 0 };
+  miningLaserActive = false;
+  miningLaserAngle = this.angle;
   loadout: PlayerLoadout = {
     hullTier: 1,
     craftedModuleIds: [],
@@ -179,7 +181,9 @@ export class Player {
     if (now - this.lastDamageAt > effective.autonomousRepair.delayMs) {
       this.health = Math.min(this.maxHealth, this.health + (effective.autonomousRepair.regenFlat + moduleBonuses.regenPerSecond) * dt);
     }
-    if (firing && (this.currentShipId !== "space_pod" || length(this.vel) > 18)) this.fire(projectiles, this.angle);
+    this.miningLaserAngle = this.angle;
+    this.miningLaserActive = this.currentShipId === "space_pod" && firing && length(this.vel) > 18;
+    if (firing && this.currentShipId !== "space_pod") this.fire(projectiles, this.angle);
   }
 
   fire(projectiles: Projectile[], angle = this.angle) {
@@ -209,28 +213,28 @@ export class Player {
     const effective = getEffectivePlayerStats(this.stats, this.baseFrameId);
     const moduleBonuses = this.moduleBonuses;
     const activeModules = this.buildIdentity.installedModules.filter((module) => module.enabled).map((module) => module.id);
-    const projectileKind = this.currentShipId === "space_pod" ? "laser" : activeModules.includes("missile_rack_mk2") ? "missile" : activeModules.some((id) => id.includes("railgun")) ? "rail" : b.projectile;
+    const projectileKind = activeModules.includes("missile_rack_mk2") ? "missile" : activeModules.some((id) => id.includes("railgun")) ? "rail" : b.projectile;
     const projectileStats = calculateProjectileModuleStats(this, {
-      speed: TUNING.baseProjectileSpeed * moduleBonuses.projectileSpeedMultiplier * (projectileKind === "laser" ? 1.2 : projectileKind === "rail" ? 1.55 : projectileKind === "missile" ? 0.72 : 1),
+      speed: TUNING.baseProjectileSpeed * moduleBonuses.projectileSpeedMultiplier * (projectileKind === "rail" ? 1.55 : projectileKind === "missile" ? 0.72 : 1),
       damage: TUNING.baseDamage * moduleBonuses.damageMultiplier * b.damage * multiplier,
       delay: TUNING.baseFireDelay,
     });
     const speed = projectileStats.speed;
     projectiles.push(new Projectile({
       pos: {
-        x: this.pos.x + Math.cos(angle) * (projectileKind === "laser" ? this.radius * 1.64 : 34),
-        y: this.pos.y + Math.sin(angle) * (projectileKind === "laser" ? this.radius * 1.64 : 34),
+        x: this.pos.x + Math.cos(angle) * 34,
+        y: this.pos.y + Math.sin(angle) * 34,
       },
       angle,
       speed,
-      radius: projectileKind === "laser" ? 6 : projectileKind === "rail" ? 5 : projectileKind === "mine" ? 18 : projectileKind === "gravity" ? 24 : 7,
+      radius: projectileKind === "rail" ? 5 : projectileKind === "mine" ? 18 : projectileKind === "gravity" ? 24 : 7,
       damage: projectileStats.damage,
-      lifetime: TUNING.projectileLifetime * effective.bulletSpeed.projectileMultiplier * (projectileKind === "mine" ? 4 : projectileKind === "laser" || projectileKind === "rail" ? 1.35 : 1),
+      lifetime: TUNING.projectileLifetime * effective.bulletSpeed.projectileMultiplier * (projectileKind === "mine" ? 4 : projectileKind === "rail" ? 1.35 : 1),
       penetration: 1 + (this.stats.bulletDamage + this.stats.bulletSpeed) * 0.03,
       owner: "player",
       ownerId: this.id,
       kind: projectileKind,
-      color: projectileKind === "laser" ? "#ff7a3d" : this.customization.projectileColor,
+      color: this.customization.projectileColor,
     }));
   }
 

@@ -14,6 +14,7 @@ export const TUNING = {
   baseProjectileSpeed: 620,
   baseFireDelay: 0.34,
   projectileLifetime: 1.6,
+  miningLaserRange: 1500,
   botCount: 14,
   botRespawnMinDelay: 2.8,
   botRespawnMaxDelay: 6.2,
