@@ -27,6 +27,9 @@ const stationDockDistance = 180;
 const asteroidChunkSize = 1600;
 const projectileSpeed = 720;
 const projectileLifetimeMs = 1800;
+const asteroidReportDistance = projectileSpeed * projectileLifetimeMs / 1000 + 64;
+const asteroidReportWindowMs = 300;
+const maxAsteroidReportsPerWindow = 8;
 const projectileDamage = 14;
 const stationPilotSpeed = 230;
 const stationPilotResponse = 6.8;
@@ -251,7 +254,7 @@ function validAsteroidReport(message,player){
   const chunkX=Number(match[1]),chunkY=Number(match[2]),index=Number(match[3]);
   if(!Number.isSafeInteger(chunkX)||!Number.isSafeInteger(chunkY)||!Number.isSafeInteger(index)||index<0||index>64)return false;
   const x=finite(message.x,NaN,-worldLimit,worldLimit),y=finite(message.y,NaN,-worldLimit,worldLimit);
-  if(!Number.isFinite(x)||!Number.isFinite(y)||distance(player,{x,y})>420)return false;
+  if(!Number.isFinite(x)||!Number.isFinite(y)||distance(player,{x,y})>asteroidReportDistance)return false;
   return Math.floor(x/asteroidChunkSize)===chunkX&&Math.floor(y/asteroidChunkSize)===chunkY;
 }
 function createProjectile(room,websocket,angle,now){
@@ -296,7 +299,7 @@ function simulateRoom(room,now,dt){
 }
 
 websocketServer.on("connection",(websocket)=>{
-  websocket.isAlive=true;websocket.lastStateAt=0;websocket.lastAsteroidAt=0;websocket.lastFireAt=0;websocket.lastRespawnAt=0;websocket.inventory=new Map();
+  websocket.isAlive=true;websocket.lastStateAt=0;websocket.asteroidReportTimes=[];websocket.lastFireAt=0;websocket.lastRespawnAt=0;websocket.inventory=new Map();
   websocket.on("pong",()=>{websocket.isAlive=true;});
   websocket.on("message",(raw)=>{
     const now=Date.now();
@@ -358,8 +361,10 @@ websocketServer.on("connection",(websocket)=>{
       websocket.send(JSON.stringify({type:"loot_collected",dropId:drop.id,etherType:drop.type,amount}));markDirty(room);return;
     }
     if(message?.type==="asteroid_destroyed"){
-      const asteroidId=cleanText(message.asteroidId,"",96);if(!asteroidId||room.destroyedAsteroids.get(asteroidId)>now||now-websocket.lastAsteroidAt<300||!validAsteroidReport(message,websocket.playerState))return;
-      websocket.lastAsteroidAt=now;
+      const asteroidId=cleanText(message.asteroidId,"",96);if(!asteroidId||room.destroyedAsteroids.get(asteroidId)>now||!validAsteroidReport(message,websocket.playerState))return;
+      websocket.asteroidReportTimes=websocket.asteroidReportTimes.filter((reportedAt)=>now-reportedAt<asteroidReportWindowMs);
+      if(websocket.asteroidReportTimes.length>=maxAsteroidReportsPerWindow)return;
+      websocket.asteroidReportTimes.push(now);
       const pos={x:finite(message.x,websocket.playerState.x,-worldLimit,worldLimit),y:finite(message.y,websocket.playerState.y,-worldLimit,worldLimit)};
       if(distance(pos,websocket.playerState)>2400)return;
       const respawnMs=300000;

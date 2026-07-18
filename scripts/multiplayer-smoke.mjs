@@ -64,6 +64,11 @@ try {
   const asteroidSnapshot=await waitForSnapshot(alpha,(message)=>message.destroyedAsteroids?.some((entry)=>entry.id===asteroidId));
   const asteroidRespawn=asteroidSnapshot.destroyedAsteroids.find((entry)=>entry.id===asteroidId);
   assert(asteroidRespawn.until-Date.now()>295000,"server must enforce the five-minute asteroid respawn");
+  assert(asteroidSnapshot.drops.length>=1,"accepted asteroid destruction must create Ether drops");
+  const secondAsteroidId=`asteroid-${asteroidChunkX}:${asteroidChunkY}-1`;
+  alpha.socket.send(JSON.stringify({type:"asteroid_destroyed",asteroidId:secondAsteroidId,x:alpha.welcome.spawn.x,y:alpha.welcome.spawn.y,etherType:"rawEther",amount:1,respawnMs:30000}));
+  const multiAsteroidSnapshot=await waitForSnapshot(alpha,(message)=>message.destroyedAsteroids?.some((entry)=>entry.id===secondAsteroidId));
+  assert(multiAsteroidSnapshot.drops.length>=2,"asteroid reports in the same burst must each create Ether drops");
   const initialTeamSnapshot = await waitForSnapshot(alpha, (message) => message.teams.some((team) => team.memberIds.includes(alpha.id)));
   const alphaTeam = initialTeamSnapshot.teams.find((team) => team.memberIds.includes(alpha.id));
   const alphaStation = initialTeamSnapshot.stations
