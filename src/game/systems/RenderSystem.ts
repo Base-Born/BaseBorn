@@ -457,7 +457,7 @@ export class RenderSystem {
 
     if (layout === "pod") {
       if (forwardPower > 0.05) {
-        plume(-r * 1.92, 0, -r * (2.35 + forwardPower * 1.35) * trailLength, 0, forwardPower, r * 0.13);
+        plume(-r * 1.58, 0, -r * (2.35 + forwardPower * 1.35) * trailLength, 0, forwardPower, r * 0.13);
       }
       if (forwardPower < -0.05) {
         plume(r * 1.48, 0, r * (1.88 + Math.abs(forwardPower) * 0.62), 0, forwardPower, r * 0.075);

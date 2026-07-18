@@ -42,7 +42,7 @@ export class ShipRenderer {
     ctx.shadowColor = glow;
     ctx.shadowBlur = 3 + profile.detailLevel * 0.8;
     if (profile.id.startsWith("starter_pod")) {
-      this.drawSpacePod(ctx, baseRadius, glow, animationTime);
+      this.drawSpacePod(ctx, baseRadius, glow, animationTime, profile.buildIdentity?.thrusterTier ?? 0);
       ctx.restore();
       return;
     }
@@ -55,7 +55,7 @@ export class ShipRenderer {
     ctx.restore();
   }
 
-  private drawSpacePod(ctx: CanvasRenderingContext2D, r: number, glow: string, animationTime: number) {
+  private drawSpacePod(ctx: CanvasRenderingContext2D, r: number, glow: string, animationTime: number, thrusterTier: number) {
     const spriteReady = Boolean(this.spacePodSprite?.complete && this.spacePodSprite.naturalWidth > 0);
     const pulse = 0.72 + Math.sin(animationTime * 0.004) * 0.16;
     ctx.save();
@@ -78,6 +78,7 @@ export class ShipRenderer {
       ctx.stroke();
     }
     ctx.restore();
+    this.drawPodThrusterHardware(ctx, r, glow, thrusterTier, animationTime);
 
     // A compact nose emitter makes the pod's mining tool readable without
     // changing the supplied hull silhouette.
@@ -92,6 +93,34 @@ export class ShipRenderer {
     ctx.arc(r * 1.64, 0, r * 0.14, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+    ctx.restore();
+  }
+
+  private drawPodThrusterHardware(ctx: CanvasRenderingContext2D, r: number, glow: string, tier: number, animationTime: number) {
+    const level = Math.max(0, Math.min(3, Math.floor(tier)));
+    if (level <= 0) return;
+    const pulse = 0.72 + Math.sin(animationTime * 0.004 + level) * 0.16;
+    ctx.save();
+    ctx.strokeStyle = glow;
+    ctx.fillStyle = "rgba(223,252,255,.86)";
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = r * (0.18 + level * 0.05);
+    ctx.lineWidth = Math.max(1.2, r * 0.025);
+    for (let index = 0; index < level; index += 1) {
+      const x = -r * (1.47 + index * 0.1);
+      ctx.globalAlpha = pulse * (0.72 + index * 0.12);
+      ctx.beginPath();
+      ctx.ellipse(x, 0, r * 0.08, r * (0.2 + level * 0.018), 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    if (level >= 2) {
+      ctx.globalAlpha = pulse;
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.arc(-r * 1.48, side * r * 0.16, r * 0.045, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
     ctx.restore();
   }
 
