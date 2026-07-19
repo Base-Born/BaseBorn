@@ -137,7 +137,7 @@ function broadcastRoom(roomId){
   const room=rooms.get(roomId);if(!room)return;
   pruneWorld(room);
   const players=[...room.clients].map(client=>client.playerState).filter(Boolean);
-  const stations=[...room.stations.values()].map(({driveX,driveY,driveUpdatedAt,...station})=>station);
+  const stations=[...room.stations.values()].map(({driveUpdatedAt,...station})=>station);
   const drops=[...room.drops.values()];
   const destroyedAsteroids=[...room.destroyedAsteroids].map(([id,until])=>({id,until}));
   const projectiles=[...room.projectiles.values()];

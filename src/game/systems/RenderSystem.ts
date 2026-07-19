@@ -93,10 +93,9 @@ export class RenderSystem {
         if (player.dockingState === "free") this.drawPlayerThrusters(player);
         const dockProgress = player.dockingState === "free" ? 0 : Math.max(0, Math.min(1, (performance.now() - player.dockingAnimationStartedAt) / player.dockingAnimationDurationMs));
         const dockAlpha = player.dockingState === "docking" ? Math.max(0.12, 1 - dockProgress * 0.88) : player.dockingState === "undocking" ? Math.min(1, 0.12 + dockProgress * 0.88) : 1;
-        const dockScale = player.dockingState === "docking" ? 1 - dockProgress * 0.22 : player.dockingState === "undocking" ? 0.78 + dockProgress * 0.22 : 1;
         ctx.save();
         ctx.globalAlpha *= dockAlpha;
-        this.shipRenderer.drawShip({ ctx, x: player.pos.x, y: player.pos.y, rotation: player.angle, visualProfile: getPlayerVisualProfile(player), playerCustomization: player.customization, animationTime: performance.now(), scale: dockScale });
+        this.shipRenderer.drawShip({ ctx, x: player.pos.x, y: player.pos.y, rotation: player.angle, visualProfile: getPlayerVisualProfile(player), playerCustomization: player.customization, animationTime: performance.now() });
         ctx.restore();
         if (player.spawnProtected) this.drawSpawnShield(player.pos, player.radius, player.customization.glowColor);
       }

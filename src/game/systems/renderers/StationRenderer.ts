@@ -6,6 +6,18 @@ export type StationRenderOptions = {
   now: number;
 };
 
+// Both supplied carrier textures use a 1254px square canvas, but their
+// non-transparent hulls have different bounds. Normalize the docked texture
+// to the derelict hull's measured height and visual center so changing state
+// never makes the spacecraft jump or grow.
+const STARTER_TEXTURE_SIZE = 1254;
+const STARTER_HULL_WIDTH = 945;
+const STARTER_HULL_HEIGHT = 1001;
+const STARTER_HULL_CENTER = { x: 652.5, y: 594.5 };
+const DOCKED_HULL_WIDTH = 992;
+const DOCKED_HULL_HEIGHT = 1095;
+const DOCKED_HULL_CENTER = { x: 634, y: 608.5 };
+
 export class StationRenderer {
   private readonly derelictSprite: HTMLImageElement | null;
   private readonly claimedSprite: HTMLImageElement | null;
@@ -58,6 +70,18 @@ export class StationRenderer {
     if (!sprite?.complete || sprite.naturalWidth <= 0) return false;
 
     const size = STATION_CONFIG.spacecraftVisualRadius * 2;
+    const isDockedTexture = sprite === this.claimedSprite;
+    const sourceHullWidth = isDockedTexture ? DOCKED_HULL_WIDTH : STARTER_HULL_WIDTH;
+    const sourceHullHeight = isDockedTexture ? DOCKED_HULL_HEIGHT : STARTER_HULL_HEIGHT;
+    const sourceHullCenter = isDockedTexture ? DOCKED_HULL_CENTER : STARTER_HULL_CENTER;
+    const drawWidth = size * (STARTER_HULL_WIDTH / sourceHullWidth);
+    const drawHeight = size * (STARTER_HULL_HEIGHT / sourceHullHeight);
+    const desiredCenterX = ((STARTER_HULL_CENTER.x - STARTER_TEXTURE_SIZE / 2) / STARTER_TEXTURE_SIZE) * size;
+    const desiredCenterY = ((STARTER_HULL_CENTER.y - STARTER_TEXTURE_SIZE / 2) / STARTER_TEXTURE_SIZE) * size;
+    const sourceCenterX = ((sourceHullCenter.x - STARTER_TEXTURE_SIZE / 2) / STARTER_TEXTURE_SIZE) * drawWidth;
+    const sourceCenterY = ((sourceHullCenter.y - STARTER_TEXTURE_SIZE / 2) / STARTER_TEXTURE_SIZE) * drawHeight;
+    const spriteOffsetX = desiredCenterX - sourceCenterX;
+    const spriteOffsetY = desiredCenterY - sourceCenterY;
     const speed = Math.hypot(station.vel.x, station.vel.y);
     const drivePower = Math.min(1, Math.hypot(station.driveInput?.x ?? 0, station.driveInput?.y ?? 0));
     const velocityFacing = speed > 5 ? Math.atan2(station.vel.y, station.vel.x) + Math.PI / 2 : 0;
@@ -103,7 +127,7 @@ export class StationRenderer {
     ctx.globalAlpha = station.claimState === "unclaimed" ? 0.84 : 1;
     ctx.shadowColor = station.underAttack ? "#ff6b78" : station.claimState === "claimed" ? "rgba(74,220,255,.7)" : "rgba(0,0,0,.9)";
     ctx.shadowBlur = station.claimState === "claimed" ? 12 : 24;
-    ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
+    ctx.drawImage(sprite, spriteOffsetX - drawWidth / 2, spriteOffsetY - drawHeight / 2, drawWidth, drawHeight);
 
     if (station.claimState === "claimed") {
       const pulse = 0.5 + Math.sin(options.now * 0.004) * 0.12;

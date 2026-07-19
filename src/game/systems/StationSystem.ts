@@ -70,13 +70,11 @@ export class StationSystem {
         station.pos = { x: state.x, y: state.y };
         station.vel = { x: state.vx ?? station.vel.x, y: state.vy ?? station.vel.y };
       }
-      const networkSpeed = Math.hypot(station.vel.x, station.vel.y);
-      if (state.driverPlayerId && networkSpeed > 0.5) {
-        station.driveInput = { x: station.vel.x / networkSpeed, y: station.vel.y / networkSpeed };
-        station.facingAngle = Math.atan2(station.vel.y, station.vel.x) + Math.PI / 2;
-      } else if (!state.driverPlayerId) {
-        station.driveInput = { x: 0, y: 0 };
-      }
+      const driveX = state.driverPlayerId ? state.driveX ?? 0 : 0;
+      const driveY = state.driverPlayerId ? state.driveY ?? 0 : 0;
+      const drivePower = Math.hypot(driveX, driveY);
+      station.driveInput = drivePower > 0.001 ? { x: driveX / drivePower, y: driveY / drivePower } : { x: 0, y: 0 };
+      if (drivePower > 0.001) station.facingAngle = Math.atan2(driveY, driveX) + Math.PI / 2;
       station.claimState = state.claimState;
       station.ownerTeamId = state.ownerTeamId;
       station.ownerPlayerId = state.ownerPlayerId;

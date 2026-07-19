@@ -88,7 +88,10 @@ try {
   const drivenSnapshot = await waitForSnapshot(alpha,(message)=>message.stations.some((station)=>station.id===alphaStation.id&&station.x>claimedStation.x+2&&station.driverPlayerId===alpha.id));
   const drivenStation = drivenSnapshot.stations.find((station)=>station.id===alphaStation.id);
   assert(drivenStation.vx>0,"station drive input should produce shared server velocity");
+  assert(drivenStation.driveX>0&&drivenStation.driveY===0,"station snapshots should expose active thruster input");
   alpha.socket.send(JSON.stringify({type:"station_input",stationId:alphaStation.id,x:0,y:0}));
+  const idleThrusterSnapshot=await waitForSnapshot(alpha,(message)=>{const station=message.stations.find((entry)=>entry.id===alphaStation.id);return station?.driveX===0&&station?.driveY===0;});
+  assert.equal(idleThrusterSnapshot.stations.find((station)=>station.id===alphaStation.id).driveX,0,"station thrusters should turn off when drive input stops");
   alpha.socket.send(JSON.stringify({type:"state",state:{x:drivenStation.x,y:drivenStation.y,vx:0,vy:0,angle:0,thrustForward:0,thrustStrafe:0,docked:false,healthRatio:1,level:1,score:0,shipClassId:"base_ship",shipClass:"Base Ship"}}));
   const undockedSnapshot = await waitForSnapshot(alpha,(message)=>message.players.some((player)=>player.id===alpha.id&&!player.docked)&&!message.stations.find((station)=>station.id===alphaStation.id)?.dockedPlayerIds.includes(alpha.id));
   const undockedPlayer = undockedSnapshot.players.find((player)=>player.id===alpha.id);
