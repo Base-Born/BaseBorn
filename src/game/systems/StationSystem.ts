@@ -70,6 +70,13 @@ export class StationSystem {
         station.pos = { x: state.x, y: state.y };
         station.vel = { x: state.vx ?? station.vel.x, y: state.vy ?? station.vel.y };
       }
+      const networkSpeed = Math.hypot(station.vel.x, station.vel.y);
+      if (state.driverPlayerId && networkSpeed > 0.5) {
+        station.driveInput = { x: station.vel.x / networkSpeed, y: station.vel.y / networkSpeed };
+        station.facingAngle = Math.atan2(station.vel.y, station.vel.x) + Math.PI / 2;
+      } else if (!state.driverPlayerId) {
+        station.driveInput = { x: 0, y: 0 };
+      }
       station.claimState = state.claimState;
       station.ownerTeamId = state.ownerTeamId;
       station.ownerPlayerId = state.ownerPlayerId;
@@ -179,10 +186,14 @@ export class StationSystem {
   }
 
   dockPlayerAtStation(player: Player, station = this.claimedStation) {
-    if (!station || station.ownerTeamId !== this.team.id || distance(player.pos, station.pos) > STATION_CONFIG.dockRadius) return false;
+    if (!station || station.ownerTeamId !== this.team.id) return false;
     if (this.isSubsystemOfflineOrDisabled(station, "landing_pads")) return false;
-    const pad = station.landingPads.find((entry) => entry.unlocked && (!entry.occupiedByPlayerId || entry.occupiedByPlayerId === player.id));
+    const pad = station.landingPads
+      .filter((entry) => entry.unlocked && (!entry.occupiedByPlayerId || entry.occupiedByPlayerId === player.id))
+      .sort((a, b) => distance(player.pos, this.getLandingPadPosition(station, a)) - distance(player.pos, this.getLandingPadPosition(station, b)))[0];
     if (!pad) return false;
+    const padPosition = this.getLandingPadPosition(station, pad);
+    if (distance(player.pos, padPosition) > STATION_CONFIG.dockRadius) return false;
     station.landingPads.forEach((entry) => {
       if (entry.occupiedByPlayerId === player.id) entry.occupiedByPlayerId = null;
     });
@@ -191,30 +202,41 @@ export class StationSystem {
     player.dockingState = "docking";
     player.dockingAnimationStartedAt = performance.now();
     player.dockingFrom = { ...player.pos };
-    player.dockingTo = { ...station.pos };
+    player.dockingTo = padPosition;
     player.vel = { x: 0, y: 0 };
+    player.thrustWorld = { x: 0, y: 0 };
+    player.thrustLocal = { forward: 0, strafe: 0 };
+    station.driveInput = { x: 0, y: 0 };
     return true;
   }
 
   launchPlayerFromStation(player: Player, station = this.claimedStation) {
     if (!station || player.dockedStationId !== station.id) return false;
-    if (distance(player.pos, station.pos) > STATION_CONFIG.dockRadius) return false;
     if (this.isSubsystemOfflineOrDisabled(station, "landing_pads")) return false;
     const pad = station.landingPads.find((entry) => entry.occupiedByPlayerId === player.id);
-    const padAngle = pad ? Math.atan2(pad.positionOffset.y, pad.positionOffset.x) : -Math.PI / 2;
+    if (!pad) return false;
+    const padPosition = this.getLandingPadPosition(station, pad);
     player.dockingState = "undocking";
     player.dockingAnimationStartedAt = performance.now();
-    player.dockingFrom = { ...station.pos };
-    player.pos = { ...station.pos };
-    player.dockingTo = clampToWorld({
-      x: station.pos.x + Math.cos(padAngle) * (station.radius + 260),
-      y: station.pos.y + Math.sin(padAngle) * (station.radius + 260),
-    }, player.radius + 20);
+    player.dockingFrom = padPosition;
+    player.dockingTo = padPosition;
+    player.pos = padPosition;
+    player.vel = { x: 0, y: 0 };
+    player.thrustWorld = { x: 0, y: 0 };
+    player.thrustLocal = { forward: 0, strafe: 0 };
+    station.driveInput = { x: 0, y: 0 };
     return true;
   }
 
   updateDockingAnimation(player: Player, now = performance.now()) {
     if (player.dockingState !== "docking" && player.dockingState !== "undocking") return;
+    const station = this.stations.find((entry) => entry.id === player.dockedStationId);
+    const pad = station?.landingPads.find((entry) => entry.occupiedByPlayerId === player.id);
+    if (station && pad) {
+      const livePadPosition = this.getLandingPadPosition(station, pad);
+      player.dockingTo = livePadPosition;
+      if (player.dockingState === "undocking") player.dockingFrom = livePadPosition;
+    }
     const t = Math.max(0, Math.min(1, (now - player.dockingAnimationStartedAt) / player.dockingAnimationDurationMs));
     const eased = t * t * (3 - 2 * t);
     player.pos = {
@@ -227,11 +249,25 @@ export class StationSystem {
       player.dockingState = "docked";
       return;
     }
-    const station = this.stations.find((entry) => entry.id === player.dockedStationId);
-    const pad = station?.landingPads.find((entry) => entry.occupiedByPlayerId === player.id);
     if (pad) pad.occupiedByPlayerId = null;
     player.dockedStationId = null;
     player.dockingState = "free";
+    player.vel = { x: 0, y: 0 };
+    player.thrustWorld = { x: 0, y: 0 };
+    player.thrustLocal = { forward: 0, strafe: 0 };
+  }
+
+  getDockedPlayerPosition(player: Player, station = this.claimedStation) {
+    if (!station || player.dockedStationId !== station.id) return null;
+    const pad = station.landingPads.find((entry) => entry.occupiedByPlayerId === player.id);
+    return pad ? this.getLandingPadPosition(station, pad) : { ...station.pos };
+  }
+
+  private getLandingPadPosition(station: Station, pad: Station["landingPads"][number]) {
+    return {
+      x: station.pos.x + pad.positionOffset.x,
+      y: station.pos.y + pad.positionOffset.y,
+    };
   }
 
   isPlayerDockedAtClaimedStation(player: Player, station = this.claimedStation) {
@@ -253,8 +289,12 @@ export class StationSystem {
     station.vel.y += (direction.y * maxSpeed - station.vel.y) * blend;
     if (magnitude <= 0.001 && Math.hypot(station.vel.x, station.vel.y) < 0.5) station.vel = { x: 0, y: 0 };
     clampStationVelocity(station, maxSpeed);
-    player.pos = { ...station.pos };
+    station.driveInput = direction;
+    if (magnitude > 0.001) station.facingAngle = Math.atan2(direction.y, direction.x) + Math.PI / 2;
+    player.pos = this.getDockedPlayerPosition(player, station) ?? { ...station.pos };
     player.vel = { x: 0, y: 0 };
+    player.thrustWorld = direction;
+    player.thrustLocal = { forward: magnitude > 0.001 ? 1 : 0, strafe: 0 };
     station.isMobile = true;
     station.lifecycleState = "active";
     station.lastActiveAt = performance.now();
@@ -882,6 +922,8 @@ export class StationSystem {
       name,
       pos,
       vel: { x: 0, y: 0 },
+      driveInput: { x: 0, y: 0 },
+      facingAngle: 0,
       radius: STATION_CONFIG.baseRadius,
       ownerTeamId: null,
       ownerPlayerId: null,
@@ -1295,8 +1337,9 @@ export function clampStationVelocity(station: Station, maxSpeed: number) {
 }
 
 export function getStationPhysicalRadius(station: Station) {
-  const repairedScale = 1 + Math.min(0.22, station.repairStageIndex * 0.028);
-  return station.radius * repairedScale;
+  return station.radius === STATION_CONFIG.baseRadius
+    ? STATION_CONFIG.spacecraftCollisionRadius
+    : station.radius;
 }
 
 export function isStationPhasedForHyperdrive(station: Station) {

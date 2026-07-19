@@ -68,6 +68,7 @@ export class Player {
   dockingTo = { x: 0, y: 0 };
   miningLaserActive = false;
   miningLaserAngle = this.angle;
+  miningLaserTarget: { id: string; pos: Vec2; radius: number } | null = null;
   loadout: PlayerLoadout = {
     hullTier: 1,
     craftedModuleIds: [],
@@ -135,8 +136,17 @@ export class Player {
     this.hyperUpgradeUnlocked = this.level >= 50;
   }
 
-  update(dt: number, move: Vec2, aimWorld: Vec2, firing: boolean, projectiles: Projectile[]) {
-    this.angle = Math.atan2(aimWorld.y - this.pos.y, aimWorld.x - this.pos.x);
+  update(
+    dt: number,
+    move: Vec2,
+    aimWorld: Vec2,
+    firing: boolean,
+    projectiles: Projectile[],
+    miningTarget: { id: string; pos: Vec2; radius: number } | null = null,
+  ) {
+    const activeMiningTarget = this.currentShipId === "space_pod" && firing ? miningTarget : null;
+    const resolvedAim = activeMiningTarget?.pos ?? aimWorld;
+    this.angle = Math.atan2(resolvedAim.y - this.pos.y, resolvedAim.x - this.pos.x);
     const forwardAmount = -move.y;
     const strafeAmount = move.x;
     const inputPower = Math.min(1, Math.hypot(forwardAmount, strafeAmount));
@@ -182,7 +192,10 @@ export class Player {
       this.health = Math.min(this.maxHealth, this.health + (effective.autonomousRepair.regenFlat + moduleBonuses.regenPerSecond) * dt);
     }
     this.miningLaserAngle = this.angle;
-    this.miningLaserActive = this.currentShipId === "space_pod" && firing && length(this.vel) > 18;
+    this.miningLaserTarget = activeMiningTarget
+      ? { id: activeMiningTarget.id, pos: { ...activeMiningTarget.pos }, radius: activeMiningTarget.radius }
+      : null;
+    this.miningLaserActive = Boolean(activeMiningTarget);
     if (firing && this.currentShipId !== "space_pod") this.fire(projectiles, this.angle);
   }
 

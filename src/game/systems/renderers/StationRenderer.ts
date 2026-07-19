@@ -57,17 +57,19 @@ export class StationRenderer {
     const sprite = station.claimState === "claimed" && hasDockedPod ? this.claimedSprite : this.derelictSprite;
     if (!sprite?.complete || sprite.naturalWidth <= 0) return false;
 
-    const size = station.radius * 2.66;
+    const size = STATION_CONFIG.spacecraftVisualRadius * 2;
     const speed = Math.hypot(station.vel.x, station.vel.y);
-    const stationRotation = speed > 5 ? Math.atan2(station.vel.x, -station.vel.y) : 0;
+    const drivePower = Math.min(1, Math.hypot(station.driveInput?.x ?? 0, station.driveInput?.y ?? 0));
+    const velocityFacing = speed > 5 ? Math.atan2(station.vel.y, station.vel.x) + Math.PI / 2 : 0;
+    const stationRotation = station.facingAngle ?? velocityFacing;
     ctx.save();
     ctx.translate(station.pos.x, station.pos.y);
     ctx.rotate(stationRotation);
 
-    if (speed > 5) {
+    if (drivePower > 0.05) {
       const boosterLevel = Math.max(1, station.upgradeState.boosterLevel);
       const upgradeScale = Math.min(2.1, 1 + (boosterLevel - 1) * 0.16 + station.level * 0.002 + profile.repairProgress * 0.18);
-      const power = Math.min(1, speed / Math.max(1, STATION_CONFIG.stationBasePilotSpeed));
+      const power = drivePower;
       const start = station.radius * 1.02;
       const end = station.radius * (1.32 + power * 0.74) * upgradeScale;
       const plume = ctx.createLinearGradient(0, start, 0, end);

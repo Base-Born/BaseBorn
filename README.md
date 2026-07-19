@@ -5,8 +5,8 @@ BaseBorn is a browser-based multiplayer space survival game built with React, Ty
 ## Current starting sequence
 
 1. Spawn in a lightweight Survey Pod in one of the safe outer sectors.
-2. Use `WASD` to maneuver and the pointer to aim.
-3. Fire the pod's mining laser at asteroids.
+2. Use `WASD` to maneuver. The pointer continues to aim later spacecraft weapons.
+3. Hold the attack control to lock one mining beam onto the closest asteroid in range.
 4. Fly over shared Ether drops to collect them in the pod's small cargo hold.
 5. Follow the tutorial waypoint to the nearby derelict spacecraft.
 6. Move directly into its central pod cradle and press `F` to land and claim it.
@@ -22,16 +22,16 @@ Claiming is intentionally close-range. A derelict spacecraft cannot be claimed f
 - Compact silver-white survival pod based on the supplied BaseBorn concept asset
 - Independent forward, reverse, and strafe maneuvering
 - Directional blue thrusters that only fire while thrust is applied
-- Built-in mining laser
+- Built-in single-beam mining laser with nearest-asteroid targeting
 - Lower hull strength and smaller cargo capacity than a full spacecraft
-- Server-synchronized movement, appearance, projectiles, and mining rewards
+- Server-synchronized movement, appearance, and shared mining rewards
 
 ### Derelict spacecraft
 
 - Circular carrier spacecraft with an empty central pod cradle
 - Separate abandoned and pod-integrated visual states
 - Becomes the crew's storage, repair, fuel-conversion, and upgrade hub after claiming
-- Uses close-range docking and a short pod integration animation
+- Uses close-range docking plus anchored integration and undocking animations that do not eject the pod
 - Can later unlock carrier movement, defenses, crafting, and advanced systems
 
 The future team-combination system is not part of this starting-sequence milestone. The multiplayer and team foundation remains in place so multiple upgraded spacecraft can later connect into a larger shared structure.

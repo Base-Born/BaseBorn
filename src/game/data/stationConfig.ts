@@ -17,6 +17,8 @@ export const STATION_CONFIG = {
   stationScannerPulseDurationMs: 6000,
   stationScannerCooldownMs: 12000,
   baseRadius: 170,
+  spacecraftVisualRadius: 226,
+  spacecraftCollisionRadius: 212,
   starterStationDistance: 920,
   localRelocationStepDistance: 4200,
   stationBasePilotSpeed: 210,

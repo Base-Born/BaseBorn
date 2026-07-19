@@ -393,7 +393,10 @@ export class Game {
       score: this.player.score,
       shipClassId: this.player.currentShipId,
       shipClass: this.player.currentShipId === "space_pod" ? "Survey Pod" : this.player.ship.name,
-      docked: this.player.dockingState === "docked",
+      // Keep the server-side cradle occupied for the full lock/release animation.
+      // This prevents the integrated spacecraft sprite from flickering between
+      // docked and empty states before the animation completes.
+      docked: this.player.dockingState !== "free",
     }, now);
     this.multiplayer.updateInterpolation(dt);
 
@@ -447,7 +450,6 @@ export class Game {
       x: this.camera.x + (this.input.pointer.x - canvasRect.width / 2) / this.camera.zoom,
       y: this.camera.y + (this.input.pointer.y - canvasRect.height / 2) / this.camera.zoom,
     };
-    const closestTarget = this.closestEnemyOrAsteroid();
     const aimWorld = this.input.pointerWorld;
     const now = performance.now();
     this.stations.updateDockingAnimation(this.player, now);
@@ -464,8 +466,11 @@ export class Game {
       const move = this.input.movement();
       const throttleMove = this.autoThrottle && move.y === 0 ? { ...move, y: -1 } : move;
       const directFire = !this.player.usesDroneControls && (this.input.firing || this.autoFire);
+      const miningTarget = this.player.currentShipId === "space_pod" && directFire
+        ? this.closestMiningAsteroid()
+        : null;
       const projectileCountBeforeUpdate = this.projectiles.length;
-      this.player.update(dt, throttleMove, aimWorld, directFire, this.projectiles);
+      this.player.update(dt, throttleMove, aimWorld, directFire, this.projectiles, miningTarget);
       if (this.multiplayer.isOnline() && this.projectiles.length > projectileCountBeforeUpdate) {
         const projectile = this.projectiles[projectileCountBeforeUpdate];
         this.multiplayer.fire(Math.atan2(projectile.vel.y, projectile.vel.x));
@@ -488,7 +493,8 @@ export class Game {
     this.stations.resolveStationPhysicalCollisions(this.asteroids, this.enemies);
     if (this.player.dockingState === "docked") {
       const dockedStation = this.stations.stations.find((station) => station.id === this.player.dockedStationId);
-      if (dockedStation) this.player.pos = { ...dockedStation.pos };
+      const dockedPosition = dockedStation ? this.stations.getDockedPlayerPosition(this.player, dockedStation) : null;
+      if (dockedPosition) this.player.pos = dockedPosition;
     }
     if (playerActive) {
       this.etherDrops.update(
@@ -653,18 +659,18 @@ export class Game {
     this.mode = "playing";
   }
 
-  private closestEnemyOrAsteroid() {
-    const candidates = [...this.enemies.map((e) => e.pos), ...this.asteroids.map((a) => a.pos)];
-    let best: Vec2 | undefined;
+  private closestMiningAsteroid() {
+    let best: Asteroid | null = null;
     let bestDistance = Infinity;
-    for (const candidate of candidates) {
-      const d = distance(this.player.pos, candidate);
-      if (d < bestDistance && d < 900) {
+    for (const asteroid of this.asteroids) {
+      if (asteroid.dead) continue;
+      const d = distance(this.player.pos, asteroid.pos) - asteroid.radius;
+      if (d < bestDistance && d <= TUNING.miningLaserRange) {
         bestDistance = d;
-        best = candidate;
+        best = asteroid;
       }
     }
-    return best;
+    return best ? { id: best.id, pos: { ...best.pos }, radius: best.radius } : null;
   }
 
   private getDroneCommands(aimWorld: Vec2) {

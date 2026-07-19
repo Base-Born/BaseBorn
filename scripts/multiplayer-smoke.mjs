@@ -90,7 +90,9 @@ try {
   assert(drivenStation.vx>0,"station drive input should produce shared server velocity");
   alpha.socket.send(JSON.stringify({type:"station_input",stationId:alphaStation.id,x:0,y:0}));
   alpha.socket.send(JSON.stringify({type:"state",state:{x:drivenStation.x,y:drivenStation.y,vx:0,vy:0,angle:0,thrustForward:0,thrustStrafe:0,docked:false,healthRatio:1,level:1,score:0,shipClassId:"base_ship",shipClass:"Base Ship"}}));
-  await waitForSnapshot(alpha,(message)=>message.players.some((player)=>player.id===alpha.id&&!player.docked));
+  const undockedSnapshot = await waitForSnapshot(alpha,(message)=>message.players.some((player)=>player.id===alpha.id&&!player.docked)&&!message.stations.find((station)=>station.id===alphaStation.id)?.dockedPlayerIds.includes(alpha.id));
+  const undockedPlayer = undockedSnapshot.players.find((player)=>player.id===alpha.id);
+  assert(distance(undockedPlayer,drivenStation)<=60,"undocking should release the ship at its cradle instead of ejecting it sideways");
   alpha.socket.send(JSON.stringify({ type:"invite_player", playerId:beta.id }));
   const inviteSnapshot = await waitForSnapshot(beta, (message) => message.invites.some((invite) => invite.teamId===alphaTeam.id));
   const invite = inviteSnapshot.invites.find((entry) => entry.teamId===alphaTeam.id);

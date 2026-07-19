@@ -46,24 +46,10 @@ export class CollisionSystem {
       level.award(player, 220 + enemy.level * 12, 600 + enemy.score);
     };
 
-    if (playerActive && player.miningLaserActive) {
-      const direction = { x: Math.cos(player.miningLaserAngle), y: Math.sin(player.miningLaserAngle) };
-      const origin = { x: player.pos.x + direction.x * player.radius * 1.64, y: player.pos.y + direction.y * player.radius * 1.64 };
-      let target: Asteroid | null = null;
-      let targetDistance = TUNING.miningLaserRange;
-      for (const asteroid of asteroids) {
-        if (asteroid.dead) continue;
-        const offsetX = asteroid.pos.x - origin.x;
-        const offsetY = asteroid.pos.y - origin.y;
-        const alongRay = offsetX * direction.x + offsetY * direction.y;
-        if (alongRay <= 0 || alongRay >= targetDistance) continue;
-        const distanceFromRay = Math.abs(offsetX * direction.y - offsetY * direction.x);
-        if (distanceFromRay <= asteroid.radius + 8) {
-          target = asteroid;
-          targetDistance = alongRay;
-        }
-      }
-      if (target) {
+    if (playerActive && player.miningLaserActive && player.miningLaserTarget) {
+      const target = asteroids.find((asteroid) => asteroid.id === player.miningLaserTarget?.id && !asteroid.dead) ?? null;
+      const targetDistance = target ? distance(player.pos, target.pos) - target.radius : Infinity;
+      if (target && targetDistance <= TUNING.miningLaserRange) {
         if (onMiningInefficient) {
           const ratio = getAsteroidMiningPowerRatio(player, target);
           if (ratio < 0.25) onMiningInefficient(ratio);

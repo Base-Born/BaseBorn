@@ -90,12 +90,13 @@ export class RenderSystem {
       if (!player.isInsideStation || player.dockingState === "docking" || player.dockingState === "undocking") {
         if (!player.isInsideStation) player.drones.forEach((d) => this.drawDrone(d, player.customization.glowColor));
         if (player.dockingState === "docking" || player.dockingState === "undocking") this.drawDockingPath(player);
-        this.drawPlayerThrusters(player);
+        if (player.dockingState === "free") this.drawPlayerThrusters(player);
         const dockProgress = player.dockingState === "free" ? 0 : Math.max(0, Math.min(1, (performance.now() - player.dockingAnimationStartedAt) / player.dockingAnimationDurationMs));
-        const dockAlpha = player.dockingState === "docking" ? Math.max(0.18, 1 - dockProgress * 0.78) : player.dockingState === "undocking" ? Math.min(1, 0.25 + dockProgress * 0.75) : 1;
+        const dockAlpha = player.dockingState === "docking" ? Math.max(0.12, 1 - dockProgress * 0.88) : player.dockingState === "undocking" ? Math.min(1, 0.12 + dockProgress * 0.88) : 1;
+        const dockScale = player.dockingState === "docking" ? 1 - dockProgress * 0.22 : player.dockingState === "undocking" ? 0.78 + dockProgress * 0.22 : 1;
         ctx.save();
         ctx.globalAlpha *= dockAlpha;
-        this.shipRenderer.drawShip({ ctx, x: player.pos.x, y: player.pos.y, rotation: player.angle, visualProfile: getPlayerVisualProfile(player), playerCustomization: player.customization, animationTime: performance.now() });
+        this.shipRenderer.drawShip({ ctx, x: player.pos.x, y: player.pos.y, rotation: player.angle, visualProfile: getPlayerVisualProfile(player), playerCustomization: player.customization, animationTime: performance.now(), scale: dockScale });
         ctx.restore();
         if (player.spawnProtected) this.drawSpawnShield(player.pos, player.radius, player.customization.glowColor);
       }
@@ -144,21 +145,39 @@ export class RenderSystem {
   private drawDockingPath(player: Player) {
     const ctx = this.ctx;
     const progress = Math.max(0, Math.min(1, (performance.now() - player.dockingAnimationStartedAt) / player.dockingAnimationDurationMs));
+    const docking = player.dockingState === "docking";
+    const phase = docking ? progress : 1 - progress;
+    const ringRadius = player.radius * (1.28 + (1 - phase) * 0.72);
     ctx.save();
-    ctx.globalAlpha = player.dockingState === "docking" ? 0.36 * (1 - progress * 0.45) : 0.22 + progress * 0.18;
+    ctx.translate(player.pos.x, player.pos.y);
+    ctx.globalAlpha = 0.2 + Math.sin(Math.PI * progress) * 0.52;
     ctx.strokeStyle = player.customization.glowColor;
-    ctx.lineWidth = 10;
-    ctx.setLineDash([28, 18]);
-    ctx.lineDashOffset = -performance.now() * 0.08;
+    ctx.shadowColor = player.customization.glowColor;
+    ctx.shadowBlur = 12;
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(player.dockingFrom.x, player.dockingFrom.y);
-    ctx.lineTo(player.dockingTo.x, player.dockingTo.y);
+    ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = player.customization.glowColor;
-    ctx.beginPath();
-    ctx.arc(player.dockingTo.x, player.dockingTo.y, 26 + Math.sin(performance.now() * 0.012) * 5, 0, Math.PI * 2);
-    ctx.fill();
+    for (let index = 0; index < 4; index += 1) {
+      const angle = index * Math.PI / 2;
+      const outer = ringRadius + player.radius * 0.34;
+      const inner = ringRadius - player.radius * 0.12;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      ctx.lineTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      ctx.stroke();
+    }
+    if (!docking) {
+      const ventLength = player.radius * (0.45 + progress * 0.65);
+      ctx.globalAlpha = 0.5 * (1 - progress);
+      ctx.lineWidth = 5;
+      for (const side of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(-player.radius * 0.5, side * player.radius * 0.22);
+        ctx.lineTo(-player.radius * 0.5 - ventLength, side * player.radius * 0.22);
+        ctx.stroke();
+      }
+    }
     ctx.restore();
   }
 
@@ -281,34 +300,40 @@ export class RenderSystem {
   }
 
   private drawMiningLaser(player: Player) {
+    if (!player.miningLaserTarget) return;
     const ctx = this.ctx;
-    const direction = { x: Math.cos(player.miningLaserAngle), y: Math.sin(player.miningLaserAngle) };
+    const target = player.miningLaserTarget;
+    const targetAngle = Math.atan2(target.pos.y - player.pos.y, target.pos.x - player.pos.x);
+    const direction = { x: Math.cos(targetAngle), y: Math.sin(targetAngle) };
     const start = {
       x: player.pos.x + direction.x * player.radius * 1.64,
       y: player.pos.y + direction.y * player.radius * 1.64,
     };
+    const centerDistance = Math.hypot(target.pos.x - start.x, target.pos.y - start.y);
+    const beamLength = Math.max(0, Math.min(TUNING.miningLaserRange, centerDistance - target.radius * 0.72));
     const end = {
-      x: start.x + direction.x * TUNING.miningLaserRange,
-      y: start.y + direction.y * TUNING.miningLaserRange,
+      x: start.x + direction.x * beamLength,
+      y: start.y + direction.y * beamLength,
     };
     ctx.save();
     ctx.lineCap = "round";
-    ctx.shadowColor = "#ff7a3d";
-    ctx.shadowBlur = 20;
-    ctx.strokeStyle = "rgba(255, 122, 61, .84)";
-    ctx.lineWidth = 9;
+    const beam = ctx.createLinearGradient(start.x, start.y, end.x, end.y);
+    beam.addColorStop(0, "#f5feff");
+    beam.addColorStop(0.16, "#74e8ff");
+    beam.addColorStop(1, "#2ab8ff");
+    ctx.shadowColor = "#48d7ff";
+    ctx.shadowBlur = 13;
+    ctx.strokeStyle = beam;
+    ctx.lineWidth = 4.5;
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
     ctx.lineTo(end.x, end.y);
     ctx.stroke();
-    ctx.shadowColor = "#fff4e8";
-    ctx.shadowBlur = 8;
-    ctx.strokeStyle = "#fff4e8";
-    ctx.lineWidth = 2.5;
+    ctx.fillStyle = "rgba(212,250,255,.92)";
+    ctx.shadowBlur = 9;
     ctx.beginPath();
-    ctx.moveTo(start.x + direction.x * 12, start.y + direction.y * 12);
-    ctx.lineTo(end.x, end.y);
-    ctx.stroke();
+    ctx.arc(end.x, end.y, 3.5 + Math.sin(performance.now() * 0.018) * 0.8, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 

@@ -10,6 +10,7 @@ type DrawArgs = {
   visualProfile: ShipVisualProfile;
   playerCustomization?: Customization;
   animationTime: number;
+  scale?: number;
 };
 
 export class ShipRenderer {
@@ -31,7 +32,7 @@ export class ShipRenderer {
   }
 
   drawShip(args: DrawArgs) {
-    const { ctx, x, y, rotation, visualProfile: profile, playerCustomization, animationTime } = args;
+    const { ctx, x, y, rotation, visualProfile: profile, playerCustomization, animationTime, scale = 1 } = args;
     const baseRadius = 24 * profile.sizeScale;
     const primary = playerCustomization?.shipColor ?? profile.primaryColor;
     const glow = playerCustomization?.glowColor ?? profile.glowColor;
@@ -39,6 +40,7 @@ export class ShipRenderer {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(rotation);
+    ctx.scale(scale, scale);
     ctx.shadowColor = glow;
     ctx.shadowBlur = 3 + profile.detailLevel * 0.8;
     if (profile.id.startsWith("starter_pod")) {

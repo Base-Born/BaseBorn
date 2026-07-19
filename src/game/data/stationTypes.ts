@@ -154,6 +154,8 @@ export interface Station {
   name: string;
   pos: Vec2;
   vel: Vec2;
+  driveInput?: Vec2;
+  facingAngle?: number;
   radius: number;
   ownerTeamId: string | null;
   ownerPlayerId: string | null;
