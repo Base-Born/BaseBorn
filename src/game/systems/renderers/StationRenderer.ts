@@ -17,15 +17,49 @@ const STARTER_HULL_CENTER = { x: 652.5, y: 594.5 };
 const DOCKED_HULL_WIDTH = 992;
 const DOCKED_HULL_HEIGHT = 1095;
 const DOCKED_HULL_CENTER = { x: 634, y: 608.5 };
+const baseWeaponPolygon = [
+  { x: 956, y: 295 }, { x: 1014, y: 295 }, { x: 1020, y: 420 }, { x: 1033, y: 459 },
+  { x: 1032, y: 565 }, { x: 1018, y: 610 }, { x: 985, y: 620 }, { x: 950, y: 606 },
+  { x: 936, y: 565 }, { x: 938, y: 461 }, { x: 950, y: 420 },
+];
+const sniperWeaponPolygon = [
+  { x: 969, y: 160 }, { x: 1038, y: 160 }, { x: 1048, y: 430 }, { x: 1068, y: 480 },
+  { x: 1062, y: 668 }, { x: 1042, y: 735 }, { x: 1040, y: 892 }, { x: 970, y: 892 },
+  { x: 968, y: 735 }, { x: 946, y: 668 }, { x: 942, y: 480 }, { x: 958, y: 430 },
+];
+const twinLeftWeaponPolygon = [
+  { x: 202, y: 290 }, { x: 264, y: 290 }, { x: 276, y: 420 }, { x: 292, y: 458 },
+  { x: 290, y: 568 }, { x: 272, y: 611 }, { x: 238, y: 621 }, { x: 203, y: 610 },
+  { x: 186, y: 568 }, { x: 188, y: 458 }, { x: 198, y: 420 },
+];
+const twinRightWeaponPolygon = twinLeftWeaponPolygon.map((point) => ({ x: STARTER_TEXTURE_SIZE - point.x, y: point.y }));
+const emptyWeaponMask = [
+  { x: 946, y: 278 }, { x: 1024, y: 278 }, { x: 1036, y: 410 }, { x: 1052, y: 454 },
+  { x: 1050, y: 592 }, { x: 1026, y: 640 }, { x: 985, y: 654 }, { x: 938, y: 638 },
+  { x: 918, y: 592 }, { x: 920, y: 450 }, { x: 934, y: 408 },
+];
+
+function stationWeaponKind(station: Station): "base" | "sniper" | "twin" {
+  const id = (station.turretClassId ?? "base_ship").toLowerCase();
+  if (id.includes("sniper")) return "sniper";
+  if (id.includes("twin") || id.includes("machine_gun_l15")) return "twin";
+  return "base";
+}
 
 export class StationRenderer {
   private readonly derelictSprite: HTMLImageElement | null;
   private readonly claimedSprite: HTMLImageElement | null;
+  private readonly emptyWeaponBaySprite: HTMLImageElement | null;
+  private readonly sniperWeaponSprite: HTMLImageElement | null;
+  private readonly twinWeaponSprite: HTMLImageElement | null;
 
   constructor() {
     if (typeof Image === "undefined") {
       this.derelictSprite = null;
       this.claimedSprite = null;
+      this.emptyWeaponBaySprite = null;
+      this.sniperWeaponSprite = null;
+      this.twinWeaponSprite = null;
       return;
     }
     this.derelictSprite = new Image();
@@ -34,6 +68,15 @@ export class StationRenderer {
     this.claimedSprite = new Image();
     this.claimedSprite.decoding = "async";
     this.claimedSprite.src = "/assets/starter/claimed-spacecraft.png";
+    this.emptyWeaponBaySprite = new Image();
+    this.emptyWeaponBaySprite.decoding = "async";
+    this.emptyWeaponBaySprite.src = "/assets/starter/claimed-spacecraft-no-gun.png";
+    this.sniperWeaponSprite = new Image();
+    this.sniperWeaponSprite.decoding = "async";
+    this.sniperWeaponSprite.src = "/assets/starter/upgrades/sniper-lv15.png";
+    this.twinWeaponSprite = new Image();
+    this.twinWeaponSprite.decoding = "async";
+    this.twinWeaponSprite.src = "/assets/starter/upgrades/twin-lv15.png";
   }
 
   renderStation(ctx: CanvasRenderingContext2D, station: Station, options: StationRenderOptions) {
@@ -128,7 +171,10 @@ export class StationRenderer {
     ctx.shadowColor = station.underAttack ? "#ff6b78" : station.claimState === "claimed" ? "rgba(74,220,255,.7)" : "rgba(0,0,0,.9)";
     ctx.shadowBlur = station.claimState === "claimed" ? 12 : 24;
     ctx.drawImage(sprite, spriteOffsetX - drawWidth / 2, spriteOffsetY - drawHeight / 2, drawWidth, drawHeight);
-    if (station.claimState === "claimed") this.renderStarterTurret(ctx, station, stationRotation, options);
+    if (station.claimState === "claimed") {
+      this.renderEmptyWeaponBays(ctx, station, drawWidth, drawHeight, spriteOffsetX, spriteOffsetY);
+      this.renderStarterTurret(ctx, station, stationRotation, options, drawWidth, drawHeight, spriteOffsetX, spriteOffsetY);
+    }
 
     if (station.claimState === "claimed") {
       const pulse = 0.5 + Math.sin(options.now * 0.004) * 0.12;
@@ -143,59 +189,85 @@ export class StationRenderer {
     return true;
   }
 
-  private renderStarterTurret(ctx: CanvasRenderingContext2D, station: Station, stationRotation: number, options: StationRenderOptions) {
-    const mountX = station.radius * STATION_CONFIG.spacecraftTurretMountX;
-    const mountY = station.radius * STATION_CONFIG.spacecraftTurretMountY;
-    const barrelLength = STATION_CONFIG.spacecraftTurretBarrelLength;
-    const relativeAim = (station.turretAngle ?? -Math.PI / 2) - stationRotation;
-    ctx.save();
-    ctx.translate(mountX, mountY);
-    ctx.shadowColor = "rgba(48,220,255,.7)";
-    ctx.shadowBlur = 9;
-    const pedestal = ctx.createRadialGradient(-4, -5, 2, 0, 0, 22);
-    pedestal.addColorStop(0, "#f7fbff");
-    pedestal.addColorStop(0.28, "#9aa8b2");
-    pedestal.addColorStop(0.62, "#313b43");
-    pedestal.addColorStop(1, "#10171d");
-    ctx.fillStyle = pedestal;
-    ctx.strokeStyle = "#70e8ff";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(0, 0, 21, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.rotate(relativeAim);
-    const barrel = ctx.createLinearGradient(5, 0, barrelLength, 0);
-    barrel.addColorStop(0, "#222c34");
-    barrel.addColorStop(0.38, "#e9f0f4");
-    barrel.addColorStop(0.72, "#8b9aa5");
-    barrel.addColorStop(1, "#26343e");
-    ctx.fillStyle = barrel;
-    ctx.strokeStyle = "#111a20";
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.roundRect(4, -8, barrelLength, 16, 5);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#0f1920";
-    ctx.strokeStyle = "#72e9ff";
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.arc(barrelLength + 3, 0, 8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    if ((station.turretFiringUntil ?? 0) > options.now) {
-      ctx.shadowColor = "#8df3ff";
-      ctx.shadowBlur = 18;
-      ctx.fillStyle = "rgba(220,252,255,.96)";
+  private renderEmptyWeaponBays(ctx: CanvasRenderingContext2D, station: Station, drawWidth: number, drawHeight: number, offsetX: number, offsetY: number) {
+    const source = this.emptyWeaponBaySprite;
+    if (!source?.complete || source.naturalWidth <= 0) return;
+    const scaleX = drawWidth / STARTER_TEXTURE_SIZE, scaleY = drawHeight / STARTER_TEXTURE_SIZE;
+    const left = offsetX - drawWidth / 2, top = offsetY - drawHeight / 2;
+    const drawBay = (mirrored: boolean) => {
+      ctx.save();
       ctx.beginPath();
-      ctx.moveTo(barrelLength + 8, -7);
-      ctx.lineTo(barrelLength + 27, 0);
-      ctx.lineTo(barrelLength + 8, 7);
+      emptyWeaponMask.forEach((point, index) => {
+        const sourceX = mirrored ? STARTER_TEXTURE_SIZE - point.x : point.x;
+        const x = left + sourceX * scaleX;
+        const y = top + point.y * scaleY;
+        if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
       ctx.closePath();
-      ctx.fill();
+      ctx.clip();
+      if (mirrored) {
+        ctx.translate(left * 2 + drawWidth, 0);
+        ctx.scale(-1, 1);
+      }
+      ctx.drawImage(source, left, top, drawWidth, drawHeight);
+      ctx.restore();
+    };
+    drawBay(false);
+    if (stationWeaponKind(station) === "twin") drawBay(true);
+  }
+
+  private renderStarterTurret(ctx: CanvasRenderingContext2D, station: Station, stationRotation: number, options: StationRenderOptions, drawWidth: number, drawHeight: number, offsetX: number, offsetY: number) {
+    const kind = stationWeaponKind(station);
+    const relativeAim = (station.turretAngle ?? -Math.PI / 2) - stationRotation;
+    const definitions = kind === "sniper"
+      ? [{ sprite: this.sniperWeaponSprite, pivot: { x: 1003, y: 572 }, polygon: sniperWeaponPolygon, muzzleLength: 128 }]
+      : kind === "twin"
+        ? [
+            { sprite: this.twinWeaponSprite, pivot: { x: 241, y: 548 }, polygon: twinLeftWeaponPolygon, muzzleLength: 82 },
+            { sprite: this.twinWeaponSprite, pivot: { x: 1013, y: 548 }, polygon: twinRightWeaponPolygon, muzzleLength: 82 },
+          ]
+        : [{ sprite: this.claimedSprite, pivot: { x: 985, y: 548 }, polygon: baseWeaponPolygon, muzzleLength: 82 }];
+    const scaleX = drawWidth / STARTER_TEXTURE_SIZE, scaleY = drawHeight / STARTER_TEXTURE_SIZE;
+    const left = offsetX - drawWidth / 2, top = offsetY - drawHeight / 2;
+    for (const definition of definitions) {
+      const source = definition.sprite;
+      if (!source?.complete || source.naturalWidth <= 0) continue;
+      const mountX = left + definition.pivot.x * scaleX;
+      const mountY = top + definition.pivot.y * scaleY;
+      ctx.save();
+      ctx.translate(mountX, mountY);
+      ctx.rotate(relativeAim + Math.PI / 2);
+      ctx.beginPath();
+      definition.polygon.forEach((point, index) => {
+        const x = (point.x - definition.pivot.x) * scaleX;
+        const y = (point.y - definition.pivot.y) * scaleY;
+        if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.clip();
+      ctx.shadowColor = "rgba(76,220,255,.48)";
+      ctx.shadowBlur = 7;
+      ctx.drawImage(source, -definition.pivot.x * scaleX, -definition.pivot.y * scaleY, drawWidth, drawHeight);
+      ctx.restore();
+      if ((station.turretFiringUntil ?? 0) > options.now) {
+        const localMuzzleAngle = relativeAim;
+        const muzzleX = mountX + Math.cos(localMuzzleAngle) * definition.muzzleLength;
+        const muzzleY = mountY + Math.sin(localMuzzleAngle) * definition.muzzleLength;
+        ctx.save();
+        ctx.translate(muzzleX, muzzleY);
+        ctx.rotate(localMuzzleAngle);
+        ctx.shadowColor = "#8df3ff";
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = "rgba(220,252,255,.96)";
+        ctx.beginPath();
+        ctx.moveTo(-5, -6);
+        ctx.lineTo(20, 0);
+        ctx.lineTo(-5, 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
     }
-    ctx.restore();
   }
 
   private renderStationShield(ctx: CanvasRenderingContext2D, station: Station, profile: StationVisualProfile, options: StationRenderOptions) {

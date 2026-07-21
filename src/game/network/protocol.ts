@@ -43,6 +43,7 @@ export type NetworkStationState = {
   facingAngle?: number;
   turretAngle?: number;
   turretFiringUntil?: number;
+  turretClassId?: string;
   claimState: "unclaimed" | "claimed";
   ownerTeamId: string | null;
   ownerPlayerId: string | null;

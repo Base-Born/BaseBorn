@@ -89,6 +89,7 @@ export class StationSystem {
       if (Number.isFinite(state.facingAngle)) station.facingAngle = lerpAngle(station.facingAngle ?? state.facingAngle as number, state.facingAngle as number, 0.34);
       else if (drivePower > 0.001) station.facingAngle = Math.atan2(driveY, driveX) + Math.PI / 2;
       if (Number.isFinite(state.turretAngle)) station.turretAngle = lerpAngle(station.turretAngle ?? state.turretAngle as number, state.turretAngle as number, 0.42);
+      if (state.turretClassId) station.turretClassId = state.turretClassId;
       if ((state.turretFiringUntil ?? 0) > Date.now()) {
         station.turretFiringUntil = performance.now() + Math.min(120, (state.turretFiringUntil as number) - Date.now());
       }
@@ -327,16 +328,20 @@ export class StationSystem {
     return station.turretAngle;
   }
 
-  getClaimedStationTurretMuzzle(station: Station, angle = station.turretAngle ?? 0) {
+  getClaimedStationTurretMuzzles(station: Station, angle = station.turretAngle ?? 0) {
     const rotation = station.facingAngle ?? 0;
-    const localX = station.radius * STATION_CONFIG.spacecraftTurretMountX;
-    const localY = station.radius * STATION_CONFIG.spacecraftTurretMountY;
-    const mountX = station.pos.x + localX * Math.cos(rotation) - localY * Math.sin(rotation);
-    const mountY = station.pos.y + localX * Math.sin(rotation) + localY * Math.cos(rotation);
-    return {
-      x: mountX + Math.cos(angle) * STATION_CONFIG.spacecraftTurretBarrelLength,
-      y: mountY + Math.sin(angle) * STATION_CONFIG.spacecraftTurretBarrelLength,
-    };
+    const classId = (station.turretClassId ?? "base_ship").toLowerCase();
+    const twin = classId.includes("twin") || classId.includes("machine_gun_l15");
+    const sniper = classId.includes("sniper");
+    const mountXs = twin ? [-STATION_CONFIG.spacecraftTurretMountX, STATION_CONFIG.spacecraftTurretMountX] : [STATION_CONFIG.spacecraftTurretMountX];
+    const barrelLength = sniper ? 128 : STATION_CONFIG.spacecraftTurretBarrelLength;
+    return mountXs.map((mountRatio) => {
+      const localX = station.radius * mountRatio;
+      const localY = station.radius * STATION_CONFIG.spacecraftTurretMountY;
+      const mountX = station.pos.x + localX * Math.cos(rotation) - localY * Math.sin(rotation);
+      const mountY = station.pos.y + localX * Math.sin(rotation) + localY * Math.cos(rotation);
+      return { x: mountX + Math.cos(angle) * barrelLength, y: mountY + Math.sin(angle) * barrelLength };
+    });
   }
 
   relocateClaimedStationNearPlayer(player: Player, station = this.claimedStation) {
@@ -963,6 +968,7 @@ export class StationSystem {
       facingAngle: 0,
       turretAngle: -Math.PI / 2,
       turretFiringUntil: 0,
+      turretClassId: "base_ship",
       radius: STATION_CONFIG.baseRadius,
       ownerTeamId: null,
       ownerPlayerId: null,

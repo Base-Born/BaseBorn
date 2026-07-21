@@ -38,6 +38,7 @@ import { getCurrentZoneStatusText, getLootRegionByDistance, getZoneNotificationT
 import { LOOT_REGION_CONFIG, type LootRegionId } from "./data/lootRegionConfig";
 import type { Customization, GameSnapshot, Planet, Vec2 } from "./types";
 import { getUpgradeImpactProfile } from "./data/upgradeImpactProfiles";
+import { getShipNode } from "./data/shipUpgradeTree";
 import { GameEventSystem } from "./systems/GameEventSystem";
 import { MultiplayerClient } from "./network/MultiplayerClient";
 import { SPACE_BACKGROUND_CONFIG } from "./data/spaceBackgroundConfig";
@@ -203,7 +204,10 @@ export class Game {
   evolve(id: string) {
     const station = this.stations.requireDockedPlayer(this.player);
     const upgradeBayOnline = Boolean(station && station.repairStageIndex > station.repairStages.findIndex((stage) => stage.id === "shipUpgradeBay"));
-    if (upgradeBayOnline) this.upgrades.evolve(this.player, id);
+    if (upgradeBayOnline && this.upgrades.evolve(this.player, id) && this.multiplayer.isOnline()) {
+      const node = getShipNode(this.player.currentShipId);
+      this.multiplayer.evolve(node.id, node.name);
+    }
     this.emitSnapshot();
   }
 
@@ -470,17 +474,18 @@ export class Game {
       const stationMovement = this.input.movement();
       const piloted = this.stations.pilotClaimedStation(this.player, stationMovement, dt);
       const pilotedStation = this.stations.claimedStation;
+      if (pilotedStation) pilotedStation.turretClassId = this.player.currentShipId;
       const turretAngle = pilotedStation ? this.stations.aimClaimedStationTurret(this.player, aimWorld, dt, pilotedStation) : null;
       const stationFiring = !this.player.usesDroneControls && (this.input.firing || this.autoFire);
       this.player.updateMountedWeapon(dt);
       let firedMountedWeapon = false;
       if (piloted && pilotedStation && turretAngle !== null && stationFiring) {
-        const muzzle = this.stations.getClaimedStationTurretMuzzle(pilotedStation, turretAngle);
-        firedMountedWeapon = this.player.fireMountedWeapon(this.projectiles, turretAngle, muzzle);
+        const muzzles = this.stations.getClaimedStationTurretMuzzles(pilotedStation, turretAngle);
+        firedMountedWeapon = this.player.fireMountedWeapon(this.projectiles, turretAngle, muzzles);
         if (firedMountedWeapon) pilotedStation.turretFiringUntil = now + 90;
       }
       if (piloted && pilotedStation && this.multiplayer.isOnline()) {
-        this.multiplayer.driveStation(pilotedStation.id, stationMovement, turretAngle ?? pilotedStation.turretAngle ?? 0);
+        this.multiplayer.driveStation(pilotedStation.id, stationMovement, turretAngle ?? pilotedStation.turretAngle ?? 0, this.player.currentShipId);
         if (firedMountedWeapon) this.multiplayer.fire(turretAngle ?? 0);
       }
       if (piloted) this.updateZoneState();

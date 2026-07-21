@@ -158,6 +158,7 @@ export interface Station {
   facingAngle?: number;
   turretAngle?: number;
   turretFiringUntil?: number;
+  turretClassId?: string;
   radius: number;
   ownerTeamId: string | null;
   ownerPlayerId: string | null;

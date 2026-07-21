@@ -156,5 +156,11 @@ export function getBehaviorProfileForNode(nodeOrId: ShipNode | string): ShipBeha
     profile.radiusScale = STARTER_POD_SIZE_SCALE;
     profile.projectile = "rail";
   }
+  if (node.id === "machine_gun_l15_twin") {
+    profile.cannons = 2;
+    profile.spread = 0.1;
+    profile.fireRate = 1.24;
+    profile.damage = 0.78;
+  }
   return profile;
 }

@@ -221,15 +221,20 @@ export class Player {
     }
   }
 
-  fireMountedWeapon(projectiles: Projectile[], angle: number, origin: Vec2) {
+  fireMountedWeapon(projectiles: Projectile[], angle: number, origins: Vec2[]) {
+    const ship = this.ship;
+    if (ship.behavior.cannons <= 0) return false;
     const effective = getEffectivePlayerStats(this.stats, this.baseFrameId);
     const moduleBonuses = this.moduleBonuses;
     const heatModifiers = getHeatModifiers(this.heat, this.buildIdentity.budgets.heatCapacity);
-    const fireDelay = calculateReloadDelay(TUNING.baseFireDelay, effective.reloadSpeed.reloadMultiplier * moduleBonuses.fireRateMultiplier * heatModifiers.reload);
+    const fireDelay = calculateReloadDelay(TUNING.baseFireDelay, effective.reloadSpeed.reloadMultiplier * ship.behavior.fireRate * moduleBonuses.fireRateMultiplier * heatModifiers.reload);
     if (this.fireCooldown > 0) return false;
     this.fireCooldown = fireDelay;
     this.heat = Math.min(this.buildIdentity.budgets.heatCapacity * 1.35, this.heat + 3.5 + this.stats.bulletDamage * 0.22 + this.stats.reloadSpeed * 0.18);
-    this.spawnProjectile(projectiles, angle, 1, origin);
+    const count = ship.behavior.cannons;
+    const start = count === 1 ? 0 : -ship.behavior.spread / 2;
+    const step = count === 1 ? 0 : ship.behavior.spread / (count - 1);
+    for (let i = 0; i < count; i += 1) this.spawnProjectile(projectiles, angle + start + step * i, 1, origins[i % origins.length]);
     return true;
   }
 

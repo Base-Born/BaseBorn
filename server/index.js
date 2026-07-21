@@ -40,9 +40,9 @@ const stationPilotActiveDamping = 0.42;
 const stationPilotIdleDamping = 0.16;
 const stationFacingResponse = 10;
 const stationRadius = 170;
-const stationTurretMountX = 0.52;
-const stationTurretMountY = -0.05;
-const stationTurretBarrelLength = 58;
+const stationTurretMountX = 0.765;
+const stationTurretMountY = -0.186;
+const stationTurretBarrelLength = 82;
 const testSpawnRadius = Math.max(0, Math.min(worldLimit - 5000, Number.parseInt(process.env.TEST_SPAWN_RADIUS || "0", 10) || 0));
 const asteroidSizeRewards = [0.75, 1, 1.6, 2.6, 4, 6, 9, 13, 19, 28];
 const asteroidSizeWeights = [22, 20, 18, 14, 10, 7, 4, 2.5, 1.5, 1];
@@ -140,7 +140,7 @@ function createTeam(playerId,name){
 }
 function createStarterStation(spawn,playerId){
   const sx=Math.sign(spawn.x)||1,sy=Math.sign(spawn.y)||1;
-  return{id:crypto.randomUUID(),name:"Derelict Survey Craft",x:spawn.x-sx*920,y:spawn.y-sy*920,vx:0,vy:0,driveX:0,driveY:0,driverPlayerId:null,driveUpdatedAt:0,facingAngle:0,turretAngle:-Math.PI/2,turretFiringUntil:0,claimState:"unclaimed",ownerTeamId:null,ownerPlayerId:null,reservedForPlayerId:playerId,level:1,health:360,maxHealth:2200,isMobile:false,mothershipUnlocked:false,dockedPlayerIds:[]};
+  return{id:crypto.randomUUID(),name:"Derelict Survey Craft",x:spawn.x-sx*920,y:spawn.y-sy*920,vx:0,vy:0,driveX:0,driveY:0,driverPlayerId:null,driveUpdatedAt:0,facingAngle:0,turretAngle:-Math.PI/2,turretFiringUntil:0,turretClassId:"base_ship",claimState:"unclaimed",ownerTeamId:null,ownerPlayerId:null,reservedForPlayerId:playerId,level:1,health:360,maxHealth:2200,isMobile:false,mothershipUnlocked:false,dockedPlayerIds:[]};
 }
 function spawnNearStation(station){
   const angle=Math.random()*Math.PI*2;
@@ -153,7 +153,7 @@ function getPublicRoom(){
     const persisted=loadWorldState(worldStatePath);
     const restored=persisted?.worldRevision===worldRevision?persisted:null;
     room={id:publicWorldId,seed:publicWorldSeed,clients:new Set(),stations:new Map(restored?.stations||[]),drops:new Map(),destroyedAsteroids:new Map(restored?.destroyedAsteroids||[]),teams:new Map(restored?.teams||[]),invites:new Map(),projectiles:new Map(),playerRecords:new Map(restored?.playerRecords||[]),dirty:true,persistenceDirty:false};
-    for(const station of room.stations.values()){if(!Array.isArray(station.dockedPlayerIds))station.dockedPlayerIds=[];station.vx=finite(station.vx,0,-stationPilotSpeed,stationPilotSpeed);station.vy=finite(station.vy,0,-stationPilotSpeed,stationPilotSpeed);station.driveX=0;station.driveY=0;station.driverPlayerId=null;station.driveUpdatedAt=0;station.facingAngle=finite(station.facingAngle,0,-Math.PI*4,Math.PI*4);station.turretAngle=finite(station.turretAngle,-Math.PI/2,-Math.PI*4,Math.PI*4);station.turretFiringUntil=0;}
+    for(const station of room.stations.values()){if(!Array.isArray(station.dockedPlayerIds))station.dockedPlayerIds=[];station.vx=finite(station.vx,0,-stationPilotSpeed,stationPilotSpeed);station.vy=finite(station.vy,0,-stationPilotSpeed,stationPilotSpeed);station.driveX=0;station.driveY=0;station.driverPlayerId=null;station.driveUpdatedAt=0;station.facingAngle=finite(station.facingAngle,0,-Math.PI*4,Math.PI*4);station.turretAngle=finite(station.turretAngle,-Math.PI/2,-Math.PI*4,Math.PI*4);station.turretFiringUntil=0;station.turretClassId=cleanText(station.turretClassId,"base_ship",96);}
     rooms.set(publicWorldId,room);
   }
   return room;
@@ -299,19 +299,18 @@ function createProjectile(room,websocket,angle,now){
   const dockedStation=[...room.stations.values()].find(station=>station.ownerPlayerId===websocket.identity.id&&station.dockedPlayerIds.includes(websocket.identity.id));
   if((websocket.playerState.shipClassId==="space_pod"&&!dockedStation)||(websocket.playerState.docked&&!dockedStation)||websocket.playerState.healthRatio<=0||now-(websocket.lastFireAt||0)<120/reloadMultiplier)return null;
   websocket.lastFireAt=now;
-  const id=crypto.randomUUID();
   const speed=projectileSpeed*combatStatMultiplier(stats.bulletSpeed,.06,.09);
   const damage=projectileDamage*combatStatMultiplier(stats.bulletDamage,.08,.13);
   const penetration=combatStatMultiplier(stats.bulletPenetration,.12,.18);
-  let originX=websocket.playerState.x,originY=websocket.playerState.y,barrelOffset=34;
+  let origins=[{x:websocket.playerState.x,y:websocket.playerState.y}],barrelOffset=34,angles=[angle];
   if(dockedStation){
-    const rotation=dockedStation.facingAngle||0,localX=stationRadius*stationTurretMountX,localY=stationRadius*stationTurretMountY;
-    originX=dockedStation.x+localX*Math.cos(rotation)-localY*Math.sin(rotation);
-    originY=dockedStation.y+localX*Math.sin(rotation)+localY*Math.cos(rotation);
-    barrelOffset=stationTurretBarrelLength+4;dockedStation.turretAngle=angle;dockedStation.turretFiringUntil=now+90;
+    const classId=String(dockedStation.turretClassId||"base_ship").toLowerCase(),twin=classId.includes("twin")||classId.includes("machine_gun_l15"),sniper=classId.includes("sniper");
+    const rotation=dockedStation.facingAngle||0,localY=stationRadius*stationTurretMountY;
+    origins=(twin?[-stationTurretMountX,stationTurretMountX]:[stationTurretMountX]).map((mountRatio)=>{const localX=stationRadius*mountRatio;return{x:dockedStation.x+localX*Math.cos(rotation)-localY*Math.sin(rotation),y:dockedStation.y+localX*Math.sin(rotation)+localY*Math.cos(rotation)};});
+    angles=twin?[angle-.05,angle+.05]:[angle];barrelOffset=(sniper?128:stationTurretBarrelLength)+4;dockedStation.turretAngle=angle;dockedStation.turretFiringUntil=now+90;
   }
-  const projectile={id,ownerId:websocket.identity.id,x:originX+Math.cos(angle)*barrelOffset,y:originY+Math.sin(angle)*barrelOffset,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,radius:7,damage,penetration,color:websocket.identity.customization.projectileColor,createdAt:now,expiresAt:now+projectileLifetimeMs};
-  room.projectiles.set(id,projectile);return projectile;
+  const projectiles=angles.map((shotAngle,index)=>{const origin=origins[index%origins.length],id=crypto.randomUUID();return{id,ownerId:websocket.identity.id,x:origin.x+Math.cos(shotAngle)*barrelOffset,y:origin.y+Math.sin(shotAngle)*barrelOffset,vx:Math.cos(shotAngle)*speed,vy:Math.sin(shotAngle)*speed,radius:7,damage,penetration,color:websocket.identity.customization.projectileColor,createdAt:now,expiresAt:now+projectileLifetimeMs};});
+  for(const projectile of projectiles)room.projectiles.set(projectile.id,projectile);return projectiles[0]||null;
 }
 function simulateRoom(room,now,dt){
   pruneWorld(room,now);
@@ -401,7 +400,16 @@ websocketServer.on("connection",(websocket)=>{
       const station=room.stations.get(String(message.stationId||""));const team=teamForPlayer(room,playerId);
       if(!station||!team||station.ownerTeamId!==team.id||station.ownerPlayerId!==playerId||!station.dockedPlayerIds.includes(playerId))return;
       if(station.driverPlayerId&&station.driverPlayerId!==playerId&&now-(station.driveUpdatedAt||0)<=180)return;
-      station.driverPlayerId=playerId;station.driveUpdatedAt=now;station.driveX=finite(message.x,0,-1,1);station.driveY=finite(message.y,0,-1,1);station.turretAngle=finite(message.aimAngle,station.turretAngle||0,-Math.PI*4,Math.PI*4);markDirty(room);return;
+      station.driverPlayerId=playerId;station.driveUpdatedAt=now;station.driveX=finite(message.x,0,-1,1);station.driveY=finite(message.y,0,-1,1);station.turretAngle=finite(message.aimAngle,station.turretAngle||0,-Math.PI*4,Math.PI*4);station.turretClassId=websocket.playerState.shipClassId||"base_ship";markDirty(room);return;
+    }
+    if(message?.type==="evolve"){
+      const targetId=cleanShipId(message.shipClassId,"");
+      const levelMatch=targetId.match(/_l(15|30|45|60|75|90|100)_/);
+      const requiredLevel=targetId==="base_ship"?1:Number(levelMatch?.[1]||Infinity);
+      if(!targetId||requiredLevel>websocket.playerState.level){sendError(websocket,"That spacecraft evolution is not available yet.");return;}
+      websocket.playerState.shipClassId=targetId;
+      websocket.playerState.shipClass=cleanText(message.shipClass,"Spacecraft",48);
+      sendProgress(websocket);markDirty(room);return;
     }
     if(message?.type==="fire"){const angle=finite(message.angle,websocket.playerState.angle,-Math.PI*4,Math.PI*4);if(createProjectile(room,websocket,angle,now))markDirty(room);return;}
     if(message?.type==="request_respawn"){

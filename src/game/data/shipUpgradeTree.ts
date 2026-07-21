@@ -145,7 +145,7 @@ const branchDefinitions: BranchDefinition[] = [
     ["Hive Mothership", "Drone Worldcore", "Swarm Ark"],
   ]),
   branch("Machine Gun", "machine_gun", "suppression", "Rapid fire, spread, suppression, and plasma walls.", ["High fire volume", "Suppression", "Easy farming"], ["Lower burst", "Lower per-shot damage", "Spread waste"], ["Reactor Cycle", "Weapon Output", "Plasma Stability"], "pink_cyan", ["rapid_fire", "spread", "suppression"], [
-    ["Machine Gunner", "Machine Gunner", "Machine Gunner"],
+    ["Twin", "Twin", "Twin"],
     ["Rapid Sprayer", "Twin Gatling", "Suppressor"],
     ["Bullet Storm", "Gatling Falcon", "Shredder"],
     ["Plasma Hose", "Storm Cannon", "Scatter Engine"],
@@ -172,7 +172,7 @@ const branchDefinitions: BranchDefinition[] = [
     ["Minefield Mothership", "Gravity Ark", "Trap Citadel"],
   ]),
   branch("Sniper", "sniper", "precision", "Long vision, high projectile speed, high damage, slow reactor cycle.", ["Long range", "High damage", "Pick potential"], ["Slow cycle", "Fragile", "Bad close range"], ["Plasma Velocity", "Plasma Stability", "Weapon Output"], "ice_blue", ["rail", "long_range", "pierce"], [
-    ["Sniper Craft", "Sniper Craft", "Sniper Craft"],
+    ["Sniper", "Sniper", "Sniper"],
     ["Rail Hunter", "Longshot Vessel", "Assassin Scope"],
     ["Void Lancer", "Rail Piercer", "Deep Scope"],
     ["Star Needle", "Phase Rail", "Hunter Lance"],
@@ -358,7 +358,11 @@ export const spacePodNode: ShipNode = {
   implementationStatus: "playable",
 };
 const legacyCoreShipId = ["core", "sk" + "iff"].join("_");
-export const normalizeShipNodeId = (id: string) => id === legacyCoreShipId ? "base_ship" : id;
+const legacyNodeIds: Record<string, string> = {
+  machine_gun_l15_machine_gunner: "machine_gun_l15_twin",
+  sniper_l15_sniper_craft: "sniper_l15_sniper",
+};
+export const normalizeShipNodeId = (id: string) => id === legacyCoreShipId ? "base_ship" : legacyNodeIds[id] ?? id;
 export const getShipNode = (id: string) => id === spacePodNode.id ? spacePodNode : shipNodeById.get(normalizeShipNodeId(id)) ?? coreShipNode;
 export const getBranchDefinitions = () => branchDefinitions;
 
