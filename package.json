@@ -1,7 +1,13 @@
 {
   "name": "baseborn-io",
   "version": "0.1.0",
+  "description": "A real-time multiplayer space-survival game built around mining, spacecraft recovery, evolution, and shared-world combat.",
   "private": true,
+  "homepage": "https://baseborn.up.railway.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Base-Born/BaseBorn.git"
+  },
   "type": "module",
   "engines": {
     "node": ">=22.12.0"

@@ -1,175 +1,170 @@
 # BaseBorn
 
-BaseBorn is a browser-based multiplayer space survival game built with React, TypeScript, Vite, Canvas 2D, Node.js, and WebSockets. The current rework starts every new pilot in a small Survey Pod instead of at a space station.
+BaseBorn is a real-time multiplayer space-survival game for desktop and mobile browsers. Every pilot begins alone in a Survey Pod, mines a shared asteroid field, repairs a nearby derelict spacecraft, integrates the pod into it, and develops a specialized combat and exploration build.
 
-## Current starting sequence
+[Play the Railway build](https://baseborn.up.railway.app) · [Game story](docs/STORY.md) · [Release checklist](docs/FINALIZATION_PLAN.md)
 
-1. Spawn in a lightweight Survey Pod in one of the safe outer sectors.
-2. Use `W`/`S` for forward/reverse thrust and `A`/`D` to rotate the hull. The pointer independently aims later spacecraft weapons.
-3. Hold the attack control to lock one mining beam onto the closest asteroid in range.
-4. Fly over shared Ether drops to collect them in the pod's small cargo hold.
-5. The broken spacecraft starts nearby and is reserved for that pilot.
-6. Move directly over the wreck and press `F` to install 12 Raw Ether from the pod cargo into its starter hull.
-7. Once the repair meter is full, press `F` again to land and integrate with the repaired spacecraft.
-8. The pod locks into the spacecraft with a short integration animation and becomes its command craft.
-9. Continue mining, deposit Ether, restore onboard systems, and earn core-tuning points by gaining levels.
+## The playable loop
 
-Starter repairs and claiming are intentionally close-range. The server owns the pod cargo balance, permanently records each Raw Ether delivery, rejects landing before the starter hull is repaired, and reserves the nearby wreck for its intended pilot.
+1. Spawn in a silver Survey Pod beside your reserved derelict spacecraft.
+2. Aim at nearby asteroids and use the pod's single mining beam.
+3. Collect the synchronized Ether drops and earn XP and score.
+4. Deliver 12 Raw Ether to repair the derelict starter hull.
+5. Land on the repaired craft and integrate the pod as its command module.
+6. Continue mining, repair onboard systems, allocate level points, and choose weapon evolutions.
+7. Join or invite other pilots, enter the riskier inner sectors, and compete on the live leaderboard.
 
-## New starter vehicles
+Repairs, claiming, docking, cargo, progression, shared loot, and combat are validated by the multiplayer server.
 
-### Survey Pod
+## Current features
 
-- Compact silver-white survival pod based on the supplied BaseBorn concept asset
-- Independent forward, reverse, and strafe maneuvering
-- Directional blue thrusters that only fire while thrust is applied
-- Built-in single-beam mining laser with nearest-asteroid targeting
-- Lower hull strength and smaller cargo capacity than a full spacecraft
-- Server-synchronized movement, appearance, and shared mining rewards
+### Flight and combat
 
-### Derelict spacecraft
+- Smooth keyboard, touch, and controller movement with inertia and damping
+- Pointer or aim-stick weapon control independent from the hull
+- Directional blue thrusters that activate only while the corresponding force is applied
+- Single-target Survey Pod mining beam
+- Server-synchronized multiplayer projectiles and PvP damage
+- Manual respawn button with no forced countdown
+- Close-range docking and undocking animations without sideways ejection
 
-- Circular carrier spacecraft with an empty central pod cradle
-- Separate abandoned and pod-integrated visual states
-- Requires a small Raw Ether starter-hull repair before it can be claimed
-- Becomes the crew's storage, repair, and fuel-conversion hub after claiming
-- Uses close-range docking plus anchored integration and undocking animations that do not eject the pod
-- Can later unlock carrier movement, defenses, crafting, and advanced systems
+### Asteroids and Ether
 
-The future team-combination system is not part of this starting-sequence milestone. The multiplayer and team foundation remains in place so multiple upgraded spacecraft can later connect into a larger shared structure.
+- Deterministic shared asteroid field across one persistent `400,000 × 400,000` world
+- Six rarity families with distinct shapes, durability, mining resistance, rewards, and distribution
+- Increasing rarity toward the dangerous center
+- Five-minute asteroid respawns
+- Shared server-created Ether drops that any pilot can collect
+- Server-authoritative rewards, XP, score, cargo balances, and anti-duplication validation
+- Physics-based impact damage with hull armor, body damage, and health regeneration support
 
-## Asteroids and resources
+### Progression
 
-Asteroids are deterministic shared-world objects distributed by distance from the map center. Common material dominates the outer sectors, while increasingly rare shapes and Ether qualities appear inward.
+- XP and score from asteroid mining and combat
+- One core-tuning point per level from levels 2–34, capped at 33 points
+- Eight stats: Health Regen, Max Health, Body Damage, Bullet Speed, Bullet Penetration, Bullet Damage, Reload, and Movement Speed
+- A universal spacecraft base instead of the removed four-frame selection
+- Level-gated spacecraft evolutions with visual weapon previews, including Twin and Sniper paths at level 15
+- Projectile penetration as projectile durability; drone paths reinterpret it as drone health
+- Reload becomes drone replacement speed for drone builds
 
-- Asteroids have rarity-specific silhouettes, health, mass, collision damage, and Ether yields.
-- Destroyed asteroids respawn after five minutes.
-- Ether drops are shared between players and synchronized by the server.
-- Impact damage depends on relative speed and asteroid mass.
-- Hull and health-regeneration upgrades support collision-focused mining builds.
+### Multiplayer and teams
 
-## Level progression
-
-Each level from 2 through 34 awards one core-tuning point, for a maximum of 33 points. The four old base-frame choices have been removed: every pilot uses the same universal spacecraft hull, while stats and later equipment evolutions define the build. Core tuning contains Health Regen, Max Health, Body Damage, Bullet Speed, Bullet Penetration, Bullet Damage, Reload, and Movement Speed. Bullet Penetration controls projectile durability and becomes drone health for drone-based evolutions.
-
-## Multiplayer
-
-The Railway-ready Node.js service provides one persistent public world with:
-
-- Player presence and interpolation
-- Validated movement
-- Shared projectiles with server-owned fire rate, projectile speed, damage, and PvP damage
-- PvE-only protection in the outer belt, matching the HUD's safe-zone status
-- Shared asteroid destruction and five-minute respawns
-- Server-calculated asteroid rarity rewards, XP, score, and level progression
-- Shared Ether drops and server-owned cargo balances
-- Derelict-spacecraft claim contention
-- Team creation, joining, invitations, leadership, and shared ownership
-- Leaderboard synchronization
-- Reconnect restoration for XP, level, score, ship class, stat allocation, health, and cargo
+- One public map shared by all connected players on the server instance
+- Live presence, interpolation, leaderboard, teams, invitations, leadership, and shared ownership
+- Shared projectiles, asteroid destruction, loot, and five-minute respawn state
+- Safe outer belt with PvP enabled deeper in the map
+- Reconnect restoration for XP, score, level, ship class, stats, health, and cargo
 - Optional file-backed world persistence through `WORLD_STATE_PATH`
 
-The service also validates same-origin WebSocket upgrades, limits message bursts, disables unused browser permissions, prevents framing, and exposes build/persistence readiness through `/health`.
+### Interface and devices
 
-This rework uses world revision `pod-start-v1`. Older persisted worlds are not loaded into the new starting sequence, preventing previous station-era player and ownership state from leaking into the pod tutorial.
+- Compact bottom-center name, score, level, and XP HUD inspired by readable `.io` interfaces
+- Condensed docked-spacecraft actions without the former full-screen resource matrix
+- Dedicated cargo and spacecraft-system screens for detailed management
+- Responsive camera zoom for desktop, ultrawide, tablet, and phone layouts
+- Mobile movement and aim sticks with safe-area-aware controls
+- Installable PWA support for launching without the normal browser address bar
 
 ## Controls
 
 | Input | Action |
 |---|---|
-| `W` / `S` or Up / Down | Apply forward or reverse thrust |
-| `A` / `D` or Left / Right | Rotate the pod or spacecraft without strafing |
-| Controller left stick | Analog thrust and rotation with deadzone filtering |
-| Pointer | Aim |
-| Left click / `Space` | Fire the mining laser or active weapon |
-| `F` | Install starter repairs / land and integrate / dock / undock |
+| `W` / `S` or Up / Down | Forward or reverse thrust |
+| `A` / `D` or Left / Right | Turn the pod, spacecraft, or driven craft |
+| Pointer | Aim the mining beam or mounted weapon |
+| Left click / `Space` | Mine or fire |
+| `F` | Repair, integrate, dock, or undock when in range |
 | `V` | Show or refresh the spacecraft waypoint |
-| `R` | Scan while flying / repair the next system while docked |
+| `R` | Scan while flying or repair the next docked system |
 | `U` | Open spacecraft systems while docked |
 | `G` | Drop the lowest-quality cargo stack |
-| `H` | Toggle cargo pickup |
-| `1`–`8` | Spend an available level point on the matching core stat |
-| `Y` | Open core tuning when level points are available |
+| `H` | Toggle automatic cargo pickup |
+| `1`–`8` | Spend a point on the matching core stat |
+| `Y` | Open core tuning when points are available; show the evolution tree |
 | `E` | Toggle auto-fire |
 | `Q` | Toggle auto-throttle |
-| Respawn button | Return near your active spacecraft, or to a safe outer-zone spawn if no valid craft remains |
+| Respawn button | Respawn near the active team spacecraft or in the safe outer belt |
 
-Mobile controls provide a flight stick (vertical thrust, horizontal rotation), a separate aim stick, fire and interaction actions, and adaptive HUD layouts.
+On mobile, the left stick controls movement, the right stick controls aim, and contextual buttons provide fire, interaction, scan, cargo, and upgrade actions.
 
-## Local development
+## Technology
 
-Requirements: Node.js 22.12 or newer.
+- React 19 and TypeScript
+- Vite
+- Canvas 2D rendering
+- Node.js 22
+- `ws` WebSockets
+- Railway deployment
+- Playwright-assisted browser verification
+
+## Run locally
+
+Node.js 22.12 or newer is required.
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Production-equivalent local run:
+Production-equivalent run:
 
 ```bash
 npm run build
 npm start
 ```
 
-Useful checks:
+The production server serves the built client, exposes `/health`, and accepts WebSocket connections at `/multiplayer`.
+
+## Verification
 
 ```bash
 npm run typecheck
+npm run test:movement
 npm run test:multiplayer
 npm run test:load
 npm run test:persistence
 npm test
-npm audit --omit=dev --audit-level=high
+npm run build
 ```
+
+The automated suite covers keyboard/controller movement, asteroid synchronization and drops, five-minute respawns, station driving, shared projectiles and damage, cargo validation, reconnects, teams, claims, leadership, 24-client load, and atomic persistence.
 
 ## Railway deployment
 
-The repository is configured to build the Vite client and serve it with the multiplayer Node.js process.
+[`railway.json`](railway.json) contains the production settings:
 
-- Build command: `npm ci && npm run build`
+- Builder: Railpack
+- Build command: `npm run build`
 - Start command: `npm start`
 - Health check: `/health`
-- WebSocket endpoint: `/multiplayer`
-- Required runtime variable: Railway supplies `PORT`
-- Optional persistence variable: `WORLD_STATE_PATH=/data/baseborn-world.json` with a Railway volume mounted at `/data`
+- Restart policy: on failure, up to five retries
 
-Pushing to the GitHub branch connected to Railway triggers deployment when automatic deployments are enabled in Railway.
-
-For persistent progression on Railway, mount a volume at `/data` and configure:
+Railway supplies `PORT`. For persistent progression, mount a Railway volume at `/data` and set:
 
 ```text
 WORLD_STATE_PATH=/data/baseborn-world.json
 ```
 
-## Playable MVP completion status
-
-| Area | Release requirement | Status |
-|---|---|---|
-| Opening loop | Spawn beside wreck, mine, collect, repair hull, integrate, deposit | Complete |
-| Flight | Pointer aim, WASD/touch movement, directional thrusters | Complete |
-| Progression | XP, levels, stat allocation, evolution paths | Complete |
-| Multiplayer | One shared map, presence, teams, leaderboard, shared loot | Complete |
-| Combat | Shared projectiles, server damage, stat-scaled weapons, respawn | Complete |
-| Safety | Outer PvE belt and inner PvP risk zones | Complete |
-| Continuity | Session identity and server-backed player/cargo restoration | Complete |
-| Devices | Desktop, ultrawide, tablet, phone landscape, portrait fallback, PWA | Complete |
-| Operations | Railway health check, persistence option, load tests, CI | Complete |
-
-The audit and release acceptance criteria are documented in [`docs/FINALIZATION_PLAN.md`](docs/FINALIZATION_PLAN.md).
+Automatic deployment should target the GitHub `main` branch. The repository's GitHub Actions workflow runs the full test suite and production build on every push and pull request.
 
 ## Project structure
 
 ```text
-public/assets/starter/       Survey Pod and derelict/claimed spacecraft sprites
-src/game/entities/          Player, asteroid, projectile, drone, and enemy entities
-src/game/rendering/         Ship, asteroid, Ether, and background rendering
-src/game/systems/           Gameplay, docking, mining, upgrades, teams, and simulation
-src/game/ui/                Desktop, tablet, and mobile interface components
-server/                     Static production server, WebSocket world, and persistence
-scripts/                    Multiplayer, load, and persistence smoke tests
+public/assets/starter/       Survey Pod and derelict/claimed spacecraft art
+src/components/              Menu and upgrade-tree components
+src/game/entities/           Player, asteroid, projectile, drone, and enemy entities
+src/game/rendering/          Spacecraft, asteroid, Ether, and background rendering
+src/game/systems/            Simulation, mining, docking, progression, and networking
+src/game/ui/                 Responsive desktop and mobile interfaces
+src/styles/                  Shared and responsive interface styling
+server/                      Static server, WebSocket world, validation, persistence
+scripts/                     Movement, multiplayer, load, and persistence smoke tests
+docs/                        Story, release criteria, and design references
 ```
 
-## Release scope
+## Current scope
 
-This repository now targets a playable single-process multiplayer MVP: one persistent public world, up to 64 connected pilots per instance, pod-first onboarding, progression, combat, teams, shared resources, and a claimed spacecraft hub. New enemy families, additional evolution branches, multi-region orchestration, and physical team-craft fusion are post-MVP content expansions.
+BaseBorn currently targets a playable single-process multiplayer MVP with one shared world per server instance. Physical fusion of multiple team spacecraft, additional evolution branches, expanded PvE, moderation, regional sharding, seasons, and account-based cross-browser progression remain future work.
+
+The anonymous session identity is stored locally in the browser. Run only one Railway game-process replica until world state is moved to shared infrastructure such as Redis or a database.

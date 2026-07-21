@@ -1,4 +1,6 @@
-## BaseBorn — Complete Upgrade System
+# BaseBorn — Upgrade Design Archive
+
+> **Status:** This is a long-term design reference, not a description of every currently playable system. The authoritative current feature list is in the [README](../README.md). The live build starts in a Survey Pod, uses one universal spacecraft base, awards core-tuning points through level 34, and presents level-gated weapon evolutions. Station archetypes, complete mothership progression, and team-craft fusion below remain roadmap concepts unless listed as complete in the release checklist.
 
 Below is the full upgrade structure based on the current BaseBorn design. Some exact numerical values still need balancing, but the systems and progression paths are defined.
 
@@ -8,7 +10,7 @@ Every player ship has **7 major evolution stages**.
 
 Each ship level gives the player **one upgrade choice**, allowing ships to develop differently depending on playstyle.
 
-The ship upgrades independently from the base station. The station provides crafting, modifications, repairs, and support, but it does not control the ship’s core level progression.
+The ship upgrades independently from its recovered spacecraft hub. The hub provides crafting, modifications, repairs, and support, but it does not control the ship's core level progression.
 
 ## Ship Evolution Stages
 
