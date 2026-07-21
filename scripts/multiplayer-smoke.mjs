@@ -48,6 +48,8 @@ try {
   assert.equal(health.status, "ok");
   const alpha = await connect("Alpha");
   const beta = await connect("Beta", "a-different-requested-room");
+  assert.equal(alpha.welcome.profile.shipClassId,"space_pod","new pilots must start in the Survey Pod");
+  assert.equal(alpha.welcome.profile.shipClass,"Survey Pod","new pilots must receive the pod profile");
   assert.equal(alpha.welcome.worldId, beta.welcome.worldId);
   assert.notDeepEqual(alpha.welcome.spawn, beta.welcome.spawn);
   assert.equal(alpha.welcome.room, "public");
@@ -90,6 +92,7 @@ try {
   const alphaStation = initialTeamSnapshot.stations
     .filter((station) => station.claimState === "unclaimed")
     .sort((left, right) => distance(left, alpha.welcome.spawn) - distance(right, alpha.welcome.spawn))[0];
+  assert(distance(alphaStation,alpha.welcome.spawn)>=330&&distance(alphaStation,alpha.welcome.spawn)<=430,"the broken spacecraft must spawn visibly beside the Survey Pod");
   await moveClient(alpha,alpha.welcome.spawn,{x:alphaStation.x+300,y:alphaStation.y});
   alpha.socket.send(JSON.stringify({ type:"claim_station", stationId:alphaStation.id }));
   await waitForMessage(alpha,(message)=>message.type==="action_error"&&/cradle/i.test(message.message));
@@ -100,11 +103,10 @@ try {
   const repairedSnapshot=await waitForSnapshot(alpha,(message)=>{const station=message.stations.find((entry)=>entry.id===alphaStation.id);return station?.starterRepairProgress===station?.starterRepairRequired;});
   assert.equal(repairedSnapshot.stations.find((station)=>station.id===alphaStation.id).starterRepairRequired,12,"starter repair should require a small asteroid-farming delivery");
   alpha.socket.send(JSON.stringify({ type:"claim_station", stationId:alphaStation.id }));
-  const claimedSnapshot = await waitForSnapshot(alpha, (message) => message.teams.some((team) => team.id===alphaTeam.id&&team.stationId===alphaStation.id));
+  const claimedSnapshot = await waitForSnapshot(alpha, (message) => message.teams.some((team) => team.id===alphaTeam.id&&team.stationId===alphaStation.id)&&message.stations.find((station)=>station.id===alphaStation.id)?.dockedPlayerIds.includes(alpha.id)&&message.players.find((player)=>player.id===alpha.id)?.docked);
   const claimedStation = claimedSnapshot.stations.find((station) => station.id===alphaStation.id);
-  await moveClient(alpha,{x:alphaStation.x+120,y:alphaStation.y},{x:claimedStation.x,y:claimedStation.y});
-  alpha.socket.send(JSON.stringify({type:"state",state:{x:claimedStation.x,y:claimedStation.y,vx:0,vy:0,angle:0,thrustForward:0,thrustStrafe:0,docked:true,healthRatio:1,level:1,score:0,shipClassId:"base_ship",shipClass:"Base Ship"}}));
-  await waitForSnapshot(alpha,(message)=>message.stations.find((station)=>station.id===alphaStation.id)?.dockedPlayerIds.includes(alpha.id));
+  const integratedPlayer=claimedSnapshot.players.find((player)=>player.id===alpha.id);
+  assert(distance(integratedPlayer,claimedStation)<1,"claiming must integrate the pod into the broken spacecraft without an extra docking action");
   alpha.socket.send(JSON.stringify({type:"station_input",stationId:alphaStation.id,x:0,y:-1,aimAngle:Math.PI/2}));
   const drivenSnapshot = await waitForSnapshot(alpha,(message)=>message.stations.some((station)=>station.id===alphaStation.id&&distance(station,claimedStation)>2&&station.driverPlayerId===alpha.id));
   const drivenStation = drivenSnapshot.stations.find((station)=>station.id===alphaStation.id);
@@ -120,9 +122,10 @@ try {
   const idleThrusterSnapshot=await waitForSnapshot(alpha,(message)=>{const station=message.stations.find((entry)=>entry.id===alphaStation.id);return station?.driveX===0&&station?.driveY===0;});
   assert.equal(idleThrusterSnapshot.stations.find((station)=>station.id===alphaStation.id).driveX,0,"station thrusters should turn off when drive input stops");
   alpha.socket.send(JSON.stringify({type:"state",state:{x:drivenStation.x,y:drivenStation.y,vx:0,vy:0,angle:0,thrustForward:0,thrustStrafe:0,docked:false,healthRatio:1,level:1,score:0,shipClassId:"base_ship",shipClass:"Base Ship"}}));
-  const undockedSnapshot = await waitForSnapshot(alpha,(message)=>message.players.some((player)=>player.id===alpha.id&&!player.docked)&&!message.stations.find((station)=>station.id===alphaStation.id)?.dockedPlayerIds.includes(alpha.id));
+  const undockedSnapshot = await waitForSnapshot(alpha,(message)=>{const station=message.stations.find((entry)=>entry.id===alphaStation.id);return station?.claimState==="claimed"&&message.players.some((player)=>player.id===alpha.id&&!player.docked)&&!station.dockedPlayerIds.includes(alpha.id);});
   const undockedPlayer = undockedSnapshot.players.find((player)=>player.id===alpha.id);
-  assert(distance(undockedPlayer,drivenStation)<=60,"undocking should release the ship at its cradle instead of ejecting it sideways");
+  const undockedStation=undockedSnapshot.stations.find((station)=>station.id===alphaStation.id);
+  assert(distance(undockedPlayer,undockedStation)<=60,"undocking should release the ship at its current cradle instead of ejecting it sideways");
   alpha.socket.send(JSON.stringify({type:"request_respawn"}));
   const manualRespawn=await waitForMessage(alpha,(message)=>message.type==="respawn");
   const respawnStation=undockedSnapshot.stations.find((station)=>station.id===alphaStation.id);

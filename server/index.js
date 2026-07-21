@@ -13,7 +13,7 @@ const maxPlayersPerRoom = Math.max(2, Number.parseInt(process.env.MAX_PLAYERS_PE
 const rooms = new Map();
 const publicWorldId = "baseborn-prime";
 const publicWorldSeed = 0x5ba5e0d1;
-const worldRevision = "pod-start-v1";
+const worldRevision = "pod-start-v2";
 const startedAt = Date.now();
 const worldStatePath = process.env.WORLD_STATE_PATH || "";
 const etherTypes = new Set(["rawEther", "refinedEther", "chargedEther", "radiantEther", "primalEther", "coreEther"]);
@@ -27,7 +27,7 @@ const maxMovementSpeed = 1800;
 const pickupDistance = 180;
 const stationClaimDistance = 145;
 const stationDockDistance = 180;
-const starterWreckDistance = 520;
+const starterWreckDistance = 380;
 const starterWreckRepairCost = 12;
 const asteroidChunkSize = 1600;
 const projectileSpeed = 720;
@@ -147,8 +147,8 @@ function createTeam(playerId,name){
   return{id:crypto.randomUUID(),name:`${name}'s Crew`,leaderPlayerId:playerId,memberIds:[playerId],maxMembers:6,stationId:null,createdAt:Date.now()};
 }
 function createStarterStation(spawn,playerId){
-  const sx=Math.sign(spawn.x)||1,sy=Math.sign(spawn.y)||1;
-  return{id:crypto.randomUUID(),name:"Derelict Survey Craft",x:spawn.x-sx*starterWreckDistance,y:spawn.y-sy*starterWreckDistance,vx:0,vy:0,driveX:0,driveY:0,driverPlayerId:null,driveUpdatedAt:0,facingAngle:0,angularVelocity:0,thrusterForward:0,thrusterRotation:0,turretAngle:-Math.PI/2,turretFiringUntil:0,turretClassId:"base_ship",claimState:"unclaimed",ownerTeamId:null,ownerPlayerId:null,reservedForPlayerId:playerId,starterRepairProgress:0,starterRepairRequired:starterWreckRepairCost,level:1,health:360,maxHealth:2200,isMobile:false,mothershipUnlocked:false,dockedPlayerIds:[]};
+  const angle=-Math.PI/4;
+  return{id:crypto.randomUUID(),name:"Derelict Survey Craft",x:spawn.x+Math.cos(angle)*starterWreckDistance,y:spawn.y+Math.sin(angle)*starterWreckDistance,vx:0,vy:0,driveX:0,driveY:0,driverPlayerId:null,driveUpdatedAt:0,facingAngle:0,angularVelocity:0,thrusterForward:0,thrusterRotation:0,turretAngle:-Math.PI/2,turretFiringUntil:0,turretClassId:"base_ship",claimState:"unclaimed",ownerTeamId:null,ownerPlayerId:null,reservedForPlayerId:playerId,starterRepairProgress:0,starterRepairRequired:starterWreckRepairCost,level:1,health:360,maxHealth:2200,isMobile:false,mothershipUnlocked:false,dockedPlayerIds:[]};
 }
 function spawnNearStation(station){
   const angle=Math.random()*Math.PI*2;
@@ -493,7 +493,9 @@ websocketServer.on("connection",(websocket)=>{
       const station=room.stations.get(String(message.stationId||""));const team=teamForPlayer(room,playerId);
       if(!station||!team||station.claimState!=="unclaimed"||station.reservedForPlayerId!==playerId||team.stationId||distance(websocket.playerState,station)>stationClaimDistance){sendError(websocket,"Move directly into your spacecraft cradle before claiming it.");return;}
       if((station.starterRepairProgress||0)<(station.starterRepairRequired||starterWreckRepairCost)){sendError(websocket,"Repair the broken spacecraft with Raw Ether before landing.");return;}
-      station.claimState="claimed";station.ownerTeamId=team.id;station.ownerPlayerId=playerId;station.name=`${websocket.identity.customization.name}'s Craft`;station.reservedForPlayerId=null;station.health=Math.max(station.health,station.maxHealth*.34);team.stationId=station.id;websocket.playerState.shipClassId="base_ship";websocket.playerState.shipClass="Base Ship";sendProgress(websocket);markDirty(room);return;
+      station.claimState="claimed";station.ownerTeamId=team.id;station.ownerPlayerId=playerId;station.name=`${websocket.identity.customization.name}'s Craft`;station.reservedForPlayerId=null;station.health=Math.max(station.health,station.maxHealth*.34);team.stationId=station.id;
+      for(const entry of room.stations.values())entry.dockedPlayerIds=entry.dockedPlayerIds.filter(id=>id!==playerId);
+      station.dockedPlayerIds.push(playerId);websocket.playerState.x=station.x;websocket.playerState.y=station.y;websocket.playerState.vx=0;websocket.playerState.vy=0;websocket.playerState.docked=true;websocket.playerState.updatedAt=now;websocket.playerState.shipClassId="base_ship";websocket.playerState.shipClass="Base Ship";sendProgress(websocket);markDirty(room);return;
     }
     if(message?.type==="rename_station"){
       const station=room.stations.get(String(message.stationId||""));const team=teamForPlayer(room,playerId);

@@ -19,7 +19,7 @@ export const STATION_CONFIG = {
   baseRadius: 170,
   spacecraftVisualRadius: 226,
   spacecraftCollisionRadius: 212,
-  starterStationDistance: 520,
+  starterStationDistance: 380,
   starterWreckRepairCost: 12,
   localRelocationStepDistance: 4200,
   stationBasePilotSpeed: 210,

@@ -733,11 +733,12 @@ export class Game {
     const shortestSide = Math.min(rect.width, rect.height);
     const touchViewport = window.matchMedia?.("(hover: none) and (pointer: coarse)").matches ?? false;
     let zoom = touchViewport || shortestSide < 700
-      ? (rect.width > rect.height ? 0.6 : 0.54)
-      : rect.width >= 1800 ? 0.68 : rect.width >= 1200 ? 0.72 : 0.76;
-    if (this.player.dockingState === "docked") zoom *= 0.9;
-    if (this.player.currentBranch === "Sniper") zoom *= 0.84;
-    return Math.max(0.46, Math.min(0.78, zoom));
+      ? (rect.width > rect.height ? 0.76 : 0.7)
+      : rect.width >= 1800 ? 0.82 : rect.width >= 1200 ? 0.88 : 0.94;
+    if (this.player.currentShipId === "space_pod" && !this.stations.claimedStation) zoom = Math.max(zoom, 1.02);
+    if (this.player.dockingState === "docked") zoom *= 0.94;
+    if (this.player.currentBranch === "Sniper") zoom *= 0.86;
+    return Math.max(0.58, Math.min(1.06, zoom));
   }
 
   private getDroneCommands(aimWorld: Vec2) {

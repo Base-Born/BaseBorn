@@ -262,7 +262,9 @@ export class MultiplayerClient {
   }
 
   private static getSessionId() {
-    const key = "baseborn.multiplayer.session";
+    // v2 intentionally starts existing browsers on the repaired pod tutorial once,
+    // while retaining stable reconnect identity after that migration.
+    const key = "baseborn.multiplayer.session.v2";
     const existing = window.localStorage.getItem(key);
     if (existing && /^[0-9a-f-]{36}$/i.test(existing)) return existing;
     const created = crypto.randomUUID();
