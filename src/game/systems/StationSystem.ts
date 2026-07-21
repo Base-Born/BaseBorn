@@ -35,6 +35,8 @@ import type { StatKey } from "../data/stats";
 import { canUpgradeShipStat } from "./ShipUpgradeSystem";
 import { canAffordStationFuelCost, convertEtherToStationFuel, createStationFuelState, spendStationFuel } from "./StationFuelSystem";
 import { ETHER_CONFIG } from "../data/etherConfig";
+import { resolveMovementTuning, type MovementCommand } from "../data/movementConfig";
+import { updateThrusterMovement } from "./ShipMovementSystem";
 
 const STATION_NAMES = ["Hollow Runner", "Kestrel Hull", "Orion Courier", "Rustwake", "Pale Voyager", "Foundry Skiff", "Eidolon Craft", "Broken Halo"];
 
@@ -87,7 +89,9 @@ export class StationSystem {
       const driveScale = drivePower > 1 ? 1 / drivePower : 1;
       station.driveInput = drivePower > 0.001 ? { x: driveX * driveScale, y: driveY * driveScale } : { x: 0, y: 0 };
       if (Number.isFinite(state.facingAngle)) station.facingAngle = lerpAngle(station.facingAngle ?? state.facingAngle as number, state.facingAngle as number, 0.34);
-      else if (drivePower > 0.001) station.facingAngle = Math.atan2(driveY, driveX) + Math.PI / 2;
+      if (Number.isFinite(state.angularVelocity)) station.angularVelocity = state.angularVelocity;
+      if (Number.isFinite(state.thrusterForward)) station.thrusterForward = state.thrusterForward;
+      if (Number.isFinite(state.thrusterRotation)) station.thrusterRotation = state.thrusterRotation;
       if (Number.isFinite(state.turretAngle)) station.turretAngle = lerpAngle(station.turretAngle ?? state.turretAngle as number, state.turretAngle as number, 0.42);
       if (state.turretClassId) station.turretClassId = state.turretClassId;
       station.reservedForPlayerId = state.reservedForPlayerId ?? null;
@@ -229,6 +233,7 @@ export class StationSystem {
     player.dockingFrom = { ...player.pos };
     player.dockingTo = padPosition;
     player.vel = { x: 0, y: 0 };
+    player.angularVelocity = 0;
     player.thrustWorld = { x: 0, y: 0 };
     player.thrustLocal = { forward: 0, strafe: 0 };
     station.driveInput = { x: 0, y: 0 };
@@ -247,6 +252,7 @@ export class StationSystem {
     player.dockingTo = padPosition;
     player.pos = padPosition;
     player.vel = { x: 0, y: 0 };
+    player.angularVelocity = 0;
     player.thrustWorld = { x: 0, y: 0 };
     player.thrustLocal = { forward: 0, strafe: 0 };
     station.driveInput = { x: 0, y: 0 };
@@ -278,6 +284,7 @@ export class StationSystem {
     player.dockedStationId = null;
     player.dockingState = "free";
     player.vel = { x: 0, y: 0 };
+    player.angularVelocity = 0;
     player.thrustWorld = { x: 0, y: 0 };
     player.thrustLocal = { forward: 0, strafe: 0 };
   }
@@ -303,29 +310,20 @@ export class StationSystem {
     return this.isPlayerDockedAtClaimedStation(player, station) ? station : null;
   }
 
-  pilotClaimedStation(player: Player, move: Vec2, dt: number, station = this.claimedStation) {
+  pilotClaimedStation(player: Player, command: MovementCommand, _dt: number, station = this.claimedStation) {
     if (!station || !canPilotStation(station, player)) return false;
-    const magnitude = Math.hypot(move.x, move.y);
-    const direction = magnitude > 0.001 ? { x: move.x / magnitude, y: move.y / magnitude } : { x: 0, y: 0 };
     const maxSpeed = getStationPilotMaxSpeed(station);
-    const inputPower = Math.min(1, magnitude);
-    station.vel.x += direction.x * STATION_CONFIG.stationPilotAcceleration * inputPower * Math.min(dt, 0.05);
-    station.vel.y += direction.y * STATION_CONFIG.stationPilotAcceleration * inputPower * Math.min(dt, 0.05);
-    clampStationVelocity(station, maxSpeed);
-    station.driveInput = { x: direction.x * inputPower, y: direction.y * inputPower };
-    if (magnitude > 0.001) {
-      const targetFacing = Math.atan2(direction.y, direction.x) + Math.PI / 2;
-      const facingBlend = 1 - Math.exp(-STATION_CONFIG.stationFacingResponse * Math.min(dt, 0.1));
-      station.facingAngle = lerpAngle(station.facingAngle ?? targetFacing, targetFacing, facingBlend);
-    }
+    station.driveInput = { x: command.rotationInput, y: -command.thrustInput };
     player.pos = this.getDockedPlayerPosition(player, station) ?? { ...station.pos };
     player.vel = { x: 0, y: 0 };
-    player.thrustWorld = direction;
-    player.thrustLocal = { forward: magnitude > 0.001 ? 1 : 0, strafe: 0 };
+    // The carrier artwork faces up at zero rotation, while the shared flight
+    // solver uses +X as its local forward axis.
+    player.thrustWorld = { x: Math.sin(station.facingAngle ?? 0) * command.thrustInput, y: -Math.cos(station.facingAngle ?? 0) * command.thrustInput };
+    player.thrustLocal = { forward: station.thrusterForward ?? command.thrustInput, strafe: station.thrusterRotation ?? command.rotationInput };
     station.isMobile = true;
     station.lifecycleState = "active";
     station.lastActiveAt = performance.now();
-    station.localRelocationReason = `Command drive online. WASD moves the station at up to ${Math.round(maxSpeed)} u/s.`;
+    station.localRelocationReason = `Command drive online. W/S thrust, A/D rotate. Maximum forward speed ${Math.round(maxSpeed)} u/s.`;
     return true;
   }
 
@@ -990,6 +988,9 @@ export class StationSystem {
       vel: { x: 0, y: 0 },
       driveInput: { x: 0, y: 0 },
       facingAngle: 0,
+      angularVelocity: 0,
+      thrusterForward: 0,
+      thrusterRotation: 0,
       turretAngle: -Math.PI / 2,
       turretFiringUntil: 0,
       turretClassId: "base_ship",
@@ -1119,23 +1120,34 @@ export class StationSystem {
       return;
     }
     if (!station.vel) station.vel = { x: 0, y: 0 };
-    const inputPower = Math.min(1, Math.hypot(station.driveInput?.x ?? 0, station.driveInput?.y ?? 0));
-    const damping = Math.pow(inputPower > 0.001 ? STATION_CONFIG.stationPilotActiveDamping : STATION_CONFIG.stationPilotIdleDamping, Math.min(dt, 0.1));
-    station.vel.x *= damping;
-    station.vel.y *= damping;
-    const speed = Math.hypot(station.vel.x, station.vel.y);
-    if (speed <= 0.01) {
-      station.vel = { x: 0, y: 0 };
-      return;
-    }
     const maxSpeed = isStationPhasedForHyperdrive(station)
       ? getStationPilotMaxSpeed(station) * STATION_CONFIG.hyperdriveSpeedMultiplier
       : getStationPilotMaxSpeed(station);
-    clampStationVelocity(station, maxSpeed);
-    station.pos = clampToWorld({
-      x: station.pos.x + station.vel.x * dt,
-      y: station.pos.y + station.vel.y * dt,
-    }, station.radius + 250);
+    const tuning = resolveMovementTuning("carrier", {
+      acceleration: STATION_CONFIG.stationPilotAcceleration / 430,
+      maximumSpeed: maxSpeed / 230,
+      rotation: 1 + Math.max(0, station.upgradeState.boosterLevel - 1) * 0.06,
+    });
+    const command: MovementCommand = {
+      thrustInput: -(station.driveInput?.y ?? 0),
+      rotationInput: station.driveInput?.x ?? 0,
+      source: "keyboard",
+    };
+    const body = {
+      pos: station.pos,
+      vel: station.vel,
+      angle: (station.facingAngle ?? 0) - Math.PI / 2,
+      angularVelocity: station.angularVelocity ?? 0,
+      thrusterForward: station.thrusterForward ?? 0,
+      thrusterRotation: station.thrusterRotation ?? 0,
+    };
+    updateThrusterMovement(body, command, tuning, dt, station.radius + 250);
+    station.pos = body.pos;
+    station.vel = body.vel;
+    station.facingAngle = body.angle + Math.PI / 2;
+    station.angularVelocity = body.angularVelocity;
+    station.thrusterForward = body.thrusterForward;
+    station.thrusterRotation = body.thrusterRotation;
   }
 
   private isRepairStageComplete(station: Station, stageId: RepairStageId) {

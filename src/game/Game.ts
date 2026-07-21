@@ -39,6 +39,7 @@ import { LOOT_REGION_CONFIG, type LootRegionId } from "./data/lootRegionConfig";
 import type { Customization, GameSnapshot, Planet, Vec2 } from "./types";
 import { getUpgradeImpactProfile } from "./data/upgradeImpactProfiles";
 import { getShipNode } from "./data/shipUpgradeTree";
+import type { MovementCommand } from "./data/movementConfig";
 import { GameEventSystem } from "./systems/GameEventSystem";
 import { MultiplayerClient } from "./network/MultiplayerClient";
 import { SPACE_BACKGROUND_CONFIG } from "./data/spaceBackgroundConfig";
@@ -181,6 +182,11 @@ export class Game {
     this.beginRespawn();
     this.autoFire = false;
     this.emitSnapshot();
+  }
+
+  setMovementPaused(paused: boolean) {
+    if (paused && !this.pausedByTree) this.input.resetActiveInput();
+    this.pausedByTree = paused;
   }
 
   respawnPlayer() {
@@ -488,8 +494,8 @@ export class Game {
     this.stations.updateDockingAnimation(this.player, now);
     this.handleStationDockingFailure();
     if (this.mode === "playing" && this.player.dockingState === "docked") {
-      const stationMovement = this.input.movement();
-      const piloted = this.stations.pilotClaimedStation(this.player, stationMovement, dt);
+      const stationCommand = this.input.movementCommand(!this.pausedByTree);
+      const piloted = this.stations.pilotClaimedStation(this.player, stationCommand, dt);
       const pilotedStation = this.stations.claimedStation;
       if (pilotedStation) pilotedStation.turretClassId = this.player.currentShipId;
       const turretAngle = pilotedStation ? this.stations.aimClaimedStationTurret(this.player, aimWorld, dt, pilotedStation) : null;
@@ -502,21 +508,23 @@ export class Game {
         if (firedMountedWeapon) pilotedStation.turretFiringUntil = now + 90;
       }
       if (piloted && pilotedStation && this.multiplayer.isOnline()) {
-        this.multiplayer.driveStation(pilotedStation.id, stationMovement, turretAngle ?? pilotedStation.turretAngle ?? 0, this.player.currentShipId);
+        this.multiplayer.driveStation(pilotedStation.id, { x: stationCommand.rotationInput, y: -stationCommand.thrustInput }, turretAngle ?? pilotedStation.turretAngle ?? 0, this.player.currentShipId);
         if (firedMountedWeapon) this.multiplayer.fire(turretAngle ?? 0);
       }
       if (piloted) this.updateZoneState();
     }
     const playerActive = this.mode === "playing" && !this.player.isInsideStation;
     if (playerActive) {
-      const move = this.input.movement();
-      const throttleMove = this.autoThrottle && move.y === 0 ? { ...move, y: -1 } : move;
+      const command = this.input.movementCommand(!this.pausedByTree);
+      const throttleCommand: MovementCommand = this.autoThrottle && command.thrustInput === 0
+        ? { ...command, thrustInput: 1, source: command.source === "none" ? "keyboard" : command.source }
+        : command;
       const directFire = !this.player.usesDroneControls && (this.input.firing || this.autoFire);
       const miningTarget = this.player.currentShipId === "space_pod" && directFire
         ? this.closestMiningAsteroid()
         : null;
       const projectileCountBeforeUpdate = this.projectiles.length;
-      this.player.update(dt, throttleMove, aimWorld, directFire, this.projectiles, miningTarget);
+      this.player.update(dt, throttleCommand, aimWorld, directFire, this.projectiles, miningTarget);
       if (this.multiplayer.isOnline() && this.projectiles.length > projectileCountBeforeUpdate) {
         const projectile = this.projectiles[projectileCountBeforeUpdate];
         this.multiplayer.fire(Math.atan2(projectile.vel.y, projectile.vel.x));
@@ -688,6 +696,11 @@ export class Game {
     this.mode = "respawning";
     this.autoFire = false;
     this.autoThrottle = false;
+    this.input.resetActiveInput();
+    this.player.vel = { x: 0, y: 0 };
+    this.player.angularVelocity = 0;
+    this.player.thrustWorld = { x: 0, y: 0 };
+    this.player.thrustLocal = { forward: 0, strafe: 0 };
   }
 
   private updateRespawnState() {

@@ -126,45 +126,52 @@ export class StationRenderer {
     const spriteOffsetX = desiredCenterX - sourceCenterX;
     const spriteOffsetY = desiredCenterY - sourceCenterY;
     const speed = Math.hypot(station.vel.x, station.vel.y);
-    const drivePower = Math.min(1, Math.hypot(station.driveInput?.x ?? 0, station.driveInput?.y ?? 0));
+    const forwardPower = Math.max(-1, Math.min(1, station.thrusterForward ?? -(station.driveInput?.y ?? 0)));
+    const rotationPower = Math.max(-1, Math.min(1, station.thrusterRotation ?? (station.driveInput?.x ?? 0)));
     const velocityFacing = speed > 5 ? Math.atan2(station.vel.y, station.vel.x) + Math.PI / 2 : 0;
     const stationRotation = station.facingAngle ?? velocityFacing;
     ctx.save();
     ctx.translate(station.pos.x, station.pos.y);
     ctx.rotate(stationRotation);
 
-    if (drivePower > 0.05) {
+    if (Math.abs(forwardPower) > 0.05 || Math.abs(rotationPower) > 0.05) {
       const boosterLevel = Math.max(1, station.upgradeState.boosterLevel);
       const upgradeScale = Math.min(2.1, 1 + (boosterLevel - 1) * 0.16 + station.level * 0.002 + profile.repairProgress * 0.18);
-      const power = drivePower;
-      const start = station.radius * 1.02;
-      const end = station.radius * (1.32 + power * 0.74) * upgradeScale;
-      const plume = ctx.createLinearGradient(0, start, 0, end);
-      plume.addColorStop(0, "rgba(236,253,255,.98)");
-      plume.addColorStop(0.16, "rgba(72,209,255,.94)");
-      plume.addColorStop(0.58, "rgba(38,155,255,.64)");
-      plume.addColorStop(1, "rgba(38,155,255,0)");
-      ctx.strokeStyle = plume;
-      ctx.lineWidth = (18 + power * 12) * upgradeScale;
-      ctx.lineCap = "round";
-      ctx.shadowColor = "#46d8ff";
-      ctx.shadowBlur = 22 * upgradeScale;
-      ctx.beginPath();
-      ctx.moveTo(0, start);
-      ctx.lineTo(0, end);
-      ctx.stroke();
-
-      if (boosterLevel >= 2) {
-        ctx.globalAlpha = 0.72 + power * 0.2;
-        ctx.strokeStyle = "rgba(223,252,255,.92)";
-        ctx.lineWidth = Math.max(3, ctx.lineWidth * 0.22);
-        for (const offset of [-station.radius * 0.16, station.radius * 0.16]) {
-          ctx.beginPath();
-          ctx.moveTo(offset, start - station.radius * 0.03);
-          ctx.lineTo(offset, end * 0.82);
-          ctx.stroke();
-        }
+      const plume = (sx: number, sy: number, ex: number, ey: number, power: number, width: number) => {
+        const gradient = ctx.createLinearGradient(sx, sy, ex, ey);
+        gradient.addColorStop(0, "rgba(236,253,255,.98)");
+        gradient.addColorStop(0.16, "rgba(72,209,255,.94)");
+        gradient.addColorStop(0.58, "rgba(38,155,255,.64)");
+        gradient.addColorStop(1, "rgba(38,155,255,0)");
+        ctx.globalAlpha = Math.min(1, Math.abs(power));
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = width * upgradeScale * (0.72 + Math.abs(power) * 0.65);
+        ctx.lineCap = "round";
+        ctx.shadowColor = "#46d8ff";
+        ctx.shadowBlur = 22 * upgradeScale;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+      };
+      if (forwardPower > 0.05) {
+        const start = station.radius * 1.02;
+        const end = station.radius * (1.32 + forwardPower * 0.74) * upgradeScale;
+        plume(0, start, 0, end, forwardPower, 22);
+      } else if (forwardPower < -0.05) {
+        const power = Math.abs(forwardPower);
+        plume(-station.radius * 0.2, -station.radius * 0.8, -station.radius * 0.2, -station.radius * (1.1 + power * 0.38), power, 8);
+        plume(station.radius * 0.2, -station.radius * 0.8, station.radius * 0.2, -station.radius * (1.1 + power * 0.38), power, 8);
       }
+      if (rotationPower > 0.05) {
+        plume(station.radius * 0.55, -station.radius * 0.55, station.radius * (0.84 + rotationPower * 0.22), -station.radius * 0.55, rotationPower, 6);
+        plume(-station.radius * 0.55, station.radius * 0.55, -station.radius * (0.84 + rotationPower * 0.22), station.radius * 0.55, rotationPower, 6);
+      } else if (rotationPower < -0.05) {
+        const power = Math.abs(rotationPower);
+        plume(-station.radius * 0.55, -station.radius * 0.55, -station.radius * (0.84 + power * 0.22), -station.radius * 0.55, power, 6);
+        plume(station.radius * 0.55, station.radius * 0.55, station.radius * (0.84 + power * 0.22), station.radius * 0.55, power, 6);
+      }
+      ctx.globalAlpha = 1;
     }
 
     ctx.globalAlpha = station.claimState === "unclaimed" ? 0.84 : 1;

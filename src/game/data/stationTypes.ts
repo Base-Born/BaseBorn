@@ -156,6 +156,9 @@ export interface Station {
   vel: Vec2;
   driveInput?: Vec2;
   facingAngle?: number;
+  angularVelocity?: number;
+  thrusterForward?: number;
+  thrusterRotation?: number;
   turretAngle?: number;
   turretFiringUntil?: number;
   turretClassId?: string;

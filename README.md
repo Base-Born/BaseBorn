@@ -5,7 +5,7 @@ BaseBorn is a browser-based multiplayer space survival game built with React, Ty
 ## Current starting sequence
 
 1. Spawn in a lightweight Survey Pod in one of the safe outer sectors.
-2. Use `WASD` to maneuver. The pointer continues to aim later spacecraft weapons.
+2. Use `W`/`S` for forward/reverse thrust and `A`/`D` to rotate the hull. The pointer independently aims later spacecraft weapons.
 3. Hold the attack control to lock one mining beam onto the closest asteroid in range.
 4. Fly over shared Ether drops to collect them in the pod's small cargo hold.
 5. The broken spacecraft starts nearby and is reserved for that pilot.
@@ -77,7 +77,9 @@ This rework uses world revision `pod-start-v1`. Older persisted worlds are not l
 
 | Input | Action |
 |---|---|
-| `WASD` / Arrow keys | Move the active pod or piloted spacecraft |
+| `W` / `S` or Up / Down | Apply forward or reverse thrust |
+| `A` / `D` or Left / Right | Rotate the pod or spacecraft without strafing |
+| Controller left stick | Analog thrust and rotation with deadzone filtering |
 | Pointer | Aim |
 | Left click / `Space` | Fire the mining laser or active weapon |
 | `F` | Install starter repairs / land and integrate / dock / undock |
@@ -92,7 +94,7 @@ This rework uses world revision `pod-start-v1`. Older persisted worlds are not l
 | `Q` | Toggle auto-throttle |
 | Respawn button | Return near your active spacecraft, or to a safe outer-zone spawn if no valid craft remains |
 
-Mobile controls provide separate movement and aim sticks, fire and interaction actions, and adaptive HUD layouts.
+Mobile controls provide a flight stick (vertical thrust, horizontal rotation), a separate aim stick, fire and interaction actions, and adaptive HUD layouts.
 
 ## Local development
 

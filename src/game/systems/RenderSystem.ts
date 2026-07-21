@@ -78,7 +78,7 @@ export class RenderSystem {
         angle: remote.renderAngle,
         radius: 24 * visualProfile.sizeScale,
         forwardPower: remote.thrustForward ?? 0,
-        strafePower: remote.thrustStrafe ?? 0,
+        rotationPower: remote.thrustStrafe ?? 0,
         visualScale: 1,
         trailLength: 1,
         glowScale: 1,
@@ -419,7 +419,7 @@ export class RenderSystem {
 
   private drawPlayerThrusters(player: Player) {
     const forwardPower = player.thrustLocal.forward;
-    const strafePower = player.thrustLocal.strafe;
+    const rotationPower = player.thrustLocal.strafe;
     const effective = getEffectivePlayerStats(player.stats, player.baseFrameId);
     const visualProfile = getPlayerVisualProfile(player);
     this.drawThrusterPlumes({
@@ -430,7 +430,7 @@ export class RenderSystem {
       // gameplay collision radius for visually scaled ships.
       radius: 24 * visualProfile.sizeScale,
       forwardPower,
-      strafePower,
+      rotationPower,
       visualScale: effective.movementSpeed.thrusterVisualScale,
       trailLength: effective.movementSpeed.thrusterTrailLength,
       glowScale: effective.movementSpeed.thrusterGlowIntensity,
@@ -444,14 +444,14 @@ export class RenderSystem {
     angle: number;
     radius: number;
     forwardPower: number;
-    strafePower: number;
+    rotationPower: number;
     visualScale: number;
     trailLength: number;
     glowScale: number;
     layout: "pod" | "dual";
   }) {
-    const { x, y, angle, radius: r, forwardPower, strafePower, visualScale, trailLength, glowScale, layout } = args;
-    if (Math.abs(forwardPower) < 0.05 && Math.abs(strafePower) < 0.05) return;
+    const { x, y, angle, radius: r, forwardPower, rotationPower, visualScale, trailLength, glowScale, layout } = args;
+    if (Math.abs(forwardPower) < 0.05 && Math.abs(rotationPower) < 0.05) return;
     const ctx = this.ctx;
     const blue = "#39c8ff";
     const blueMid = "rgba(57,200,255,.62)";
@@ -485,11 +485,14 @@ export class RenderSystem {
       if (forwardPower < -0.05) {
         plume(r * 1.48, 0, r * (1.88 + Math.abs(forwardPower) * 0.62), 0, forwardPower, r * 0.075);
       }
-      if (strafePower > 0.05) {
-        plume(-r * 0.42, -r * 0.46, -r * 0.42, -r * (0.78 + strafePower * 0.32), strafePower, r * 0.055);
+      if (rotationPower > 0.05) {
+        plume(r * 0.45, -r * 0.42, r * 0.45, -r * (0.78 + rotationPower * 0.32), rotationPower, r * 0.055);
+        plume(-r * 0.45, r * 0.42, -r * 0.45, r * (0.78 + rotationPower * 0.32), rotationPower, r * 0.055);
       }
-      if (strafePower < -0.05) {
-        plume(-r * 0.42, r * 0.46, -r * 0.42, r * (0.78 + Math.abs(strafePower) * 0.32), strafePower, r * 0.055);
+      if (rotationPower < -0.05) {
+        const power = Math.abs(rotationPower);
+        plume(r * 0.45, r * 0.42, r * 0.45, r * (0.78 + power * 0.32), power, r * 0.055);
+        plume(-r * 0.45, -r * 0.42, -r * 0.45, -r * (0.78 + power * 0.32), power, r * 0.055);
       }
       ctx.restore();
       ctx.globalAlpha = 1;
@@ -504,13 +507,14 @@ export class RenderSystem {
       plume(r * 1.55, -r * 0.16, r * (1.9 + Math.abs(forwardPower) * 0.58), -r * 0.18, forwardPower, 3.5);
       plume(r * 1.55, r * 0.16, r * (1.9 + Math.abs(forwardPower) * 0.58), r * 0.18, forwardPower, 3.5);
     }
-    if (strafePower > 0.05) {
-      plume(-r * 0.92, -r * 0.72, -r * 0.96, -r * (1.32 + strafePower * 0.48), strafePower, 4);
-      plume(r * 0.56, -r * 0.43, r * 0.6, -r * (0.86 + strafePower * 0.38), strafePower, 3);
+    if (rotationPower > 0.05) {
+      plume(r * 0.72, -r * 0.52, r * 0.72, -r * (1.04 + rotationPower * 0.42), rotationPower, 4);
+      plume(-r * 0.92, r * 0.62, -r * 0.92, r * (1.22 + rotationPower * 0.46), rotationPower, 4);
     }
-    if (strafePower < -0.05) {
-      plume(-r * 0.92, r * 0.72, -r * 0.96, r * (1.32 + Math.abs(strafePower) * 0.48), strafePower, 4);
-      plume(r * 0.56, r * 0.43, r * 0.6, r * (0.86 + Math.abs(strafePower) * 0.38), strafePower, 3);
+    if (rotationPower < -0.05) {
+      const power = Math.abs(rotationPower);
+      plume(r * 0.72, r * 0.52, r * 0.72, r * (1.04 + power * 0.42), power, 4);
+      plume(-r * 0.92, -r * 0.62, -r * 0.92, -r * (1.22 + power * 0.46), power, 4);
     }
     ctx.restore();
     ctx.globalAlpha = 1;

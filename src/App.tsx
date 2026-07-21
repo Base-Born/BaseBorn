@@ -235,7 +235,7 @@ export default function App() {
 
   useEffect(() => {
     if (gameRef.current) {
-      gameRef.current.pausedByTree = isUpgradeTreeOpen || stationCommandOpen || cargoPanelOpen || corePanelOpen || panel !== "none";
+      gameRef.current.setMovementPaused(isUpgradeTreeOpen || stationCommandOpen || cargoPanelOpen || corePanelOpen || panel !== "none");
     }
   }, [isUpgradeTreeOpen, stationCommandOpen, cargoPanelOpen, corePanelOpen, panel]);
 

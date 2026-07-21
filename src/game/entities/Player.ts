@@ -1,12 +1,12 @@
 import { TUNING } from "../config";
+import { resolveMovementTuning, type MovementCommand } from "../data/movementConfig";
 import { getBaseShipFrame, type BaseFrameType } from "../data/baseShipFrames";
 import { getHullTier } from "../data/hullTiers";
-import { MAP_CONFIG, clampToWorld } from "../data/mapConfig";
+import { MAP_CONFIG } from "../data/mapConfig";
 import { combineModuleBonuses } from "../data/shipModules";
 import { getBehaviorProfileForNode } from "../data/shipBehaviorProfiles";
 import { getShipNode } from "../data/shipUpgradeTree";
 import { emptyStats, type StatKey } from "../data/stats";
-import { clamp, fromAngle, length, normalize } from "../math";
 import { getEffectivePlayerStats } from "../systems/StatScalingSystem";
 import { createCargoStorage, getTotalCargoUsed } from "../systems/CargoSystem";
 import { getRandomCornerSpawnPoint } from "../systems/SpawnSystem";
@@ -16,6 +16,7 @@ import { calculateBuildIdentity } from "../systems/BuildIdentitySystem";
 import { getMassMovementModifiers } from "../systems/MassSystem";
 import { getHeatModifiers } from "../systems/HeatSystem";
 import { getDamageState } from "../systems/DamageVisualizationSystem";
+import { updateThrusterMovement } from "../systems/ShipMovementSystem";
 import type { BuildIdentitySnapshot } from "../data/buildIdentity";
 import type { Customization, Vec2 } from "../types";
 import type { CargoStorage } from "../data/etherTypes";
@@ -30,6 +31,8 @@ export class Player {
   vel: Vec2 = { x: 0, y: 0 };
   radius = 24;
   angle = -Math.PI / 2;
+  weaponAngle = -Math.PI / 2;
+  angularVelocity = 0;
   health = TUNING.playerBaseHealth;
   maxHealth = TUNING.playerBaseHealth;
   shieldHealth = 0;
@@ -138,7 +141,7 @@ export class Player {
 
   update(
     dt: number,
-    move: Vec2,
+    movement: MovementCommand,
     aimWorld: Vec2,
     firing: boolean,
     projectiles: Projectile[],
@@ -146,20 +149,7 @@ export class Player {
   ) {
     const activeMiningTarget = this.currentShipId === "space_pod" && firing ? miningTarget : null;
     const resolvedAim = activeMiningTarget?.pos ?? aimWorld;
-    this.angle = Math.atan2(resolvedAim.y - this.pos.y, resolvedAim.x - this.pos.x);
-    const forwardAmount = -move.y;
-    const strafeAmount = move.x;
-    const inputPower = Math.min(1, Math.hypot(forwardAmount, strafeAmount));
-    const localForward = inputPower > 0 ? forwardAmount / Math.max(1, Math.hypot(forwardAmount, strafeAmount)) : 0;
-    const localStrafe = inputPower > 0 ? strafeAmount / Math.max(1, Math.hypot(forwardAmount, strafeAmount)) : 0;
-    const forward = fromAngle(this.angle, 1);
-    const right = fromAngle(this.angle + Math.PI / 2, 1);
-    const thrust = normalize({
-      x: forward.x * forwardAmount + right.x * strafeAmount,
-      y: forward.y * forwardAmount + right.y * strafeAmount,
-    });
-    this.thrustWorld = inputPower > 0 ? thrust : { x: 0, y: 0 };
-    this.thrustLocal = { forward: localForward, strafe: localStrafe };
+    this.weaponAngle = Math.atan2(resolvedAim.y - this.pos.y, resolvedAim.x - this.pos.x);
     const effective = getEffectivePlayerStats(this.stats, this.baseFrameId);
     const hull = getHullTier(this.loadout.hullTier);
     const moduleBonuses = this.moduleBonuses;
@@ -168,21 +158,31 @@ export class Player {
     const heatModifiers = getHeatModifiers(this.heat, buildIdentity.budgets.heatCapacity);
     this.heat = Math.max(0, this.heat - (18 + buildIdentity.budgets.heatCapacity * 0.04) * dt);
     const speedScale = effective.movementSpeed.movementMultiplier * this.ship.behavior.speed * hull.speedMultiplier * moduleBonuses.speedMultiplier;
-    const reversePenalty = localForward < -0.1 ? 0.72 : 1;
-    const strafePenalty = Math.abs(localStrafe) > Math.abs(localForward) ? 0.86 : 1;
-    const acceleration = TUNING.playerBaseSpeed * 2.65 * speedScale * effective.movementSpeed.accelerationMultiplier * massModifiers.acceleration * heatModifiers.engine * reversePenalty * strafePenalty;
-    this.vel.x += thrust.x * acceleration * inputPower * dt;
-    this.vel.y += thrust.y * acceleration * inputPower * dt;
-    const damping = inputPower > 0 ? Math.pow(0.42, dt) : Math.pow(0.16, dt);
-    this.vel.x *= damping;
-    this.vel.y *= damping;
-    const maxSpeed = TUNING.playerBaseSpeed * 1.45 * speedScale * massModifiers.maxSpeed * heatModifiers.engine;
-    const currentSpeed = length(this.vel);
-    if (currentSpeed > maxSpeed) {
-      this.vel.x = (this.vel.x / currentSpeed) * maxSpeed;
-      this.vel.y = (this.vel.y / currentSpeed) * maxSpeed;
-    }
-    this.pos = clampToWorld({ x: this.pos.x + this.vel.x * dt, y: this.pos.y + this.vel.y * dt }, 80);
+    const healthEfficiency = 0.68 + 0.32 * Math.max(0, Math.min(1, this.health / Math.max(1, this.maxHealth)));
+    const tuning = resolveMovementTuning(this.currentShipId === "space_pod" ? "pod" : "spacecraft", {
+      acceleration: effective.movementSpeed.accelerationMultiplier * speedScale * massModifiers.acceleration,
+      maximumSpeed: speedScale * massModifiers.maxSpeed,
+      rotation: Math.sqrt(effective.movementSpeed.movementMultiplier * massModifiers.acceleration),
+      engine: heatModifiers.engine * healthEfficiency,
+    });
+    const movementBody = {
+      pos: this.pos,
+      vel: this.vel,
+      angle: this.angle,
+      angularVelocity: this.angularVelocity,
+      thrusterForward: this.thrustLocal.forward,
+      thrusterRotation: this.thrustLocal.strafe,
+    };
+    updateThrusterMovement(movementBody, movement, tuning, dt);
+    this.pos = movementBody.pos;
+    this.vel = movementBody.vel;
+    this.angle = movementBody.angle;
+    this.angularVelocity = movementBody.angularVelocity;
+    this.thrustLocal = { forward: movementBody.thrusterForward, strafe: movementBody.thrusterRotation };
+    this.thrustWorld = {
+      x: Math.cos(this.angle) * movement.thrustInput,
+      y: Math.sin(this.angle) * movement.thrustInput,
+    };
     this.fireCooldown = Math.max(0, this.fireCooldown - dt);
     const now = performance.now();
     if (now - this.lastDamageAt > effective.maxShield.regenDelayMs && this.maxShield > 0) {
@@ -191,12 +191,12 @@ export class Player {
     if (now - this.lastDamageAt > effective.autonomousRepair.delayMs) {
       this.health = Math.min(this.maxHealth, this.health + (effective.autonomousRepair.regenFlat + moduleBonuses.regenPerSecond) * dt);
     }
-    this.miningLaserAngle = this.angle;
+    this.miningLaserAngle = this.weaponAngle;
     this.miningLaserTarget = activeMiningTarget
       ? { id: activeMiningTarget.id, pos: { ...activeMiningTarget.pos }, radius: activeMiningTarget.radius }
       : null;
     this.miningLaserActive = Boolean(activeMiningTarget);
-    if (firing && this.currentShipId !== "space_pod") this.fire(projectiles, this.angle);
+    if (firing && this.currentShipId !== "space_pod") this.fire(projectiles, this.weaponAngle);
   }
 
   fire(projectiles: Projectile[], angle = this.angle) {

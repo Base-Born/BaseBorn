@@ -40,7 +40,11 @@ const stationPilotSpeed = 230;
 const stationPilotAcceleration = 610;
 const stationPilotActiveDamping = 0.42;
 const stationPilotIdleDamping = 0.16;
-const stationFacingResponse = 10;
+const stationReverseAcceleration = stationPilotAcceleration * (255 / 430);
+const stationReverseSpeed = stationPilotSpeed * (125 / 230);
+const stationRotationAcceleration = 4.8;
+const stationMaximumRotationSpeed = 1.45;
+const stationRotationDamping = 0.055;
 const stationRadius = 170;
 const stationTurretMountX = 0.765;
 const stationTurretMountY = -0.186;
@@ -142,7 +146,7 @@ function createTeam(playerId,name){
 }
 function createStarterStation(spawn,playerId){
   const sx=Math.sign(spawn.x)||1,sy=Math.sign(spawn.y)||1;
-  return{id:crypto.randomUUID(),name:"Derelict Survey Craft",x:spawn.x-sx*starterWreckDistance,y:spawn.y-sy*starterWreckDistance,vx:0,vy:0,driveX:0,driveY:0,driverPlayerId:null,driveUpdatedAt:0,facingAngle:0,turretAngle:-Math.PI/2,turretFiringUntil:0,turretClassId:"base_ship",claimState:"unclaimed",ownerTeamId:null,ownerPlayerId:null,reservedForPlayerId:playerId,starterRepairProgress:0,starterRepairRequired:starterWreckRepairCost,level:1,health:360,maxHealth:2200,isMobile:false,mothershipUnlocked:false,dockedPlayerIds:[]};
+  return{id:crypto.randomUUID(),name:"Derelict Survey Craft",x:spawn.x-sx*starterWreckDistance,y:spawn.y-sy*starterWreckDistance,vx:0,vy:0,driveX:0,driveY:0,driverPlayerId:null,driveUpdatedAt:0,facingAngle:0,angularVelocity:0,thrusterForward:0,thrusterRotation:0,turretAngle:-Math.PI/2,turretFiringUntil:0,turretClassId:"base_ship",claimState:"unclaimed",ownerTeamId:null,ownerPlayerId:null,reservedForPlayerId:playerId,starterRepairProgress:0,starterRepairRequired:starterWreckRepairCost,level:1,health:360,maxHealth:2200,isMobile:false,mothershipUnlocked:false,dockedPlayerIds:[]};
 }
 function spawnNearStation(station){
   const angle=Math.random()*Math.PI*2;
@@ -155,7 +159,7 @@ function getPublicRoom(){
     const persisted=loadWorldState(worldStatePath);
     const restored=persisted?.worldRevision===worldRevision?persisted:null;
     room={id:publicWorldId,seed:publicWorldSeed,clients:new Set(),stations:new Map(restored?.stations||[]),drops:new Map(),destroyedAsteroids:new Map(restored?.destroyedAsteroids||[]),teams:new Map(restored?.teams||[]),invites:new Map(),projectiles:new Map(),playerRecords:new Map(restored?.playerRecords||[]),dirty:true,persistenceDirty:false};
-    for(const station of room.stations.values()){if(!Array.isArray(station.dockedPlayerIds))station.dockedPlayerIds=[];station.vx=finite(station.vx,0,-stationPilotSpeed,stationPilotSpeed);station.vy=finite(station.vy,0,-stationPilotSpeed,stationPilotSpeed);station.driveX=0;station.driveY=0;station.driverPlayerId=null;station.driveUpdatedAt=0;station.facingAngle=finite(station.facingAngle,0,-Math.PI*4,Math.PI*4);station.turretAngle=finite(station.turretAngle,-Math.PI/2,-Math.PI*4,Math.PI*4);station.turretFiringUntil=0;station.turretClassId=cleanText(station.turretClassId,"base_ship",96);station.starterRepairRequired=Math.max(1,Math.round(finite(station.starterRepairRequired,starterWreckRepairCost,1,10000)));station.starterRepairProgress=Math.max(0,Math.round(finite(station.starterRepairProgress,station.claimState==="claimed"?station.starterRepairRequired:0,0,station.starterRepairRequired)));}
+    for(const station of room.stations.values()){if(!Array.isArray(station.dockedPlayerIds))station.dockedPlayerIds=[];station.vx=finite(station.vx,0,-stationPilotSpeed,stationPilotSpeed);station.vy=finite(station.vy,0,-stationPilotSpeed,stationPilotSpeed);station.driveX=0;station.driveY=0;station.driverPlayerId=null;station.driveUpdatedAt=0;station.facingAngle=finite(station.facingAngle,0,-Math.PI*4,Math.PI*4);station.angularVelocity=finite(station.angularVelocity,0,-stationMaximumRotationSpeed,stationMaximumRotationSpeed);station.thrusterForward=0;station.thrusterRotation=0;station.turretAngle=finite(station.turretAngle,-Math.PI/2,-Math.PI*4,Math.PI*4);station.turretFiringUntil=0;station.turretClassId=cleanText(station.turretClassId,"base_ship",96);station.starterRepairRequired=Math.max(1,Math.round(finite(station.starterRepairRequired,starterWreckRepairCost,1,10000)));station.starterRepairProgress=Math.max(0,Math.round(finite(station.starterRepairProgress,station.claimState==="claimed"?station.starterRepairRequired:0,0,station.starterRepairRequired)));}
     rooms.set(publicWorldId,room);
   }
   return room;
@@ -319,14 +323,21 @@ function simulateRoom(room,now,dt){
   let changed=false;
   for(const station of room.stations.values()){
     if(now-(station.driveUpdatedAt||0)>180){station.driveX=0;station.driveY=0;station.driverPlayerId=null;}
-    const magnitude=Math.hypot(station.driveX||0,station.driveY||0);
-    const dx=magnitude>.001?station.driveX/magnitude:0,dy=magnitude>.001?station.driveY/magnitude:0;
-    const inputPower=Math.min(1,magnitude);
-    station.vx+=dx*stationPilotAcceleration*inputPower*dt;station.vy+=dy*stationPilotAcceleration*inputPower*dt;
-    const damping=Math.pow(inputPower>.001?stationPilotActiveDamping:stationPilotIdleDamping,dt);station.vx*=damping;station.vy*=damping;
-    const speed=Math.hypot(station.vx,station.vy);if(speed>stationPilotSpeed){station.vx=station.vx/speed*stationPilotSpeed;station.vy=station.vy/speed*stationPilotSpeed;}
-    if(inputPower>.001){const targetFacing=Math.atan2(dy,dx)+Math.PI/2,delta=Math.atan2(Math.sin(targetFacing-(station.facingAngle||0)),Math.cos(targetFacing-(station.facingAngle||0)));station.facingAngle=(station.facingAngle||0)+delta*(1-Math.exp(-stationFacingResponse*dt));}
-    if(magnitude<=.001&&Math.hypot(station.vx,station.vy)<.5){station.vx=0;station.vy=0;}
+    const rotationInput=finite(station.driveX,0,-1,1),thrustInput=-finite(station.driveY,0,-1,1);
+    station.angularVelocity=finite(station.angularVelocity,0,-stationMaximumRotationSpeed,stationMaximumRotationSpeed)+rotationInput*stationRotationAcceleration*dt;
+    const angularDamping=Math.pow(Math.abs(rotationInput)>.001?Math.sqrt(stationRotationDamping):stationRotationDamping,dt);
+    station.angularVelocity=Math.max(-stationMaximumRotationSpeed,Math.min(stationMaximumRotationSpeed,station.angularVelocity*angularDamping));
+    if(Math.abs(station.angularVelocity)<.001&&Math.abs(rotationInput)<=.001)station.angularVelocity=0;
+    station.facingAngle=Math.atan2(Math.sin((station.facingAngle||0)+station.angularVelocity*dt),Math.cos((station.facingAngle||0)+station.angularVelocity*dt));
+    const forwardX=Math.sin(station.facingAngle),forwardY=-Math.cos(station.facingAngle);
+    const acceleration=thrustInput>=0?stationPilotAcceleration:stationReverseAcceleration;
+    station.vx+=forwardX*thrustInput*acceleration*dt;station.vy+=forwardY*thrustInput*acceleration*dt;
+    const damping=Math.pow(Math.abs(thrustInput)>.001?stationPilotActiveDamping:stationPilotIdleDamping,dt);station.vx*=damping;station.vy*=damping;
+    const localForward=station.vx*forwardX+station.vy*forwardY,localSideX=station.vx-forwardX*localForward,localSideY=station.vy-forwardY*localForward;
+    const limitedForward=Math.max(-stationReverseSpeed,Math.min(stationPilotSpeed,localForward));station.vx=localSideX+forwardX*limitedForward;station.vy=localSideY+forwardY*limitedForward;
+    const speed=Math.hypot(station.vx,station.vy),safetySpeed=stationPilotSpeed*1.18;if(speed>safetySpeed){station.vx=station.vx/speed*safetySpeed;station.vy=station.vy/speed*safetySpeed;}
+    const visualBlend=1-Math.exp(-8*dt);station.thrusterForward=(station.thrusterForward||0)+(thrustInput-(station.thrusterForward||0))*visualBlend;station.thrusterRotation=(station.thrusterRotation||0)+(rotationInput-(station.thrusterRotation||0))*visualBlend;
+    if(Math.abs(thrustInput)<=.001&&Math.hypot(station.vx,station.vy)<.5){station.vx=0;station.vy=0;}
     if(Math.hypot(station.vx,station.vy)>.01){station.x=Math.max(-worldLimit+500,Math.min(worldLimit-500,station.x+station.vx*dt));station.y=Math.max(-worldLimit+500,Math.min(worldLimit-500,station.y+station.vy*dt));station.isMobile=true;changed=true;}
     for(const client of room.clients){if(!client.playerState||!station.dockedPlayerIds.includes(client.identity.id))continue;client.playerState.x=station.x;client.playerState.y=station.y;client.playerState.vx=station.vx;client.playerState.vy=station.vy;client.playerState.updatedAt=now;}
   }

@@ -41,6 +41,9 @@ export type NetworkStationState = {
   driveY?: number;
   driverPlayerId?: string | null;
   facingAngle?: number;
+  angularVelocity?: number;
+  thrusterForward?: number;
+  thrusterRotation?: number;
   turretAngle?: number;
   turretFiringUntil?: number;
   turretClassId?: string;

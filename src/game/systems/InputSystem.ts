@@ -1,4 +1,5 @@
 import type { Vec2 } from "../types";
+import { MOVEMENT_INPUT_CONFIG, type MovementCommand } from "../data/movementConfig";
 
 export class InputSystem {
   keys = new Set<string>();
@@ -10,6 +11,7 @@ export class InputSystem {
   private canvasFiring = false;
   private virtualFiring = false;
   private virtualMovement: Vec2 = { x: 0, y: 0 };
+  currentMovementSource: MovementCommand["source"] = "none";
   private canvas: HTMLCanvasElement;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -20,6 +22,8 @@ export class InputSystem {
     canvas.addEventListener("pointerdown", this.onPointerDown);
     canvas.addEventListener("pointerup", this.onPointerUp);
     canvas.addEventListener("contextmenu", this.preventContext);
+    window.addEventListener("blur", this.clearActiveInput);
+    document.addEventListener("visibilitychange", this.onVisibilityChange);
     canvas.tabIndex = 0;
   }
 
@@ -30,15 +34,31 @@ export class InputSystem {
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.canvas.removeEventListener("pointerup", this.onPointerUp);
     this.canvas.removeEventListener("contextmenu", this.preventContext);
+    window.removeEventListener("blur", this.clearActiveInput);
+    document.removeEventListener("visibilitychange", this.onVisibilityChange);
   }
 
   movement(): Vec2 {
-    const keyboardX = (this.keys.has("d") || this.keys.has("arrowright") ? 1 : 0) - (this.keys.has("a") || this.keys.has("arrowleft") ? 1 : 0);
-    const keyboardY = (this.keys.has("s") || this.keys.has("arrowdown") ? 1 : 0) - (this.keys.has("w") || this.keys.has("arrowup") ? 1 : 0);
-    const x = Math.max(-1, Math.min(1, keyboardX + this.virtualMovement.x));
-    const y = Math.max(-1, Math.min(1, keyboardY + this.virtualMovement.y));
-    const length = Math.hypot(x, y);
-    return length > 1 ? { x: x / length, y: y / length } : { x, y };
+    const command = this.movementCommand();
+    return { x: command.rotationInput, y: -command.thrustInput };
+  }
+
+  movementCommand(enabled = true): MovementCommand {
+    if (!enabled) {
+      this.currentMovementSource = "none";
+      return { thrustInput: 0, rotationInput: 0, source: "none" };
+    }
+    const keyboard: MovementCommand = {
+      thrustInput: (this.keys.has("w") || this.keys.has("arrowup") ? 1 : 0) - (this.keys.has("s") || this.keys.has("arrowdown") ? 1 : 0),
+      rotationInput: (this.keys.has("d") || this.keys.has("arrowright") ? 1 : 0) - (this.keys.has("a") || this.keys.has("arrowleft") ? 1 : 0),
+      source: "keyboard",
+    };
+    const touch: MovementCommand = { thrustInput: -this.virtualMovement.y, rotationInput: this.virtualMovement.x, source: "touch" };
+    const controller = this.readControllerCommand();
+    const candidates = [keyboard, touch, controller];
+    const selected = candidates.reduce((strongest, candidate) => commandStrength(candidate) > commandStrength(strongest) ? candidate : strongest, { thrustInput: 0, rotationInput: 0, source: "none" } as MovementCommand);
+    this.currentMovementSource = commandStrength(selected) >= MOVEMENT_INPUT_CONFIG.meaningfulInput ? selected.source : "none";
+    return this.currentMovementSource === "none" ? { thrustInput: 0, rotationInput: 0, source: "none" } : selected;
   }
 
   setVirtualMovement(movement: Vec2) {
@@ -68,6 +88,10 @@ export class InputSystem {
     if (!this.keys.has(key)) return false;
     this.keys.delete(key);
     return true;
+  }
+
+  resetActiveInput() {
+    this.clearActiveInput();
   }
 
   private onKeyDown = (event: KeyboardEvent) => {
@@ -121,8 +145,45 @@ export class InputSystem {
 
   private preventContext = (event: Event) => event.preventDefault();
 
+  private readControllerCommand(): MovementCommand {
+    const pads = typeof navigator !== "undefined" && navigator.getGamepads ? navigator.getGamepads() : [];
+    const pad = Array.from(pads).find((entry) => entry?.connected && entry.axes.length >= 2);
+    if (!pad) return { thrustInput: 0, rotationInput: 0, source: "controller" };
+    return normalizeControllerMovement(pad.axes[0] ?? 0, pad.axes[1] ?? 0);
+  }
+
+  private clearActiveInput = () => {
+    this.keys.clear();
+    this.virtualMovement = { x: 0, y: 0 };
+    this.keyboardFiring = false;
+    this.canvasFiring = false;
+    this.virtualFiring = false;
+    this.rightFiring = false;
+    this.syncFiring();
+  };
+
+  private onVisibilityChange = () => { if (document.hidden) this.clearActiveInput(); };
+
   private textInputFocused(target: EventTarget | null) {
     const element = target as HTMLElement | null;
     return element?.tagName === "INPUT" || element?.tagName === "TEXTAREA" || Boolean(element?.isContentEditable);
   }
+}
+
+export function normalizeControllerMovement(axisX: number, axisY: number): MovementCommand {
+    const rawX = Math.max(-1, Math.min(1, axisX));
+    const rawY = Math.max(-1, Math.min(1, axisY));
+    const magnitude = Math.min(1, Math.hypot(rawX, rawY));
+    if (magnitude <= MOVEMENT_INPUT_CONFIG.controllerDeadzone) return { thrustInput: 0, rotationInput: 0, source: "controller" };
+    const normalizedMagnitude = (magnitude - MOVEMENT_INPUT_CONFIG.controllerDeadzone) / (1 - MOVEMENT_INPUT_CONFIG.controllerDeadzone);
+    const curvedMagnitude = normalizedMagnitude ** MOVEMENT_INPUT_CONFIG.controllerResponseCurve;
+    return {
+      thrustInput: -(rawY / magnitude) * curvedMagnitude,
+      rotationInput: (rawX / magnitude) * curvedMagnitude,
+      source: "controller",
+    };
+}
+
+function commandStrength(command: MovementCommand) {
+  return Math.hypot(command.thrustInput, command.rotationInput);
 }

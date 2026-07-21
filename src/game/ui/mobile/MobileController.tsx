@@ -174,7 +174,7 @@ export function MobileController({ snapshot, active, shipUpgradesAvailable, onMo
         <span><Boxes size={13} />Cargo <b>{snapshot.cargo.used}/{snapshot.cargo.capacity}</b></span>
       </div>
 
-      <VirtualStick label="Move" className="mobileStick--move" onChange={onMove} />
+      <VirtualStick label="Flight" className="mobileStick--move" onChange={onMove} />
 
       <div className="mobileActions" aria-label="Game actions">
         <button type="button" onClick={onInteract} aria-label="Interact"><Hand size={19} /><span>ACT</span></button>

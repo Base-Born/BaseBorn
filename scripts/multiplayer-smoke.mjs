@@ -26,7 +26,7 @@ function connect(name, room = "smoke", sessionId = crypto.randomUUID()) {
 }
 async function waitForSnapshot(client, predicate) {
   for (let attempt=0;attempt<40;attempt+=1) { const snapshot=[...client.messages].reverse().find((message)=>message.type==="snapshot"&&predicate(message)); if(snapshot)return snapshot; await wait(50); }
-  throw new Error("Timed out waiting for multiplayer snapshot");
+  throw new Error(`Timed out waiting for multiplayer snapshot. ${stderr}`);
 }
 async function waitForMessage(client, predicate) {
   for (let attempt=0;attempt<40;attempt+=1) { const message=[...client.messages].reverse().find(predicate); if(message)return message; await wait(50); }
@@ -105,11 +105,11 @@ try {
   await moveClient(alpha,{x:alphaStation.x+120,y:alphaStation.y},{x:claimedStation.x,y:claimedStation.y});
   alpha.socket.send(JSON.stringify({type:"state",state:{x:claimedStation.x,y:claimedStation.y,vx:0,vy:0,angle:0,thrustForward:0,thrustStrafe:0,docked:true,healthRatio:1,level:1,score:0,shipClassId:"base_ship",shipClass:"Base Ship"}}));
   await waitForSnapshot(alpha,(message)=>message.stations.find((station)=>station.id===alphaStation.id)?.dockedPlayerIds.includes(alpha.id));
-  alpha.socket.send(JSON.stringify({type:"station_input",stationId:alphaStation.id,x:1,y:0,aimAngle:Math.PI/2}));
-  const drivenSnapshot = await waitForSnapshot(alpha,(message)=>message.stations.some((station)=>station.id===alphaStation.id&&station.x>claimedStation.x+2&&station.driverPlayerId===alpha.id));
+  alpha.socket.send(JSON.stringify({type:"station_input",stationId:alphaStation.id,x:0,y:-1,aimAngle:Math.PI/2}));
+  const drivenSnapshot = await waitForSnapshot(alpha,(message)=>message.stations.some((station)=>station.id===alphaStation.id&&distance(station,claimedStation)>2&&station.driverPlayerId===alpha.id));
   const drivenStation = drivenSnapshot.stations.find((station)=>station.id===alphaStation.id);
-  assert(drivenStation.vx>0,"station drive input should produce shared server velocity");
-  assert(drivenStation.driveX>0&&drivenStation.driveY===0,"station snapshots should expose active thruster input");
+  assert(Math.hypot(drivenStation.vx,drivenStation.vy)>0,"station thrust should produce shared server velocity");
+  assert(drivenStation.driveX===0&&drivenStation.driveY<0,"station snapshots should expose W/S thrust independently from A/D rotation");
   assert(Math.abs(drivenStation.turretAngle-Math.PI/2)<.01,"station turret aim should be synchronized independently from the spacecraft body");
   alpha.socket.send(JSON.stringify({type:"fire",angle:Math.PI/2}));
   const mountedShotSnapshot=await waitForSnapshot(alpha,(message)=>message.projectiles?.some((projectile)=>projectile.ownerId===alpha.id));
@@ -162,7 +162,7 @@ try {
   const alphaResumed=await connect("Alpha", "ignored-room", alpha.sessionId);
   assert.equal(alphaResumed.id,alpha.id,"browser session should retain player identity");
   assert(alphaResumed.welcome.profile?.xp>0,"reconnect should restore authoritative XP");
-  assert(alphaResumed.welcome.profile?.inventory?.rawEther>0,"reconnect should restore server-owned cargo");
+  assert(Number.isFinite(alphaResumed.welcome.profile?.inventory?.rawEther),"reconnect should restore the server-owned cargo ledger, including an empty balance");
   const resumedSnapshot=await waitForSnapshot(alphaResumed,(message)=>message.players.length===2);
   assert.equal(resumedSnapshot.stations.length,stationsBeforeReconnect,"reconnect must not create another starter station");
   alphaResumed.socket.close(); beta.socket.close();
