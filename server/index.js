@@ -27,6 +27,8 @@ const maxMovementSpeed = 1800;
 const pickupDistance = 180;
 const stationClaimDistance = 145;
 const stationDockDistance = 180;
+const starterWreckDistance = 520;
+const starterWreckRepairCost = 12;
 const asteroidChunkSize = 1600;
 const projectileSpeed = 720;
 const projectileLifetimeMs = 1800;
@@ -140,7 +142,7 @@ function createTeam(playerId,name){
 }
 function createStarterStation(spawn,playerId){
   const sx=Math.sign(spawn.x)||1,sy=Math.sign(spawn.y)||1;
-  return{id:crypto.randomUUID(),name:"Derelict Survey Craft",x:spawn.x-sx*920,y:spawn.y-sy*920,vx:0,vy:0,driveX:0,driveY:0,driverPlayerId:null,driveUpdatedAt:0,facingAngle:0,turretAngle:-Math.PI/2,turretFiringUntil:0,turretClassId:"base_ship",claimState:"unclaimed",ownerTeamId:null,ownerPlayerId:null,reservedForPlayerId:playerId,level:1,health:360,maxHealth:2200,isMobile:false,mothershipUnlocked:false,dockedPlayerIds:[]};
+  return{id:crypto.randomUUID(),name:"Derelict Survey Craft",x:spawn.x-sx*starterWreckDistance,y:spawn.y-sy*starterWreckDistance,vx:0,vy:0,driveX:0,driveY:0,driverPlayerId:null,driveUpdatedAt:0,facingAngle:0,turretAngle:-Math.PI/2,turretFiringUntil:0,turretClassId:"base_ship",claimState:"unclaimed",ownerTeamId:null,ownerPlayerId:null,reservedForPlayerId:playerId,starterRepairProgress:0,starterRepairRequired:starterWreckRepairCost,level:1,health:360,maxHealth:2200,isMobile:false,mothershipUnlocked:false,dockedPlayerIds:[]};
 }
 function spawnNearStation(station){
   const angle=Math.random()*Math.PI*2;
@@ -153,7 +155,7 @@ function getPublicRoom(){
     const persisted=loadWorldState(worldStatePath);
     const restored=persisted?.worldRevision===worldRevision?persisted:null;
     room={id:publicWorldId,seed:publicWorldSeed,clients:new Set(),stations:new Map(restored?.stations||[]),drops:new Map(),destroyedAsteroids:new Map(restored?.destroyedAsteroids||[]),teams:new Map(restored?.teams||[]),invites:new Map(),projectiles:new Map(),playerRecords:new Map(restored?.playerRecords||[]),dirty:true,persistenceDirty:false};
-    for(const station of room.stations.values()){if(!Array.isArray(station.dockedPlayerIds))station.dockedPlayerIds=[];station.vx=finite(station.vx,0,-stationPilotSpeed,stationPilotSpeed);station.vy=finite(station.vy,0,-stationPilotSpeed,stationPilotSpeed);station.driveX=0;station.driveY=0;station.driverPlayerId=null;station.driveUpdatedAt=0;station.facingAngle=finite(station.facingAngle,0,-Math.PI*4,Math.PI*4);station.turretAngle=finite(station.turretAngle,-Math.PI/2,-Math.PI*4,Math.PI*4);station.turretFiringUntil=0;station.turretClassId=cleanText(station.turretClassId,"base_ship",96);}
+    for(const station of room.stations.values()){if(!Array.isArray(station.dockedPlayerIds))station.dockedPlayerIds=[];station.vx=finite(station.vx,0,-stationPilotSpeed,stationPilotSpeed);station.vy=finite(station.vy,0,-stationPilotSpeed,stationPilotSpeed);station.driveX=0;station.driveY=0;station.driverPlayerId=null;station.driveUpdatedAt=0;station.facingAngle=finite(station.facingAngle,0,-Math.PI*4,Math.PI*4);station.turretAngle=finite(station.turretAngle,-Math.PI/2,-Math.PI*4,Math.PI*4);station.turretFiringUntil=0;station.turretClassId=cleanText(station.turretClassId,"base_ship",96);station.starterRepairRequired=Math.max(1,Math.round(finite(station.starterRepairRequired,starterWreckRepairCost,1,10000)));station.starterRepairProgress=Math.max(0,Math.round(finite(station.starterRepairProgress,station.claimState==="claimed"?station.starterRepairRequired:0,0,station.starterRepairRequired)));}
     rooms.set(publicWorldId,room);
   }
   return room;
@@ -194,7 +196,7 @@ function persistRoom(room){
 function sendError(websocket,message){if(websocket.readyState===WebSocket.OPEN)websocket.send(JSON.stringify({type:"action_error",message}));}
 function inventorySnapshot(websocket){return Object.fromEntries(etherTypeOrder.map(type=>[type,inventoryFor(websocket).get(type)||0]));}
 function playerProfile(websocket,includeInventory=false){const state=websocket.playerState;return{xp:state?.xp||0,level:state?.level||1,score:state?.score||0,healthRatio:state?.healthRatio??1,shipClassId:state?.shipClassId||"space_pod",shipClass:state?.shipClass||"Survey Pod",stats:{...(state?.stats||{})},...(includeInventory?{inventory:inventorySnapshot(websocket)}:{})};}
-function sendProgress(websocket){if(websocket?.readyState===WebSocket.OPEN)websocket.send(JSON.stringify({type:"progression_update",profile:playerProfile(websocket)}));}
+function sendProgress(websocket,includeInventory=false){if(websocket?.readyState===WebSocket.OPEN)websocket.send(JSON.stringify({type:"progression_update",profile:playerProfile(websocket,includeInventory)}));}
 function removeFromTeam(room,playerId){
   const team=teamForPlayer(room,playerId);if(!team)return true;
   if(team.stationId&&team.leaderPlayerId===playerId&&team.memberIds.length>1)return false;
@@ -458,10 +460,24 @@ websocketServer.on("connection",(websocket)=>{
       for(let i=0;i<shards&&remaining>0;i+=1){const amount=i===shards-1?remaining:Math.max(1,Math.round(remaining/(shards-i)));remaining-=amount;makeDrop(room,{type,amount,x:pos.x+(Math.random()-.5)*80,y:pos.y+(Math.random()-.5)*80,ownerId:playerId});}
       sendProgress(websocket);markDirty(room);return;
     }
+    if(message?.type==="repair_wreck"){
+      const station=room.stations.get(String(message.stationId||""));
+      if(!station||station.claimState!=="unclaimed"||station.reservedForPlayerId!==playerId||distance(websocket.playerState,station)>stationClaimDistance){sendError(websocket,"Move directly over your broken spacecraft before installing repairs.");return;}
+      station.starterRepairRequired=Math.max(1,station.starterRepairRequired||starterWreckRepairCost);
+      const missing=Math.max(0,station.starterRepairRequired-(station.starterRepairProgress||0));
+      if(missing<=0){sendError(websocket,"The starter hull is already repaired. Land to integrate with it.");return;}
+      const installed=removeInventory(websocket,"rawEther",missing);
+      if(installed<=0){sendError(websocket,"Mine nearby asteroids and collect Raw Ether before repairing the spacecraft.");return;}
+      station.starterRepairProgress=Math.min(station.starterRepairRequired,(station.starterRepairProgress||0)+installed);
+      const ratio=station.starterRepairProgress/station.starterRepairRequired;
+      station.health=Math.max(station.health,station.maxHealth*(.16+ratio*.18));
+      sendProgress(websocket,true);markDirty(room);return;
+    }
     if(message?.type==="claim_station"){
       const station=room.stations.get(String(message.stationId||""));const team=teamForPlayer(room,playerId);
-      if(!station||!team||station.claimState!=="unclaimed"||team.stationId||distance(websocket.playerState,station)>stationClaimDistance){sendError(websocket,"Move directly into the spacecraft cradle before claiming it.");return;}
-      station.claimState="claimed";station.ownerTeamId=team.id;station.ownerPlayerId=playerId;station.name=`${websocket.identity.customization.name}'s Craft`;station.reservedForPlayerId=null;team.stationId=station.id;markDirty(room);return;
+      if(!station||!team||station.claimState!=="unclaimed"||station.reservedForPlayerId!==playerId||team.stationId||distance(websocket.playerState,station)>stationClaimDistance){sendError(websocket,"Move directly into your spacecraft cradle before claiming it.");return;}
+      if((station.starterRepairProgress||0)<(station.starterRepairRequired||starterWreckRepairCost)){sendError(websocket,"Repair the broken spacecraft with Raw Ether before landing.");return;}
+      station.claimState="claimed";station.ownerTeamId=team.id;station.ownerPlayerId=playerId;station.name=`${websocket.identity.customization.name}'s Craft`;station.reservedForPlayerId=null;station.health=Math.max(station.health,station.maxHealth*.34);team.stationId=station.id;websocket.playerState.shipClassId="base_ship";websocket.playerState.shipClass="Base Ship";sendProgress(websocket);markDirty(room);return;
     }
     if(message?.type==="rename_station"){
       const station=room.stations.get(String(message.stationId||""));const team=teamForPlayer(room,playerId);

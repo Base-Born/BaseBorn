@@ -8,12 +8,13 @@ BaseBorn is a browser-based multiplayer space survival game built with React, Ty
 2. Use `WASD` to maneuver. The pointer continues to aim later spacecraft weapons.
 3. Hold the attack control to lock one mining beam onto the closest asteroid in range.
 4. Fly over shared Ether drops to collect them in the pod's small cargo hold.
-5. Follow the tutorial waypoint to the nearby derelict spacecraft.
-6. Move directly into its central pod cradle and press `F` to land and claim it.
-7. The pod docks into the spacecraft with a short integration animation.
-8. Deposit Ether, repair onboard systems, and earn core-tuning points by gaining levels.
+5. The broken spacecraft starts nearby and is reserved for that pilot.
+6. Move directly over the wreck and press `F` to install 12 Raw Ether from the pod cargo into its starter hull.
+7. Once the repair meter is full, press `F` again to land and integrate with the repaired spacecraft.
+8. The pod locks into the spacecraft with a short integration animation and becomes its command craft.
+9. Continue mining, deposit Ether, restore onboard systems, and earn core-tuning points by gaining levels.
 
-Claiming is intentionally close-range. A derelict spacecraft cannot be claimed from outside its central cradle, and multiplayer ownership is resolved by the server so two crews cannot claim the same craft.
+Starter repairs and claiming are intentionally close-range. The server owns the pod cargo balance, permanently records each Raw Ether delivery, rejects landing before the starter hull is repaired, and reserves the nearby wreck for its intended pilot.
 
 ## New starter vehicles
 
@@ -30,6 +31,7 @@ Claiming is intentionally close-range. A derelict spacecraft cannot be claimed f
 
 - Circular carrier spacecraft with an empty central pod cradle
 - Separate abandoned and pod-integrated visual states
+- Requires a small Raw Ether starter-hull repair before it can be claimed
 - Becomes the crew's storage, repair, and fuel-conversion hub after claiming
 - Uses close-range docking plus anchored integration and undocking animations that do not eject the pod
 - Can later unlock carrier movement, defenses, crafting, and advanced systems
@@ -78,7 +80,7 @@ This rework uses world revision `pod-start-v1`. Older persisted worlds are not l
 | `WASD` / Arrow keys | Move the active pod or piloted spacecraft |
 | Pointer | Aim |
 | Left click / `Space` | Fire the mining laser or active weapon |
-| `F` | Land and claim / dock / undock |
+| `F` | Install starter repairs / land and integrate / dock / undock |
 | `V` | Show or refresh the spacecraft waypoint |
 | `R` | Scan while flying / repair the next system while docked |
 | `U` | Open spacecraft systems while docked |
@@ -142,7 +144,7 @@ WORLD_STATE_PATH=/data/baseborn-world.json
 
 | Area | Release requirement | Status |
 |---|---|---|
-| Opening loop | Spawn, mine, collect, claim, dock, deposit, repair | Complete |
+| Opening loop | Spawn beside wreck, mine, collect, repair hull, integrate, deposit | Complete |
 | Flight | Pointer aim, WASD/touch movement, directional thrusters | Complete |
 | Progression | XP, levels, stat allocation, evolution paths | Complete |
 | Multiplayer | One shared map, presence, teams, leaderboard, shared loot | Complete |

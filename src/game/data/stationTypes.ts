@@ -159,6 +159,9 @@ export interface Station {
   turretAngle?: number;
   turretFiringUntil?: number;
   turretClassId?: string;
+  reservedForPlayerId?: string | null;
+  starterRepairProgress: number;
+  starterRepairRequired: number;
   radius: number;
   ownerTeamId: string | null;
   ownerPlayerId: string | null;

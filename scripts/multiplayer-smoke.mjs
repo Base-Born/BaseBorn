@@ -80,6 +80,11 @@ try {
   assert(multiAsteroidSnapshot.drops.length>=2,"asteroid reports in the same burst must each create Ether drops");
   const secondRewardTotal=multiAsteroidSnapshot.drops.filter((drop)=>drop.id!==pickupDrop.id).reduce((sum,drop)=>sum+drop.amount,0);
   assert(secondRewardTotal<500,"the server must ignore a client-proposed oversized asteroid reward");
+  await wait(400);
+  for(const drop of multiAsteroidSnapshot.drops.filter((entry)=>entry.id!==pickupDrop.id)){
+    alpha.socket.send(JSON.stringify({type:"pickup_drop",dropId:drop.id,amount:drop.amount}));
+    await waitForMessage(alpha,(message)=>message.type==="loot_collected"&&message.dropId===drop.id);
+  }
   const initialTeamSnapshot = await waitForSnapshot(alpha, (message) => message.teams.some((team) => team.memberIds.includes(alpha.id)));
   const alphaTeam = initialTeamSnapshot.teams.find((team) => team.memberIds.includes(alpha.id));
   const alphaStation = initialTeamSnapshot.stations
@@ -89,6 +94,11 @@ try {
   alpha.socket.send(JSON.stringify({ type:"claim_station", stationId:alphaStation.id }));
   await waitForMessage(alpha,(message)=>message.type==="action_error"&&/cradle/i.test(message.message));
   await moveClient(alpha,{x:alphaStation.x+300,y:alphaStation.y},{x:alphaStation.x+120,y:alphaStation.y});
+  alpha.socket.send(JSON.stringify({ type:"claim_station", stationId:alphaStation.id }));
+  await waitForMessage(alpha,(message)=>message.type==="action_error"&&/repair/i.test(message.message));
+  alpha.socket.send(JSON.stringify({ type:"repair_wreck", stationId:alphaStation.id }));
+  const repairedSnapshot=await waitForSnapshot(alpha,(message)=>{const station=message.stations.find((entry)=>entry.id===alphaStation.id);return station?.starterRepairProgress===station?.starterRepairRequired;});
+  assert.equal(repairedSnapshot.stations.find((station)=>station.id===alphaStation.id).starterRepairRequired,12,"starter repair should require a small asteroid-farming delivery");
   alpha.socket.send(JSON.stringify({ type:"claim_station", stationId:alphaStation.id }));
   const claimedSnapshot = await waitForSnapshot(alpha, (message) => message.teams.some((team) => team.id===alphaTeam.id&&team.stationId===alphaStation.id));
   const claimedStation = claimedSnapshot.stations.find((station) => station.id===alphaStation.id);

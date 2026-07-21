@@ -27,7 +27,7 @@ import { distance, lerp, normalize, randomRange } from "../math";
 import type { Vec2 } from "../types";
 import type { NetworkStationState, NetworkTeam } from "../network/protocol";
 import { ETHER_QUALITY_ORDER, ETHER_VALUE_WEIGHTS } from "../data/resourceBalance";
-import { addEtherToCargo, canAffordEtherCost, spendEther, syncCargoUsed } from "./CargoSystem";
+import { addEtherToCargo, canAffordEtherCost, removeEtherFromCombinedCargo, spendEther, syncCargoUsed } from "./CargoSystem";
 import type { EtherDropSystem } from "./EtherDropSystem";
 import type { Asteroid } from "../entities/Asteroid";
 import { TUNING } from "../config";
@@ -40,7 +40,7 @@ const STATION_NAMES = ["Hollow Runner", "Kestrel Hull", "Orion Courier", "Rustwa
 
 export type StationInteraction = {
   station: Station | null;
-  kind: "claim" | "deposit" | "dock" | null;
+  kind: "claim" | "repair_wreck" | "deposit" | "dock" | null;
   prompt: string;
   distance: number;
 };
@@ -90,6 +90,9 @@ export class StationSystem {
       else if (drivePower > 0.001) station.facingAngle = Math.atan2(driveY, driveX) + Math.PI / 2;
       if (Number.isFinite(state.turretAngle)) station.turretAngle = lerpAngle(station.turretAngle ?? state.turretAngle as number, state.turretAngle as number, 0.42);
       if (state.turretClassId) station.turretClassId = state.turretClassId;
+      station.reservedForPlayerId = state.reservedForPlayerId ?? null;
+      station.starterRepairRequired = Math.max(1, state.starterRepairRequired ?? STATION_CONFIG.starterWreckRepairCost);
+      station.starterRepairProgress = Math.max(0, Math.min(station.starterRepairRequired, state.starterRepairProgress ?? (state.claimState === "claimed" ? station.starterRepairRequired : 0)));
       if ((state.turretFiringUntil ?? 0) > Date.now()) {
         station.turretFiringUntil = performance.now() + Math.min(120, (state.turretFiringUntil as number) - Date.now());
       }
@@ -163,7 +166,12 @@ export class StationSystem {
     if (!nearest) return { station: null, kind: null, prompt: "", distance: Infinity };
     const owned = nearest.ownerTeamId === this.team.id;
     if (nearest.claimState === "unclaimed" && nearestDistance <= STATION_CONFIG.claimRadius) {
-      return { station: nearest, kind: "claim", prompt: "Press F to Land and Claim Spacecraft", distance: nearestDistance };
+      const reservedForAnotherPilot = Boolean(nearest.reservedForPlayerId && nearest.reservedForPlayerId !== player.id);
+      if (reservedForAnotherPilot) return { station: nearest, kind: null, prompt: "This wreck is reserved for another pilot", distance: nearestDistance };
+      const repaired = nearest.starterRepairProgress >= nearest.starterRepairRequired;
+      return repaired
+        ? { station: nearest, kind: "claim", prompt: "Press F to Land and Integrate", distance: nearestDistance }
+        : { station: nearest, kind: "repair_wreck", prompt: player.cargo.ether.rawEther > 0 ? "Press F to Install Raw Ether Repairs" : "Mine asteroids for Raw Ether", distance: nearestDistance };
     }
     if (owned && nearestDistance <= STATION_CONFIG.depositRadius) {
       return {
@@ -187,6 +195,7 @@ export class StationSystem {
   interact(player: Player) {
     const interaction = this.getNearestInteraction(player);
     if (!interaction.station || !interaction.kind) return false;
+    if (interaction.kind === "repair_wreck") return this.repairStarterWreck(player, interaction.station) > 0;
     if (interaction.kind === "claim") return this.claimStation(interaction.station, player);
     if (interaction.kind === "deposit") return this.depositAllEther(player, interaction.station) > 0;
     if (interaction.kind === "dock") {
@@ -541,16 +550,31 @@ export class StationSystem {
 
   claimStation(station: Station, player: Player) {
     if (station.claimState !== "unclaimed") return false;
+    if (station.starterRepairProgress < station.starterRepairRequired) return false;
     if (this.team.stationId) return false;
     station.ownerTeamId = this.team.id;
     station.ownerPlayerId = player.id;
     station.name = player.name;
     station.claimState = "claimed";
+    station.reservedForPlayerId = null;
     station.health = Math.max(station.health, station.maxHealth * 0.22);
     station.movementLockReason = getStationMovementLockReason(station, player);
     this.team.stationId = station.id;
+    player.setClass("base_ship");
     this.dockPlayerAtStation(player, station);
     return true;
+  }
+
+  repairStarterWreck(player: Player, station: Station) {
+    if (station.claimState !== "unclaimed" || distance(player.pos, station.pos) > STATION_CONFIG.claimRadius) return 0;
+    if (station.reservedForPlayerId && station.reservedForPlayerId !== player.id) return 0;
+    const missing = Math.max(0, station.starterRepairRequired - station.starterRepairProgress);
+    const installed = removeEtherFromCombinedCargo(player.cargo, "rawEther", missing);
+    if (installed <= 0) return 0;
+    station.starterRepairProgress += installed;
+    const ratio = station.starterRepairProgress / station.starterRepairRequired;
+    station.health = Math.max(station.health, station.maxHealth * (0.16 + ratio * 0.18));
+    return installed;
   }
 
   depositAllEther(player: Player, station = this.claimedStation) {
@@ -969,6 +993,9 @@ export class StationSystem {
       turretAngle: -Math.PI / 2,
       turretFiringUntil: 0,
       turretClassId: "base_ship",
+      reservedForPlayerId: null,
+      starterRepairProgress: 0,
+      starterRepairRequired: STATION_CONFIG.starterWreckRepairCost,
       radius: STATION_CONFIG.baseRadius,
       ownerTeamId: null,
       ownerPlayerId: null,
@@ -1061,6 +1088,7 @@ export class StationSystem {
     station.pos = pos;
     station.vel = { x: 0, y: 0 };
     station.name = "Derelict Survey Craft";
+    station.reservedForPlayerId = player.id;
     if (!existing) this.stations.unshift(station);
   }
 

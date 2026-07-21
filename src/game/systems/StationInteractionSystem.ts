@@ -30,6 +30,7 @@ export function createStationInteractionSnapshot({
   station,
   claimedStation,
   teamId,
+  playerId,
   playerCargo,
   playerPosition,
   playerDockedStationId,
@@ -39,6 +40,7 @@ export function createStationInteractionSnapshot({
   station: Station | null;
   claimedStation: Station | null;
   teamId: string | null;
+  playerId: string;
   playerCargo: CargoStorage;
   playerPosition: { x: number; y: number };
   playerDockedStationId?: string | null;
@@ -55,7 +57,11 @@ export function createStationInteractionSnapshot({
   const visible = unclaimed ? d <= STATION_CONFIG.claimRadius * 1.35 : owned && (landed || animatingDock || d <= STATION_CONFIG.depositRadius * 1.35);
   if (!visible) return EMPTY_STATION_INTERACTION;
 
-  const repairProgress = station.repairStages.length ? station.repairStageIndex / station.repairStages.length : 0;
+  const starterRepairRequired = Math.max(1, station.starterRepairRequired);
+  const starterRepairProgress = Math.max(0, Math.min(starterRepairRequired, station.starterRepairProgress));
+  const starterReady = starterRepairProgress >= starterRepairRequired;
+  const reservedForAnotherPilot = Boolean(station.reservedForPlayerId && station.reservedForPlayerId !== playerId);
+  const repairProgress = unclaimed ? starterRepairProgress / starterRepairRequired : station.repairStages.length ? station.repairStageIndex / station.repairStages.length : 0;
   const nextStage = station.repairStages[station.repairStageIndex] ?? null;
   const warningText = !unclaimed && raidWarningActive
     ? "Raid Incoming"
@@ -89,7 +95,25 @@ export function createStationInteractionSnapshot({
 
   const actions: StationInteractionAction[] = [];
   if (unclaimed) {
-    actions.push({ id: "claim", label: "Land & Claim", kind: "claim", enabled: d <= STATION_CONFIG.claimRadius, hotkey: "F", priority: 100, lockReason: d > STATION_CONFIG.claimRadius ? "Move directly into the empty pod cradle." : "" });
+    if (!starterReady) {
+      const rawEther = playerCargo.ether.rawEther;
+      actions.push({
+        id: "repair_wreck",
+        label: rawEther > 0 ? "Install Raw Ether" : "Repair Hull",
+        kind: "repair_wreck",
+        enabled: !reservedForAnotherPilot && d <= STATION_CONFIG.claimRadius && rawEther > 0,
+        hotkey: !reservedForAnotherPilot && d <= STATION_CONFIG.claimRadius && rawEther > 0 ? "F" : undefined,
+        priority: 120,
+        lockReason: reservedForAnotherPilot
+          ? "This wreck is reserved for another pilot."
+          : d > STATION_CONFIG.claimRadius
+            ? "Move the pod directly over the damaged spacecraft."
+            : rawEther <= 0
+              ? "Mine nearby asteroids and collect Raw Ether first."
+              : "",
+      });
+    }
+    actions.push({ id: "claim", label: "Land & Integrate", kind: "claim", enabled: !reservedForAnotherPilot && starterReady && d <= STATION_CONFIG.claimRadius, hotkey: !reservedForAnotherPilot && starterReady && d <= STATION_CONFIG.claimRadius ? "F" : undefined, priority: 110, lockReason: reservedForAnotherPilot ? "This wreck is reserved for another pilot." : !starterReady ? "Repair the broken hull before landing." : d > STATION_CONFIG.claimRadius ? "Move directly into the spacecraft cradle." : "" });
     actions.push({ id: "scan", label: "Scan Derelict", kind: "scan", enabled: true, priority: 20, lockReason: "" });
   } else if (owned) {
     const hasCargo = playerCargo.used > 0;
@@ -155,13 +179,13 @@ export function createStationInteractionSnapshot({
     visible,
     stationId: station.id,
     stationName: station.name,
-    stationState: unclaimed ? "Derelict Spacecraft" : owned && landed ? `Integrated with Spacecraft Lv ${station.level}` : animatingDock ? "Pod docking sequence" : owned ? "Claimed Spacecraft - Dock Required" : "Claimed Spacecraft",
+    stationState: unclaimed ? starterReady ? "Repaired Spacecraft - Ready to Integrate" : "Broken Spacecraft" : owned && landed ? `Integrated with Spacecraft Lv ${station.level}` : animatingDock ? "Pod docking sequence" : owned ? "Claimed Spacecraft - Dock Required" : "Claimed Spacecraft",
     ownershipState: unclaimed ? "unclaimed" : owned ? "owned" : "other",
     stationLevel: station.level,
     health: Math.max(0, station.health),
     maxHealth: station.maxHealth,
     docked: landed,
-    repairStageLabel: owned && !landed ? "spacecraft systems locked" : station.isFullyRepaired ? "Fully restored" : `${station.repairStageIndex}/${station.repairStages.length} repair stages`,
+    repairStageLabel: unclaimed ? `${starterRepairProgress}/${starterRepairRequired} Raw Ether installed` : owned && !landed ? "spacecraft systems locked" : station.isFullyRepaired ? "Fully restored" : `${station.repairStageIndex}/${station.repairStages.length} repair stages`,
     repairProgress,
     storageUsed: owned && landed ? station.storage.used : 0,
     storageCapacity: owned && landed ? station.storage.capacity : 0,

@@ -28,6 +28,7 @@ export type StationInteractionActionKind =
   | "launch"
   | "deposit"
   | "open_command"
+  | "repair_wreck"
   | "repair"
   | "craft"
   | "loadout"

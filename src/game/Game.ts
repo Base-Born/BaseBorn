@@ -223,8 +223,11 @@ export class Game {
 
   interactWithStation() {
     const interaction = this.stations.getNearestInteraction(this.player);
-    if (interaction.kind === "claim" && interaction.station && this.multiplayer.isOnline()) this.multiplayer.claimStation(interaction.station.id);
-    else this.stations.interact(this.player);
+    if (interaction.kind === "repair_wreck" && interaction.station && this.multiplayer.isOnline()) this.multiplayer.repairWreck(interaction.station.id);
+    else if (interaction.kind === "claim" && interaction.station && this.multiplayer.isOnline()) {
+      this.multiplayer.claimStation(interaction.station.id);
+      this.stations.claimStation(interaction.station, this.player);
+    } else this.stations.interact(this.player);
     this.emitSnapshot();
   }
 
@@ -247,6 +250,7 @@ export class Game {
       station: interaction.station,
       claimedStation: this.stations.claimedStation,
       teamId: this.stations.team.id,
+      playerId: this.player.id,
       playerCargo: this.player.cargo,
       playerPosition: this.player.pos,
       playerDockedStationId: this.player.dockedStationId,
@@ -257,7 +261,20 @@ export class Game {
   }
 
   performStationAction(actionId: string) {
-    if (actionId === "claim") { const interaction = this.stations.getNearestInteraction(this.player); if (interaction.station) this.multiplayer.claimStation(interaction.station.id); }
+    if (actionId === "repair_wreck") {
+      const interaction = this.stations.getNearestInteraction(this.player);
+      if (interaction.station) {
+        if (this.multiplayer.isOnline()) this.multiplayer.repairWreck(interaction.station.id);
+        else this.stations.repairStarterWreck(this.player, interaction.station);
+      }
+    }
+    if (actionId === "claim") {
+      const interaction = this.stations.getNearestInteraction(this.player);
+      if (interaction.station) {
+        if (this.multiplayer.isOnline()) this.multiplayer.claimStation(interaction.station.id);
+        this.stations.claimStation(interaction.station, this.player);
+      }
+    }
     if (actionId === "dock") this.stations.interact(this.player);
     if (actionId === "deposit") {
       const station = this.stations.requireDockedPlayer(this.player);
@@ -865,6 +882,7 @@ export class Game {
       station: nearestStationInteraction.station,
       claimedStation: this.stations.claimedStation,
       teamId: this.stations.team.id,
+      playerId: this.player.id,
       playerCargo: this.player.cargo,
       playerPosition: this.player.pos,
       playerDockedStationId: this.player.dockedStationId,

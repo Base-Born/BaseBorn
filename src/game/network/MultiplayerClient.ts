@@ -133,6 +133,7 @@ export class MultiplayerClient {
     this.send({ type: "asteroid_destroyed", ...args });
   }
   claimStation(stationId: string) { this.send({ type: "claim_station", stationId }); }
+  repairWreck(stationId: string) { this.send({ type: "repair_wreck", stationId }); }
   renameStation(stationId: string, name: string) { this.send({ type: "rename_station", stationId, name }); }
   joinTeam(teamId: string, spawnAtBase = true) { this.send({ type: "join_team", teamId, spawnAtBase }); }
   invitePlayer(playerId: string) { this.send({ type: "invite_player", playerId }); }

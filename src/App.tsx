@@ -578,8 +578,9 @@ function OverlayPanel({ title, onClose, children }: { title: string; onClose: ()
 
 function BuildGuide({ embedded = false, compact = false, onBack }: { embedded?: boolean; compact?: boolean; onBack?: () => void }) {
   const guideCards = [
-    { name: "Claim a Station", description: "Search the station belt for a broken abandoned station. Move into claim range and press F to make it your team base.", tags: ["Station Belt", "F Interact"] },
-    { name: "Dock and Deposit", description: "Mine asteroids, collect Ether, return to your claimed station, then press F to dock before depositing cargo into shared storage.", tags: ["Cargo", "Docking"] },
+    { name: "Repair Your Spacecraft", description: "Your pod starts beside a reserved broken spacecraft. Mine common asteroids, collect 12 Raw Ether, and press F over the wreck to install the starter hull repairs.", tags: ["Pod Tutorial", "Raw Ether"] },
+    { name: "Land and Integrate", description: "When the repair meter is full, move into the central cradle and press F. The pod locks into the spacecraft and becomes its command craft.", tags: ["Integration", "F Interact"] },
+    { name: "Dock and Deposit", description: "Continue mining, return to your active spacecraft, and deposit cargo into its shared storage.", tags: ["Cargo", "Docking"] },
     { name: "Repair Systems", description: "Repairs, crafting, defenses, landing pads, and station upgrades are managed from inside the docked station command room.", tags: ["Repair Stages", "Team Base"] },
     { name: "Build Your Ship", description: "Level up to qualify for stronger hulls, then use station storage to upgrade through seven linear hull tiers and craft installable modules.", tags: ["Hull Tiers", "Modules"] },
     { name: "Prepare the Mothership", description: "A fully restored level 100 station, Tier 7 hull, crafted Mothership Core, and paid transformation cost unlock future mobile mothership play.", tags: ["Level 100", "Endgame"] },
@@ -592,8 +593,8 @@ function BuildGuide({ embedded = false, compact = false, onBack }: { embedded?: 
         </header>
       )}
       <div className="guideIntro">
-        <h2>Station Guide</h2>
-        <p>BaseBorn now revolves around claiming a broken station, repairing it with Ether, and crafting hull/module upgrades from your team base.</p>
+        <h2>Spacecraft Guide</h2>
+        <p>BaseBorn begins in a mining pod beside a broken spacecraft. Repair its starter hull, integrate the pod, and develop the restored craft into your crew's mobile base.</p>
       </div>
       <div className="presetGrid">
         {guideCards.map((card) => (

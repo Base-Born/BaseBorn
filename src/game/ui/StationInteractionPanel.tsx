@@ -18,7 +18,9 @@ export function StationInteractionPanel({
   onOpenCommand: () => void;
 }) {
   if (!interaction.visible) return null;
-  const healthPct = interaction.maxHealth > 0 ? Math.max(0, Math.min(100, (interaction.health / interaction.maxHealth) * 100)) : 0;
+  const healthPct = interaction.ownershipState === "unclaimed"
+    ? Math.max(0, Math.min(100, interaction.repairProgress * 100))
+    : interaction.maxHealth > 0 ? Math.max(0, Math.min(100, (interaction.health / interaction.maxHealth) * 100)) : 0;
   const actions = interaction.actions
     .filter((action) => action.id !== interaction.primaryAction?.id)
     .sort((a, b) => b.priority - a.priority)
@@ -45,7 +47,7 @@ export function StationInteractionPanel({
         {interaction.storageCapacity > 0 && <span>{interaction.storageUsed.toLocaleString()} / {interaction.storageCapacity.toLocaleString()} Ether</span>}
         {interaction.warningText && <b className={isWarning ? "" : "stationInteraction__hint"}>{interaction.warningText}</b>}
       </div>
-      {interaction.docked && (
+      {(interaction.docked || interaction.ownershipState === "unclaimed") && (
         <div className="stationInteraction__cargo">
           <section>
             <header>
@@ -54,13 +56,13 @@ export function StationInteractionPanel({
             </header>
             <StationResourceRows ether={cargo.ether} />
           </section>
-          <section>
+          {interaction.docked && <section>
             <header>
               <span>Spacecraft Storage</span>
               <b>{interaction.storageUsed.toLocaleString()} / {interaction.storageCapacity.toLocaleString()}</b>
             </header>
             <StationResourceRows ether={interaction.storageEther} />
-          </section>
+          </section>}
         </div>
       )}
       <div className="stationInteraction__actions">

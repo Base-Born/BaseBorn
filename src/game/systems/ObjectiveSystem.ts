@@ -23,20 +23,49 @@ export class ObjectiveSystem {
     }
 
     if (!claimed) {
-      if (interaction.kind === "claim") {
+      const wreck = stations.getNearestUnclaimedStation(player)?.station ?? null;
+      const repairRequired = Math.max(1, wreck?.starterRepairRequired ?? 1);
+      const repairProgress = Math.max(0, wreck?.starterRepairProgress ?? 0);
+      if (wreck && repairProgress >= repairRequired) {
         return createObjective({
           id: "claim_station",
-          title: "Land and Claim the Spacecraft",
-          description: "Move directly into the empty cradle, then press F to lock your pod into the derelict spacecraft.",
+          title: "Land and Integrate with the Spacecraft",
+          description: "The broken hull is operational. Move the pod directly into its cradle and press F to integrate.",
           priority: 100,
           category: "station",
-          hint: "The docking sequence is intentionally close-range. Once claimed, the spacecraft becomes your upgrade and storage hub.",
+          currentAmount: repairProgress,
+          targetAmount: repairRequired,
+          hint: "Landing is close-range. The pod will lock into the repaired hull and become its command craft.",
+        });
+      }
+      if (wreck && player.cargo.ether.rawEther > 0) {
+        return createObjective({
+          id: "repair_starter_spacecraft",
+          title: "Repair the Broken Spacecraft",
+          description: "Return to the nearby wreck and install the Raw Ether carried by your pod.",
+          priority: 102,
+          category: "repair",
+          currentAmount: repairProgress,
+          targetAmount: repairRequired,
+          hint: "Move directly over the wreck and press F. Each delivery permanently fills its starter hull repair meter.",
+        });
+      }
+      if (wreck) {
+        return createObjective({
+          id: "mine_starter_repairs",
+          title: "Mine Raw Ether for Hull Repairs",
+          description: "Use the Survey Pod laser to break common asteroids and collect enough Raw Ether to repair the nearby spacecraft.",
+          priority: 101,
+          category: "cargo",
+          currentAmount: repairProgress,
+          targetAmount: repairRequired,
+          hint: "Aim at a nearby gray asteroid, hold fire, and fly over the dropped Ether to collect it.",
         });
       }
       return createObjective({
         id: "find_station",
-        title: "Find the Derelict Spacecraft",
-        description: "Fly the Survey Pod toward the nearby derelict spacecraft signal.",
+        title: "Locate Your Broken Spacecraft",
+        description: "Follow the nearby spacecraft signal in the Survey Pod.",
         priority: 100,
         category: "discovery",
         hint: "Press V for a waypoint. Your pod laser can already break nearby asteroids and collect Ether.",

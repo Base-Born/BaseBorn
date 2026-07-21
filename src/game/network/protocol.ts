@@ -44,6 +44,9 @@ export type NetworkStationState = {
   turretAngle?: number;
   turretFiringUntil?: number;
   turretClassId?: string;
+  reservedForPlayerId?: string | null;
+  starterRepairProgress?: number;
+  starterRepairRequired?: number;
   claimState: "unclaimed" | "claimed";
   ownerTeamId: string | null;
   ownerPlayerId: string | null;
