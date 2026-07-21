@@ -46,6 +46,20 @@ export class CollisionSystem {
       level.award(player, 220 + enemy.level * 12, 600 + enemy.score);
     };
 
+    for (let i = 0; i < projectiles.length; i += 1) {
+      const left = projectiles[i];
+      if (left.dead) continue;
+      for (let j = i + 1; j < projectiles.length; j += 1) {
+        const right = projectiles[j];
+        if (right.dead || left.owner === right.owner || distance(left.pos, right.pos) >= left.radius + right.radius) continue;
+        const leftPenetration = left.penetration;
+        const rightPenetration = right.penetration;
+        left.penetration -= rightPenetration;
+        right.penetration -= leftPenetration;
+        if (left.dead) break;
+      }
+    }
+
     if (playerActive && player.miningLaserActive && player.miningLaserTarget) {
       const target = asteroids.find((asteroid) => asteroid.id === player.miningLaserTarget?.id && !asteroid.dead) ?? null;
       const targetDistance = target ? distance(player.pos, target.pos) - target.radius : Infinity;

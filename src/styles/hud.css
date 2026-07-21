@@ -459,8 +459,7 @@
   backdrop-filter: blur(10px);
 }
 
-.shipUpgradePanel > header,
-.baseFrameSelect header {
+.shipUpgradePanel > header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -473,8 +472,7 @@
   font-size: 0.94rem;
 }
 
-.shipUpgradePanel header span,
-.baseFrameSelect header span {
+.shipUpgradePanel header span {
   color: var(--muted);
   font-size: 0.68rem;
   font-weight: 800;
@@ -504,68 +502,6 @@
 }
 
 .shipUpgradePanel__close:hover { color: white; border-color: rgba(76, 201, 240, .72); background: rgba(20, 83, 120, .8); }
-
-.baseFrameSelect {
-  display: grid;
-  gap: 6px;
-}
-
-.baseFrameSelect header b {
-  color: #4cc9f0;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-}
-
-.baseFrameGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.baseFrameCard {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-  min-height: 52px;
-  padding: 7px 6px;
-  border: 1px solid color-mix(in srgb, var(--frame-color) 32%, rgba(82, 124, 148, 0.22));
-  border-radius: 8px;
-  background: rgba(6, 13, 22, 0.62);
-  color: #f2f7fb;
-  text-align: left;
-}
-
-.baseFrameCard.selected {
-  border-color: var(--frame-color);
-  box-shadow: inset 0 0 18px color-mix(in srgb, var(--frame-color) 12%, transparent);
-}
-
-.baseFrameCard strong {
-  overflow: hidden;
-  font-size: 0.62rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.baseFrameCard span,
-.baseFrameCard small {
-  color: rgba(218, 228, 236, 0.78);
-  font-size: 0.52rem;
-  line-height: 1.25;
-}
-
-.baseFrameCard span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.baseFrameSummary {
-  min-height: 26px;
-  color: rgba(218, 228, 236, 0.78);
-  font-size: 0.56rem;
-  line-height: 1.35;
-}
 
 .shipUpgradeRows {
   display: grid;

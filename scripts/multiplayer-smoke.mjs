@@ -51,13 +51,14 @@ try {
   assert.equal(alpha.welcome.worldId, beta.welcome.worldId);
   assert.notDeepEqual(alpha.welcome.spawn, beta.welcome.spawn);
   assert.equal(alpha.welcome.room, "public");
-  beta.socket.send(JSON.stringify({ type:"state", state:{ x:125, y:-80, vx:10, vy:0, angle:1.2, healthRatio:0.01, level:100, score:1_000_000_000, shipClassId:"base_ship", shipClass:"Base Ship", docked:true } }));
+  beta.socket.send(JSON.stringify({ type:"state", state:{ x:125, y:-80, vx:10, vy:0, angle:1.2, healthRatio:0.01, level:100, score:1_000_000_000, stats:{ autonomousRepair:20, maxHealth:20, bodyDamage:20, bulletSpeed:20, bulletPenetration:20, bulletDamage:20, reloadSpeed:20, movementSpeed:20 }, shipClassId:"base_ship", shipClass:"Base Ship", docked:true } }));
   const snapshot = await waitForSnapshot(alpha, (message) => message.players.some((player) => player.id===beta.id&&player.updatedAt));
   assert.equal(snapshot.players.length, 2);
   const validatedBeta=snapshot.players.find((player) => player.id===beta.id);
   assert.equal(validatedBeta.name, "Beta");
   assert(distance(validatedBeta,beta.welcome.spawn)<200,"teleport must be clamped");
   assert.equal(validatedBeta.level,1);assert.equal(validatedBeta.score,0);assert.equal(validatedBeta.healthRatio,1);assert.equal(validatedBeta.docked,false);
+  assert.equal(Object.values(validatedBeta.stats).reduce((sum,value)=>sum+value,0),0,"players cannot submit stat points they did not earn from levels");
   const asteroidChunkX=Math.floor(alpha.welcome.spawn.x/1600),asteroidChunkY=Math.floor(alpha.welcome.spawn.y/1600);
   const asteroidId=`asteroid-${asteroidChunkX}:${asteroidChunkY}-0`;
   alpha.socket.send(JSON.stringify({type:"asteroid_destroyed",asteroidId,x:alpha.welcome.spawn.x,y:alpha.welcome.spawn.y,etherType:"rawEther",amount:1,respawnMs:30000}));
@@ -134,7 +135,8 @@ try {
   const betaNear={x:alphaState.x+300,y:alphaState.y};
   await moveClient(beta,teamSpawn.spawn,betaNear);
   alpha.socket.send(JSON.stringify({type:"fire",angle:0}));
-  await waitForSnapshot(beta,(message)=>message.projectiles?.some((projectile)=>projectile.ownerId===alpha.id));
+  const projectileSnapshot=await waitForSnapshot(beta,(message)=>message.projectiles?.some((projectile)=>projectile.ownerId===alpha.id));
+  assert.equal(projectileSnapshot.projectiles.find((projectile)=>projectile.ownerId===alpha.id).penetration,1,"shared projectiles should expose server-owned penetration durability");
   await waitForMessage(beta,(message)=>message.type==="player_damaged"&&message.sourcePlayerId===alpha.id);
   const status = await fetch(`${base}/api/status`).then((response) => response.json());
   assert.equal(status.multiplayer, true);

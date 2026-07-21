@@ -14,7 +14,6 @@ import { StationStoragePanel } from "./StationStoragePanel";
 import { StationTabs, type StationTabId } from "./StationTabs";
 import { TeamPanel } from "./TeamPanel";
 import type { Vec2 } from "../types";
-import type { BaseFrameType } from "../data/baseShipFrames";
 import { ShipManagementPanel } from "./ShipManagementPanel";
 
 export function StationCommandPanel({
@@ -27,7 +26,6 @@ export function StationCommandPanel({
   onRepairSubsystem,
   onUpgradeDefense,
   onCraftModule,
-  onAcquireShip,
   onSwitchShip,
   onInstallModule,
   onRelocateBase,
@@ -45,7 +43,6 @@ export function StationCommandPanel({
   onRepairSubsystem: (subsystemId: StationSubsystemId) => void;
   onUpgradeDefense: (category: StationUpgradeCategory) => void;
   onCraftModule: (moduleId: string) => void;
-  onAcquireShip: (frameId: BaseFrameType) => void;
   onSwitchShip: (shipId: string) => void;
   onInstallModule: (moduleId: string) => void;
   onRelocateBase: () => void;
@@ -82,7 +79,7 @@ export function StationCommandPanel({
             )}
             {activeTab === "defenses" && <StationDefensePanel snapshot={snapshot} onUpgrade={onUpgradeDefense} />}
             {activeTab === "crafting" && <CraftingPanel snapshot={snapshot} onCraft={onCraftModule} />}
-            {activeTab === "ships" && <ShipManagementPanel snapshot={snapshot} onAcquire={onAcquireShip} onSwitch={onSwitchShip} />}
+            {activeTab === "ships" && <ShipManagementPanel snapshot={snapshot} onSwitch={onSwitchShip} />}
             {activeTab === "loadout" && <ShipLoadoutPanel snapshot={snapshot} onInstall={onInstallModule} />}
             {activeTab === "landing" && <LandingPadsPanel snapshot={snapshot} onRelocateBase={onRelocateBase} />}
             {activeTab === "team" && <TeamPanel snapshot={snapshot} />}

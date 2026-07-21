@@ -1,10 +1,9 @@
 import type { BaseFrameType } from "../data/baseShipFrames";
-import { emptyStats, type StatKey } from "../data/stats";
+import type { StatKey } from "../data/stats";
 import type { CargoStorage } from "../data/etherTypes";
 import type { HullTierId, InstalledModule } from "../data/stationTypes";
 import type { Player } from "../entities/Player";
 import { createId } from "../id";
-import { createCargoStorage } from "./CargoSystem";
 import { getAvailableUpgradePoints } from "./ShipUpgradeSystem";
 
 export interface OwnedShip {
@@ -53,34 +52,6 @@ export class ShipOwnershipSystem {
         installedModules: ship.installedModules.map((module) => ({ ...module })),
       })),
     };
-  }
-
-  canAcquire(model: BaseFrameType) {
-    return this.ships.length < this.hangarSlots && !this.ships.some((ship) => ship.model === model);
-  }
-
-  acquire(model: BaseFrameType) {
-    if (!this.canAcquire(model)) return null;
-    this.syncActive();
-    const ship: OwnedShip = {
-      id: createId("ship"),
-      ownerId: this.player.id,
-      name: model[0].toUpperCase() + model.slice(1) + " Ship",
-      model,
-      hullTier: 1,
-      currentShipId: "base_ship",
-      currentBranch: "Core",
-      stats: emptyStats(),
-      craftedModuleIds: [],
-      installedModules: [],
-      cargo: createCargoStorage(100),
-      health: this.player.maxHealth,
-      shield: 0,
-      mothershipEligible: false,
-      isMothership: false,
-    };
-    this.ships.push(ship);
-    return ship;
   }
 
   switchTo(shipId: string) {

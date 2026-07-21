@@ -45,7 +45,7 @@ export class Enemy {
   constructor() {
     this.shipClassId = this.role === "carrier" ? "drone-carrier" : this.role === "sniper" ? "longshot-vessel" : this.role === "rammer" ? "scatter-raider" : "scout-frigate";
     for (let i = 0; i < Math.min(18, this.level); i += 1) {
-      const priorities = this.role === "rammer" ? ["maxShield", "bodyDamage", "movementSpeed"] : this.role === "sniper" ? ["bulletSpeed", "bulletDamage", "reloadSpeed"] : ["bulletDamage", "reloadSpeed", "movementSpeed"];
+      const priorities = this.role === "rammer" ? ["maxHealth", "bodyDamage", "movementSpeed"] : this.role === "sniper" ? ["bulletSpeed", "bulletPenetration", "bulletDamage"] : ["bulletDamage", "reloadSpeed", "movementSpeed"];
       const key = priorities[Math.floor(Math.random() * priorities.length)] as keyof typeof this.stats;
       this.stats[key] = Math.min(7, this.stats[key] + 1);
     }
@@ -53,7 +53,7 @@ export class Enemy {
       const options = shipClasses.filter((ship) => ship.tier === 3);
       this.shipClassId = options[Math.floor(Math.random() * options.length)].id;
     }
-    this.maxHealth = 96 + this.stats.maxHealth * 11 + this.stats.maxShield * 8;
+    this.maxHealth = 96 + this.stats.maxHealth * 11;
     this.health = this.maxHealth;
   }
 

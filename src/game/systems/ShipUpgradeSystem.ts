@@ -1,10 +1,10 @@
-import { MAX_LEVEL } from "../config";
+import { totalUpgradePointsForLevel } from "../config";
 import { statKeys, type StatKey } from "../data/stats";
 import type { Player } from "../entities/Player";
 import { getHyperStatLevel, getHyperUpgradeLevelRequirement, getNormalStatLevel, HYPER_STAT_MAX, NORMAL_STAT_MAX } from "./StatScalingSystem";
 
 export function getUpgradePointsForLevel(level: number) {
-  return Math.max(0, Math.min(MAX_LEVEL, Math.floor(level)) - 1);
+  return totalUpgradePointsForLevel(level);
 }
 
 export function getSpentUpgradePoints(player: Player) {

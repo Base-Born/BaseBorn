@@ -11,7 +11,7 @@ BaseBorn is a browser-based multiplayer space survival game built with React, Ty
 5. Follow the tutorial waypoint to the nearby derelict spacecraft.
 6. Move directly into its central pod cradle and press `F` to land and claim it.
 7. The pod docks into the spacecraft with a short integration animation.
-8. Deposit Ether, convert it into spacecraft fuel, repair onboard systems, and unlock the upgrade bay.
+8. Deposit Ether, repair onboard systems, and earn core-tuning points by gaining levels.
 
 Claiming is intentionally close-range. A derelict spacecraft cannot be claimed from outside its central cradle, and multiplayer ownership is resolved by the server so two crews cannot claim the same craft.
 
@@ -30,7 +30,7 @@ Claiming is intentionally close-range. A derelict spacecraft cannot be claimed f
 
 - Circular carrier spacecraft with an empty central pod cradle
 - Separate abandoned and pod-integrated visual states
-- Becomes the crew's storage, repair, fuel-conversion, and upgrade hub after claiming
+- Becomes the crew's storage, repair, and fuel-conversion hub after claiming
 - Uses close-range docking plus anchored integration and undocking animations that do not eject the pod
 - Can later unlock carrier movement, defenses, crafting, and advanced systems
 
@@ -45,6 +45,10 @@ Asteroids are deterministic shared-world objects distributed by distance from th
 - Ether drops are shared between players and synchronized by the server.
 - Impact damage depends on relative speed and asteroid mass.
 - Hull and health-regeneration upgrades support collision-focused mining builds.
+
+## Level progression
+
+Each level from 2 through 34 awards one core-tuning point, for a maximum of 33 points. The four old base-frame choices have been removed: every pilot uses the same universal spacecraft hull, while stats and later equipment evolutions define the build. Core tuning contains Health Regen, Max Health, Body Damage, Bullet Speed, Bullet Penetration, Bullet Damage, Reload, and Movement Speed. Bullet Penetration controls projectile durability and becomes drone health for drone-based evolutions.
 
 ## Multiplayer
 
@@ -80,7 +84,8 @@ This rework uses world revision `pod-start-v1`. Older persisted worlds are not l
 | `U` | Open spacecraft systems while docked |
 | `G` | Drop the lowest-quality cargo stack |
 | `H` | Toggle cargo pickup |
-| `Y` | Open the spacecraft evolution tree |
+| `1`–`8` | Spend an available level point on the matching core stat |
+| `Y` | Open core tuning when level points are available |
 | `E` | Toggle auto-fire |
 | `Q` | Toggle auto-throttle |
 | Respawn button | Return near your active spacecraft, or to a safe outer-zone spawn if no valid craft remains |

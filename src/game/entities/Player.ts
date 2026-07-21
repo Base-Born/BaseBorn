@@ -243,7 +243,7 @@ export class Player {
       radius: projectileKind === "rail" ? 5 : projectileKind === "mine" ? 18 : projectileKind === "gravity" ? 24 : 7,
       damage: projectileStats.damage,
       lifetime: TUNING.projectileLifetime * effective.bulletSpeed.projectileMultiplier * (projectileKind === "mine" ? 4 : projectileKind === "rail" ? 1.35 : 1),
-      penetration: 1 + (this.stats.bulletDamage + this.stats.bulletSpeed) * 0.03,
+      penetration: effective.bulletPenetration.projectileDurability,
       owner: "player",
       ownerId: this.id,
       kind: projectileKind,
@@ -378,7 +378,7 @@ export class Player {
       const previousMaxHealth = Math.max(1, drone.maxHealth);
       drone.speed = droneStats.speed;
       drone.maxSpeed = droneStats.maxSpeed;
-      drone.maxHealth = 36 * (1 + this.stats.maxShield * 0.04 + this.stats.maxHealth * 0.03);
+      drone.maxHealth = 36 * effective.bulletPenetration.droneHealthMultiplier * (1 + this.stats.maxHealth * 0.03);
       drone.health = Math.min(drone.maxHealth, Math.max(drone.health, drone.maxHealth * (drone.health / previousMaxHealth)));
       drone.damage = droneStats.damage;
     });

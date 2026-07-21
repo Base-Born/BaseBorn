@@ -10,7 +10,7 @@ import { getReachedUpgradeMilestones } from "../data/upgradeImpactProfiles";
 
 const ROLES:BuildRole[]=["Assault","Fortress","Support","Mobility","Technology","Mining","Command","Logistics","Recon","Siege"];
 const frameRoles:Record<string,Partial<Record<BuildRole,number>>>={balanced:{Assault:3,Fortress:3,Mobility:3,Technology:3},tank:{Fortress:12,Assault:3},speed:{Mobility:13,Recon:6},tech:{Technology:12,Support:4,Command:3}};
-const statRoles:Record<StatKey,BuildRole>={autonomousRepair:"Support",maxHealth:"Fortress",maxShield:"Fortress",bodyDamage:"Assault",movementSpeed:"Mobility",bulletSpeed:"Recon",bulletDamage:"Assault",reloadSpeed:"Siege"};
+const statRoles:Record<StatKey,BuildRole>={autonomousRepair:"Support",maxHealth:"Fortress",bodyDamage:"Assault",bulletSpeed:"Recon",bulletPenetration:"Technology",bulletDamage:"Assault",reloadSpeed:"Siege",movementSpeed:"Mobility"};
 
 export type BuildIdentityInput={vehicleId:string;frameId:string;hullTier:number;stats:Record<StatKey,number>;loadout:PlayerLoadout;health:number;maxHealth:number;currentHeat?:number};
 
@@ -19,7 +19,7 @@ function structuralBranch(input:BuildIdentityInput):{id:StructuralBranchId;name:
 
 export function calculateBuildIdentity(input:BuildIdentityInput):BuildIdentitySnapshot{
  const frame=getBaseShipFrame(input.frameId);const branch=structuralBranch(input);const topology=getPhysicalSlotTopology(input.frameId,input.loadout.installedModules);
- const capacity=80+input.hullTier*16+(input.frameId==="tech"?28:input.frameId==="tank"?14:0)+input.stats.maxShield*2;
+ const capacity=80+input.hullTier*16+(input.frameId==="tech"?28:input.frameId==="tank"?14:0)+input.stats.bulletPenetration*2;
  const heatCapacity=70+input.hullTier*9+(input.frameId==="speed"?12:0)+input.stats.reloadSpeed*1.5;
  const controlCapacity=12+input.hullTier*3+(input.frameId==="tech"?12:0);
  let powerUsed=0,mass=45+(input.frameId==="tank"?24:input.frameId==="speed"?-9:0),heatGeneration=0,controlUsed=0;

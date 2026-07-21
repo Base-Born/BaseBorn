@@ -75,7 +75,7 @@ const emptySnapshot: GameSnapshot = {
   stats: {
     autonomousRepair: 0,
     maxHealth: 0,
-    maxShield: 0,
+    bulletPenetration: 0,
     bodyDamage: 0,
     movementSpeed: 0,
     bulletSpeed: 0,
@@ -102,7 +102,7 @@ const emptySnapshot: GameSnapshot = {
   leaderboard: [],
   multiplayer: { status: "offline", room: "public", playerId: null, playerCount: 0, message: "Offline", teamId: null, teams: [], invites: [], actionError: "" },
   buildSummary: "Uncommitted Scout",
-  buildIdentity: calculateBuildIdentity({ vehicleId: "player", frameId: "balanced", hullTier: 1, stats: { autonomousRepair: 0, maxHealth: 0, maxShield: 0, bodyDamage: 0, movementSpeed: 0, bulletSpeed: 0, bulletDamage: 0, reloadSpeed: 0 }, loadout: { hullTier: 1, craftedModuleIds: [], installedModules: [] }, health: 120, maxHealth: 120, currentHeat: 0 }),
+  buildIdentity: calculateBuildIdentity({ vehicleId: "player", frameId: "balanced", hullTier: 1, stats: { autonomousRepair: 0, maxHealth: 0, bulletPenetration: 0, bodyDamage: 0, movementSpeed: 0, bulletSpeed: 0, bulletDamage: 0, reloadSpeed: 0 }, loadout: { hullTier: 1, craftedModuleIds: [], installedModules: [] }, health: 120, maxHealth: 120, currentHeat: 0 }),
   upgradeFeedback: null,
   fleet: { activeShipId: "", hangarSlots: 6, ships: [] },
   hull: {
@@ -210,7 +210,7 @@ export default function App() {
         }
         if (key === "y") {
           setStationCommandOpen(false);
-          setCorePanelOpen(Boolean(game.stations.claimedStation && game.player.dockingState === "docked"));
+          setCorePanelOpen(game.player.statPoints > 0);
         }
       };
       respawnProgressRef.current = null;
@@ -438,7 +438,7 @@ function GameScreen({
   playAgain: () => void;
   returnToMenu: () => void;
 }) {
-  const shipUpgradesAvailable = Boolean(snapshot.station.claimed && snapshot.stationInteraction.docked);
+  const shipUpgradesAvailable = snapshot.upgradePoints > 0;
   const showShipPanel = corePanelOpen && shipUpgradesAvailable;
   const openCommand = (tab: StationTabId = "overview") => {
     if (!snapshot.station.claimed || !snapshot.stationInteraction.docked) return;
@@ -449,8 +449,8 @@ function GameScreen({
 
   useEffect(() => {
     if (!snapshot.stationInteraction.docked) setStationCommandOpen(false);
-    if (!snapshot.stationInteraction.docked) setCorePanelOpen(false);
-  }, [snapshot.stationInteraction.docked, setStationCommandOpen]);
+    if (!shipUpgradesAvailable) setCorePanelOpen(false);
+  }, [snapshot.stationInteraction.docked, shipUpgradesAvailable, setStationCommandOpen]);
 
 
   return (
@@ -494,8 +494,6 @@ function GameScreen({
         <div className="bottomLeftUpgradeDock">
           <ShipUpgradePanel
             snapshot={snapshot}
-            frames={BASE_SHIP_FRAMES}
-            onSelectFrame={(id) => game?.selectBaseFrame(id)}
             onUpgrade={(key) => game?.upgradeStat(key)}
             onClose={() => setCorePanelOpen(false)}
           />
@@ -519,7 +517,6 @@ function GameScreen({
           onRepairSubsystem={(subsystemId) => game?.repairStationSubsystem(subsystemId)}
           onUpgradeDefense={(category) => game?.upgradeStationDefense(category)}
           onCraftModule={(id) => game?.craftModule(id)}
-          onAcquireShip={(frameId) => game?.acquireShip(frameId)}
           onSwitchShip={(shipId) => game?.switchOwnedShip(shipId)}
           onInstallModule={(id) => game?.installModule(id)}
           onRelocateBase={() => game?.relocateBaseToPlayer()}

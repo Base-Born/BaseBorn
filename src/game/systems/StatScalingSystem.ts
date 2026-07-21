@@ -60,8 +60,6 @@ function flatValue(stats: NumericCoreStats, key: StatKey, normalStep: number, hy
 export function getEffectivePlayerStats(stats: NumericCoreStats, baseFrameId = "balanced") {
   const frame = getBaseShipFrame(baseFrameId);
   const repairDelayReduction = flatValue(stats, "autonomousRepair", 100, 180, baseFrameId);
-  const shieldNormal = getNormalStatLevel(stats, "maxShield");
-  const shieldHyper = getHyperStatLevel(stats, "maxShield");
   const movementNormal = getNormalStatLevel(stats, "movementSpeed");
   const movementHyper = getHyperStatLevel(stats, "movementSpeed");
   const movementScale = frameScale(baseFrameId, "movementSpeed");
@@ -75,9 +73,9 @@ export function getEffectivePlayerStats(stats: NumericCoreStats, baseFrameId = "
       multiplier: statMultiplier(stats, "maxHealth", 0.08, 0.12, baseFrameId) * frame.statBias.healthMultiplier,
     },
     maxShield: {
-      multiplier: statMultiplier(stats, "maxShield", 0.1, 0.14, baseFrameId) * frame.statBias.shieldMultiplier,
-      regenPerSecond: (2 + shieldNormal * 0.5 + shieldHyper * 1.1) * frameScale(baseFrameId, "maxShield"),
-      regenDelayMs: Math.max(1400, 4200 - shieldNormal * 120 - shieldHyper * 220),
+      multiplier: frame.statBias.shieldMultiplier,
+      regenPerSecond: 2,
+      regenDelayMs: 4200,
     },
     bodyDamage: {
       damageMultiplier: statMultiplier(stats, "bodyDamage", 0.1, 0.16, baseFrameId) * frame.statBias.bodyDamageMultiplier,
@@ -94,6 +92,10 @@ export function getEffectivePlayerStats(stats: NumericCoreStats, baseFrameId = "
       projectileMultiplier: statMultiplier(stats, "bulletSpeed", 0.06, 0.09, baseFrameId),
       droneMultiplier: statMultiplier(stats, "bulletSpeed", 0.05, 0.08, baseFrameId),
     },
+    bulletPenetration: {
+      projectileDurability: statMultiplier(stats, "bulletPenetration", 0.12, 0.18, baseFrameId),
+      droneHealthMultiplier: statMultiplier(stats, "bulletPenetration", 0.08, 0.12, baseFrameId),
+    },
     bulletDamage: {
       projectileMultiplier: statMultiplier(stats, "bulletDamage", 0.08, 0.13, baseFrameId),
       droneDamageMultiplier: statMultiplier(stats, "bulletDamage", 0.08, 0.13, baseFrameId),
@@ -104,16 +106,14 @@ export function getEffectivePlayerStats(stats: NumericCoreStats, baseFrameId = "
   };
 }
 
-export function calculateThrusterVisualScale(stats: NumericCoreStats, baseFrameId = "balanced") {
-  const frame = getBaseShipFrame(baseFrameId);
-  const speedFrameBonus = frame.id === "speed" ? 0.24 : 0;
-  return 1 + getNormalStatLevel(stats, "movementSpeed") * 0.035 + getHyperStatLevel(stats, "movementSpeed") * 0.06 + speedFrameBonus;
+export function calculateThrusterVisualScale(stats: NumericCoreStats, _baseFrameId = "balanced") {
+  return 1 + getNormalStatLevel(stats, "movementSpeed") * 0.035 + getHyperStatLevel(stats, "movementSpeed") * 0.06;
 }
 
-export function calculateThrusterTrailLength(stats: NumericCoreStats, baseFrameId = "balanced") {
-  return 1 + getNormalStatLevel(stats, "movementSpeed") * 0.045 + getHyperStatLevel(stats, "movementSpeed") * 0.075 + (getBaseShipFrame(baseFrameId).id === "speed" ? 0.28 : 0);
+export function calculateThrusterTrailLength(stats: NumericCoreStats, _baseFrameId = "balanced") {
+  return 1 + getNormalStatLevel(stats, "movementSpeed") * 0.045 + getHyperStatLevel(stats, "movementSpeed") * 0.075;
 }
 
-export function calculateThrusterGlowIntensity(stats: NumericCoreStats, baseFrameId = "balanced") {
-  return 1 + getNormalStatLevel(stats, "movementSpeed") * 0.035 + getHyperStatLevel(stats, "movementSpeed") * 0.07 + (getBaseShipFrame(baseFrameId).id === "speed" ? 0.32 : 0);
+export function calculateThrusterGlowIntensity(stats: NumericCoreStats, _baseFrameId = "balanced") {
+  return 1 + getNormalStatLevel(stats, "movementSpeed") * 0.035 + getHyperStatLevel(stats, "movementSpeed") * 0.07;
 }

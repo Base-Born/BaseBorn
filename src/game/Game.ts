@@ -3,7 +3,7 @@ import { getHullTier, getNextHullTier } from "./data/hullTiers";
 import type { EtherType } from "./data/etherTypes";
 import { ASTEROID_BELTS } from "./data/asteroidBelts";
 import { STATION_CONFIG } from "./data/stationConfig";
-import { getBaseShipFrame, type BaseFrameType } from "./data/baseShipFrames";
+import { getBaseShipFrame } from "./data/baseShipFrames";
 import { MAP_CONFIG, clampToWorld } from "./data/mapConfig";
 import { statKeys, type StatKey } from "./data/stats";
 import type { Asteroid } from "./entities/Asteroid";
@@ -24,7 +24,6 @@ import { AsteroidSystem } from "./systems/AsteroidSystem";
 import { EtherDropSystem } from "./systems/EtherDropSystem";
 import { StationSystem } from "./systems/StationSystem";
 import { ShipOwnershipSystem } from "./systems/ShipOwnershipSystem";
-import { spendStationFuel } from "./systems/StationFuelSystem";
 import { addEtherToCombinedCargo, dropLowestQualityCargoFromStorage, getNextCargoDropPreview, syncCargoUsed } from "./systems/CargoSystem";
 import { ObjectiveSystem } from "./systems/ObjectiveSystem";
 import { completeRespawn, createPlayerDeathState, getStationRespawnLockReason, type PlayerDeathState } from "./systems/RespawnSystem";
@@ -32,7 +31,7 @@ import { clearPlayerCargo, getDeathCargoDropSummary } from "./systems/DeathDropS
 import { getStationDirectionIndicator, getStationHealthWarning } from "./systems/StationSystem";
 import { createStationInteractionSnapshot } from "./systems/StationInteractionSystem";
 import { getEffectiveModuleStats } from "./systems/ModuleStatApplicationSystem";
-import { getAvailableUpgradePoints, getShipUpgradeLockReason } from "./systems/ShipUpgradeSystem";
+import { getAvailableUpgradePoints, getShipUpgradeLockReason, spendShipUpgradePoint } from "./systems/ShipUpgradeSystem";
 import { getEffectivePlayerStats, getHyperStatLevel, getNormalStatLevel, HYPER_STAT_MAX, isStatHyperUnlockedForLevel, NORMAL_STAT_MAX } from "./systems/StatScalingSystem";
 import { findSafeCornerSpawnPoint, isValidSpawnPoint } from "./systems/SpawnSystem";
 import { getCurrentZoneStatusText, getLootRegionByDistance, getZoneNotificationText } from "./systems/LootDistributionSystem";
@@ -197,16 +196,7 @@ export class Game {
   }
 
   upgradeStat(key: StatKey) {
-    const station = this.stations.requireDockedPlayer(this.player);
-    if (station) this.stations.upgradeShipStat(this.player, key, station);
-    this.emitSnapshot();
-  }
-
-  selectBaseFrame(frameId: BaseFrameType) {
-    const station = this.stations.requireDockedPlayer(this.player);
-    if (station && station.repairStageIndex > station.repairStages.findIndex((stage) => stage.id === "shipUpgradeBay")) {
-      this.player.selectBaseFrame(frameId);
-    }
+    spendShipUpgradePoint(this.player, key);
     this.emitSnapshot();
   }
 
@@ -214,17 +204,6 @@ export class Game {
     const station = this.stations.requireDockedPlayer(this.player);
     const upgradeBayOnline = Boolean(station && station.repairStageIndex > station.repairStages.findIndex((stage) => stage.id === "shipUpgradeBay"));
     if (upgradeBayOnline) this.upgrades.evolve(this.player, id);
-    this.emitSnapshot();
-  }
-
-  acquireShip(frameId: BaseFrameType) {
-    const station = this.stations.requireDockedPlayer(this.player);
-    if (!station || !this.fleet.canAcquire(frameId)) return;
-    const bayIndex = station.repairStages.findIndex((stage) => stage.id === "shipUpgradeBay");
-    if (station.repairStageIndex <= bayIndex || this.player.level < 10) return;
-    const cost = frameId === "balanced" ? 900 : frameId === "tech" ? 1600 : 1200;
-    if (!spendStationFuel(station, cost, "acquire-ship:" + frameId)) return;
-    this.fleet.acquire(frameId);
     this.emitSnapshot();
   }
 
@@ -908,8 +887,8 @@ export class Game {
           maxHyperLevel: HYPER_STAT_MAX,
           totalLevel: normalLevel + hyperLevel,
           isHyperUnlocked: isStatHyperUnlockedForLevel(this.player.stats, statKey, this.player.level),
-          fuelCost: this.stations.getShipStatUpgradeCost(this.player, statKey),
-          lockReason: getShipUpgradeLockReason(this.player, statKey) || this.stations.getShipStatUpgradeLockReason(this.player, statKey),
+          fuelCost: 0,
+          lockReason: getShipUpgradeLockReason(this.player, statKey),
         };
       }),
       effectiveShipStats: (() => {

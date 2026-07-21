@@ -18,7 +18,8 @@ const startedAt = Date.now();
 const worldStatePath = process.env.WORLD_STATE_PATH || "";
 const etherTypes = new Set(["rawEther", "refinedEther", "chargedEther", "radiantEther", "primalEther", "coreEther"]);
 const etherTypeOrder = ["rawEther", "refinedEther", "chargedEther", "radiantEther", "primalEther", "coreEther"];
-const statKeys = ["autonomousRepair", "maxHealth", "maxShield", "bodyDamage", "movementSpeed", "bulletSpeed", "bulletDamage", "reloadSpeed"];
+const statKeys = ["autonomousRepair", "maxHealth", "bodyDamage", "bulletSpeed", "bulletPenetration", "bulletDamage", "reloadSpeed", "movementSpeed"];
+const maxStatPoints = 33;
 const worldLimit = 200000;
 const snapshotIntervalMs = 50;
 const simulationIntervalMs = 25;
@@ -87,7 +88,7 @@ function finite(value,fallback,min,max){return typeof value==="number"&&Number.i
 function getXPRequiredForLevel(level){if(level<=10)return Math.floor(45+level*18);if(level<=30)return Math.floor(180+Math.pow(level-10,1.45)*55);if(level<=60)return Math.floor(900+Math.pow(level-30,1.55)*95);if(level<=90)return Math.floor(3200+Math.pow(level-60,1.65)*160);return Math.floor(9500+Math.pow(level-90,1.85)*420);}
 const xpByLevel=Array.from({length:103},()=>0);for(let level=2;level<xpByLevel.length;level+=1)xpByLevel[level]=xpByLevel[level-1]+getXPRequiredForLevel(level-1);
 function levelForXP(xp){let level=1;while(level<100&&xp>=xpByLevel[level+1])level+=1;return level;}
-function cleanStats(value,previous,level){const source=value&&typeof value==="object"?value:{};const next={};for(const key of statKeys)next[key]=Math.round(finite(source[key],previous?.[key]||0,0,20));const spent=Object.values(next).reduce((sum,amount)=>sum+amount,0);return spent<=Math.max(0,level-1)?next:{...(previous||Object.fromEntries(statKeys.map(key=>[key,0])))};}
+function cleanStats(value,previous,level){const source=value&&typeof value==="object"?value:{};const legacyPenetration=source.bulletPenetration??source.maxShield??previous?.bulletPenetration??previous?.maxShield??0;const next={};for(const key of statKeys){const fallback=key==="bulletPenetration"?legacyPenetration:(previous?.[key]||0);next[key]=Math.round(finite(key==="bulletPenetration"?legacyPenetration:source[key],fallback,0,20));}const spent=Object.values(next).reduce((sum,amount)=>sum+amount,0);return spent<=Math.max(0,Math.min(maxStatPoints,level-1))?next:{...(previous||Object.fromEntries(statKeys.map(key=>[key,0])))};}
 function combatStatMultiplier(rank,normalStep,hyperStep){const value=Math.max(0,Math.min(20,Math.floor(rank||0)));return 1+Math.min(10,value)*normalStep+Math.max(0,value-10)*hyperStep;}
 function cleanShipId(value,fallback){const id=cleanText(value,fallback,64);return /^[a-z0-9_]+$/.test(id)?id:fallback;}
 function hashToUint(value){let hash=2166136261;for(let index=0;index<value.length;index+=1){hash^=value.charCodeAt(index);hash=Math.imul(hash,16777619);}return hash>>>0;}
@@ -294,7 +295,8 @@ function createProjectile(room,websocket,angle,now){
   const id=crypto.randomUUID();
   const speed=projectileSpeed*combatStatMultiplier(stats.bulletSpeed,.06,.09);
   const damage=projectileDamage*combatStatMultiplier(stats.bulletDamage,.08,.13);
-  const projectile={id,ownerId:websocket.identity.id,x:websocket.playerState.x+Math.cos(angle)*34,y:websocket.playerState.y+Math.sin(angle)*34,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,radius:7,damage,color:websocket.identity.customization.projectileColor,createdAt:now,expiresAt:now+projectileLifetimeMs};
+  const penetration=combatStatMultiplier(stats.bulletPenetration,.12,.18);
+  const projectile={id,ownerId:websocket.identity.id,x:websocket.playerState.x+Math.cos(angle)*34,y:websocket.playerState.y+Math.sin(angle)*34,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,radius:7,damage,penetration,color:websocket.identity.customization.projectileColor,createdAt:now,expiresAt:now+projectileLifetimeMs};
   room.projectiles.set(id,projectile);return projectile;
 }
 function simulateRoom(room,now,dt){
@@ -315,6 +317,10 @@ function simulateRoom(room,now,dt){
     projectile.x+=projectile.vx*dt;projectile.y+=projectile.vy*dt;
     changed=true;
     if(Math.abs(projectile.x)>worldLimit+200||Math.abs(projectile.y)>worldLimit+200){room.projectiles.delete(id);changed=true;continue;}
+  }
+  const activeProjectiles=[...room.projectiles.values()];
+  for(let i=0;i<activeProjectiles.length;i+=1){for(let j=i+1;j<activeProjectiles.length;j+=1){const a=activeProjectiles[i],b=activeProjectiles[j];if(a.ownerId===b.ownerId||!room.projectiles.has(a.id)||!room.projectiles.has(b.id))continue;const aOwner=[...room.clients].find(client=>client.identity?.id===a.ownerId),bOwner=[...room.clients].find(client=>client.identity?.id===b.ownerId);const aTeam=aOwner?teamForPlayer(room,aOwner.identity.id):null,bTeam=bOwner?teamForPlayer(room,bOwner.identity.id):null;if(aTeam&&aTeam.id===bTeam?.id)continue;if(distance(a,b)>a.radius+b.radius)continue;const aPenetration=a.penetration??1,bPenetration=b.penetration??1;a.penetration=aPenetration-bPenetration;b.penetration=bPenetration-aPenetration;if(a.penetration<=0)room.projectiles.delete(a.id);if(b.penetration<=0)room.projectiles.delete(b.id);changed=true;}}
+  for(const [id,projectile] of room.projectiles){
     const owner=[...room.clients].find(client=>client.identity?.id===projectile.ownerId);
     const ownerTeam=owner?teamForPlayer(room,owner.identity.id):null;
     for(const target of room.clients){
@@ -352,7 +358,8 @@ websocketServer.on("connection",(websocket)=>{
       const record=room.playerRecords.get(playerId);
       websocket.roomId=room.id;websocket.identity={id:playerId,customization};
       const spawn=record?{x:record.state.x,y:record.state.y}:randomSpawn(room);
-      websocket.playerState=record?{...record.state,name:customization.name,customization,updatedAt:now}:cleanState({...message.state,x:spawn.x,y:spawn.y},null,websocket.identity);
+      const restoredLevel=record?levelForXP(record.state?.xp??xpByLevel[Math.max(1,Math.min(100,record.state?.level||1))]):1;
+      websocket.playerState=record?{...record.state,level:restoredLevel,stats:cleanStats(record.state?.stats,null,restoredLevel),name:customization.name,customization,updatedAt:now}:cleanState({...message.state,x:spawn.x,y:spawn.y},null,websocket.identity);
       websocket.inventory=new Map(record?.inventory||[]);
       room.clients.add(websocket);
       if(!teamForPlayer(room,playerId))createPersonalTeam(room,websocket);

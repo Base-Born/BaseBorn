@@ -9,7 +9,7 @@ export function PlayerStatusCard({ snapshot }: { snapshot: GameSnapshot }) {
         <span>{snapshot.baseFrame.name} / {snapshot.buildSummary}</span>
       </div>
       <div className="scoreLine">Score {snapshot.score.toLocaleString()}</div>
-      <div className="pointsLine">{snapshot.upgradePoints} ship upgrade points</div>
+      <div className="pointsLine">{snapshot.upgradePoints} core tuning points</div>
     </aside>
   );
 }
