@@ -30,3 +30,4 @@ playwright-report/
 
 # Local generated assets
 baseborn-*.png
+.codex-remote-attachments/

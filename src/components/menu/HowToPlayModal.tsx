@@ -6,7 +6,7 @@ const controlSections = [
     title: "Movement",
     rows: [
       ["W / S or ↑ / ↓", "Forward thrust / reverse thrusters"],
-      ["A / D or ← / →", "Strafe left / right with maneuvering jets"],
+      ["A / D or ← / →", "Turn with maneuvering thrusters"],
       ["Mouse", "Aim"],
     ],
   },
@@ -20,12 +20,12 @@ const controlSections = [
     ],
   },
   {
-    title: "Station",
+    title: "Spacecraft",
     rows: [
-      ["F", "Claim / dock / undock"],
+      ["F", "Repair / integrate / dock / undock"],
       ["R", "Scanner pulse / repair next stage"],
-      ["U", "Station command while docked; ship panel otherwise"],
-      ["V", "Locate nearest broken station or team station"],
+      ["U", "Open recovered-spacecraft systems while docked"],
+      ["V", "Locate your nearby derelict or team spacecraft"],
     ],
   },
   {
@@ -33,8 +33,8 @@ const controlSections = [
     rows: [
       ["H", "Toggle cargo pickup"],
       ["G", "Eject lowest-quality cargo"],
-      ["1-9", "Upgrade ship stats while docked"],
-      ["Y", "Open ship upgrades"],
+      ["1-8", "Allocate an available core-tuning point"],
+      ["Y", "Open tuning or available weapon evolutions"],
     ],
   },
   {
@@ -47,7 +47,7 @@ const controlSections = [
 ];
 
 const guideSections = [
-  ["Objective", "Start as a Base Ship, mine asteroids, collect Ether, upgrade your ship, and push toward the center belt."],
+  ["Objective", "Start in a Survey Pod, mine 12 Raw Ether, repair and integrate with your derelict spacecraft, then push toward the center belt."],
   ["Mining", "Every asteroid can be mined. Rarer and larger asteroids take longer, but they pay much higher XP."],
   ["Ether and Cargo", "Destroyed asteroids drop Ether shards. Fly over them to collect Ether until your cargo is full."],
   ["Center Belt", "The center belt has the best loot. Alien defenders guard it. Going alone is dangerous."],

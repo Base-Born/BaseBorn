@@ -1,6 +1,6 @@
 import { Play, Rocket, Swords, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { getRandomShipName } from "./components/menu/MainMenu";
+import { getRandomPilotName } from "./components/menu/pilotNames";
 import { UpgradeTreeOverlay } from "./components/UpgradeTreeOverlay";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { XP_BY_LEVEL, totalUpgradePointsForLevel } from "./game/config";
@@ -41,18 +41,18 @@ const defaultCustomization: Customization = {
 
 const SHIP_NAME_STORAGE_KEY = "baseborn.io.shipName.v1";
 function loadShipName() {
-  if (typeof window === "undefined") return getRandomShipName();
+  if (typeof window === "undefined") return getRandomPilotName();
   try {
     const saved = window.localStorage.getItem(SHIP_NAME_STORAGE_KEY);
     if (saved?.trim()) return saved.slice(0, 16);
   } catch {
   }
-  return getRandomShipName();
+  return getRandomPilotName();
 }
 
 const buildLaunchCustomization = (shipName: string): Customization => ({
   ...defaultCustomization,
-  name: shipName.trim().slice(0, 16) || getRandomShipName(),
+  name: shipName.trim().slice(0, 16) || getRandomPilotName(),
 });
 
 const emptySnapshot: GameSnapshot = {
@@ -353,7 +353,7 @@ export default function App() {
           pilotName={shipName}
           setPilotName={setShipName}
           onStart={startGame}
-          onRandomize={() => setShipName(getRandomShipName().slice(0, 16))}
+          onRandomize={() => setShipName(getRandomPilotName().slice(0, 16))}
         />
       ) : screen === "loading" ? (
         <GameLoadingScreen pilotName={shipName} />

@@ -1391,7 +1391,7 @@ export function isRepairStageCompleteForStation(station: Station, stageId: Repai
 }
 
 export function getLocalStationRelocationLockReason(station: Station, ownerPlayer: Player) {
-  if (station.claimState !== "claimed") return "Claim a broken station first.";
+  if (station.claimState !== "claimed") return "Repair and claim a derelict spacecraft first.";
   if (station.ownerPlayerId !== ownerPlayer.id) return "Only the team leader can pilot this base.";
   if (station.health <= 0 || station.lifecycleState === "destroyed") return "Base disabled.";
   if (station.hyperdrive.hyperdriveState === "charging") return "Hyperdrive charging. Station control locked.";

@@ -128,7 +128,7 @@ npm test
 npm run build
 ```
 
-The automated suite covers keyboard/controller movement, asteroid synchronization and drops, five-minute respawns, station driving, shared projectiles and damage, cargo validation, reconnects, teams, claims, leadership, 24-client load, and atomic persistence.
+The automated suite covers keyboard/controller movement, asteroid synchronization and drops, five-minute respawns, recovered-spacecraft driving, shared projectiles and damage, cargo validation, reconnects, teams, claims, leadership, 24-client load, and atomic persistence.
 
 ## Railway deployment
 
@@ -162,6 +162,8 @@ server/                      Static server, WebSocket world, validation, persist
 scripts/                     Movement, multiplayer, load, and persistence smoke tests
 docs/                        Story, release criteria, and design references
 ```
+
+The starter asset directory is the canonical visual set. Player rendering uses `space-pod.png` before integration and `claimed-spacecraft-no-gun.png` afterward, with weapon mounts rendered independently. Retired ship and station artwork is not included in the production repository.
 
 ## Current scope
 

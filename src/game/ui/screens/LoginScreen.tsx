@@ -102,7 +102,7 @@ export function LoginScreen({ pilotName, setPilotName, onStart, onRandomize }: {
     <footer className="loginFooter">
       <div className="loginFooter__meta"><strong>Live multiplayer</strong><span>•</span><strong>Build</strong><span>•</span><strong>Trade</strong><span>•</span><strong>Conquer</strong></div>
       <div className="loginPillars">
-        <article><i><Hammer size={21}/></i><div><strong>Build</strong><span>Construct & upgrade your station</span></div></article>
+        <article><i><Hammer size={21}/></i><div><strong>Build</strong><span>Recover & evolve your spacecraft</span></div></article>
         <article><i><ShieldCheck size={21}/></i><div><strong>Defend</strong><span>Fortify & protect your territory</span></div></article>
         <article><i><Compass size={21}/></i><div><strong>Survive</strong><span>Explore, gather & outlast rivals</span></div></article>
       </div>

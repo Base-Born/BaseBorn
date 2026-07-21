@@ -191,153 +191,6 @@
   backdrop-filter: blur(18px);
 }
 
-.bbShipPreview {
-  position: relative;
-  justify-self: center;
-  width: 188px;
-  height: 188px;
-  margin-bottom: -22px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  border: 1px solid rgba(154, 164, 176, 0.28);
-  background:
-    radial-gradient(circle at 52% 45%, rgba(90, 166, 200, 0.12), transparent 42%),
-    rgba(13, 18, 24, 0.72);
-  box-shadow: inset 0 0 28px rgba(90, 166, 200, 0.08), 0 0 20px rgba(90, 166, 200, 0.08);
-}
-
-.bbShipPreview__ring {
-  position: absolute;
-  inset: -13px;
-  border-radius: 50%;
-  border: 2px solid rgba(90, 166, 200, 0.58);
-  border-left-color: transparent;
-  border-bottom-color: transparent;
-  border-right-color: rgba(90, 166, 200, 0.14);
-  animation: bbSpin 8s linear infinite;
-}
-
-.bbShipPreview__glow {
-  position: absolute;
-  width: 82px;
-  height: 104px;
-  border-radius: 50%;
-  background: rgba(90, 166, 200, 0.12);
-  filter: blur(13px);
-}
-
-@keyframes bbSpin {
-  to { transform: rotate(360deg); }
-}
-
-.bbPreviewShip {
-  position: relative;
-  width: 118px;
-  height: 76px;
-  filter:
-    drop-shadow(0 0 7px rgba(255, 255, 255, 0.28))
-    drop-shadow(0 0 13px rgba(76, 201, 240, 0.38));
-  transform: rotate(-90deg);
-  animation: bbShipFloat 3.6s ease-in-out infinite;
-}
-
-.bbPreviewShipImage {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 3px 5px rgba(0,0,0,.92)) drop-shadow(0 0 7px rgba(76,201,240,.24));
-}
-
-.bbPreviewHull {
-  position: absolute;
-  inset: 24px 5px;
-  z-index: 2;
-  clip-path: polygon(100% 50%, 79% 12%, 26% 0, 0 32%, 0 68%, 26% 100%, 79% 88%);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.82), transparent 22%, rgba(3,10,15,.58) 52%, rgba(208,220,227,.7) 76%, rgba(25,36,45,.94)),
-    linear-gradient(90deg, #1b2730, #89969e 52%, #d9e1e5 78%, #4d5b64);
-  border-radius: 46% 58% 58% 46%;
-  box-shadow: inset 0 0 0 1px rgba(5,13,19,.82);
-}
-
-.bbPreviewWing {
-  position: absolute;
-  z-index: 1;
-  left: 20px;
-  width: 62px;
-  height: 30px;
-  background: linear-gradient(115deg, #101820 8%, #aab5bc 58%, #36434c 92%);
-  clip-path: polygon(100% 10%, 57% 34%, 0 100%, 8% 22%, 66% 0);
-}
-
-.bbPreviewWing--top { top: 1px; }
-.bbPreviewWing--bottom { bottom: 1px; transform: scaleY(-1); }
-
-.bbPreviewEngine {
-  position: absolute;
-  z-index: 3;
-  left: -7px;
-  top: 31px;
-  width: 23px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid #718995;
-  background: #dffaff;
-  box-shadow: -12px 0 14px 3px rgba(76,201,240,.62), 0 0 8px #4cc9f0;
-  animation: bbEngineBreathe 2.7s ease-in-out infinite;
-}
-
-@keyframes bbEngineBreathe {
-  0%, 100% {
-    transform: scale(.92);
-    opacity: .78;
-    box-shadow: -10px 0 11px 2px rgba(76,201,240,.46), 0 0 6px #4cc9f0;
-  }
-  48% {
-    transform: scale(1.08);
-    opacity: 1;
-    box-shadow: -19px 0 21px 5px rgba(76,201,240,.78), 0 0 12px #a7efff;
-  }
-}
-
-.bbPreviewCockpit {
-  position: absolute;
-  z-index: 4;
-  right: 30px;
-  top: 30px;
-  width: 19px;
-  height: 16px;
-  border-radius: 999px;
-  background: radial-gradient(circle at 68% 35%, #e9fdff 0 12%, #4cc9f0 28%, #126785 56%, #071722 78%);
-  box-shadow: 0 0 9px rgba(76,201,240,.72), inset 0 0 0 1px rgba(215,250,255,.7);
-}
-
-.bbPreviewDecal {
-  position: absolute;
-  z-index: 4;
-  left: 28px;
-  right: 52px;
-  top: 36px;
-  height: 3px;
-  border-radius: 999px;
-  background: #4cc9f0;
-  clip-path: polygon(0 0, 75% 0, 100% 50%, 75% 100%, 0 100%, 22% 50%);
-  box-shadow: 0 0 6px #4cc9f0;
-  animation: bbSystemsPulse 2.15s ease-in-out infinite alternate;
-}
-
-@keyframes bbSystemsPulse {
-  from { opacity: .48; filter: brightness(.8); }
-  to { opacity: 1; filter: brightness(1.45); }
-}
-
-@keyframes bbShipFloat {
-  0%, 100% { translate: 0 0; }
-  50% { translate: 0 -5px; }
-}
 
 .bbField {
   display: grid;
@@ -666,16 +519,6 @@
     padding: 18px 28px 22px;
   }
 
-  .bbShipPreview {
-    width: 100px;
-    height: 100px;
-  }
-
-  .bbPreviewShip {
-    width: 54px;
-    height: 34px;
-  }
-
   .bbInputWrap input {
     height: 48px;
     padding: 0 94px 0 46px;
@@ -815,10 +658,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bbStars,
-  .bbShipPreview__ring,
-  .bbPreviewShip,
-  .bbPreviewEngine,
-  .bbPreviewDecal,
   .bbMenuStack,
   .bbModal {
     animation: none;

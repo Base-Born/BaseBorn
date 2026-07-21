@@ -13,7 +13,8 @@ This is the definition of the current single-process `.io` MVP. It is not a clai
 | Area | Release problem | Implemented resolution |
 |---|---|---|
 | Starting experience | The former station-first sequence conflicted with the new concept | New pilots spawn in a Survey Pod beside a reserved derelict spacecraft, mine 12 Raw Ether, repair it, and integrate |
-| Pod identity | The old spacecraft model could replace the Survey Pod | Rendering now selects the pod explicitly from the authoritative ship class and versions the cached pod asset |
+| Visual identity | Retired spacecraft art could replace the Survey Pod or modular hull | Rendering now selects the pod explicitly, keeps one canonical recovered-spacecraft base through weapon evolutions, and versions the offline asset cache |
+| Repository hygiene | A retired ship sprite and a local Codex attachment were tracked | Obsolete binary assets were removed and local attachment directories are ignored |
 | Shared mining | Docked spacecraft kills could remove an asteroid without producing loot | Player-caused kills are tracked independently from flight state and reported while docked |
 | Asteroid validation | Legitimate long-range or boundary-drifting kills could be rejected | The server accepts bounded upgraded range and validates drift against the asteroid's deterministic origin chunk |
 | Progression integrity | Clients could propose asteroid value and impossible stat totals | The server calculates rewards and clamps allocations to earned level points |
