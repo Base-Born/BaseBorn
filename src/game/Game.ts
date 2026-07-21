@@ -562,10 +562,10 @@ export class Game {
     }
     if (playerActive) this.applyHazards(dt);
     const enemyCountBeforeCollision = this.enemies.length;
-    this.collision.resolve(dt, this.player, this.enemies, this.asteroids, this.projectiles, this.levels, playerActive, (asteroid) => {
+    this.collision.resolve(dt, this.player, this.enemies, this.asteroids, this.projectiles, this.levels, playerActive, (asteroid, destroyedByPlayer) => {
       const now = performance.now();
       this.asteroidSystem.markDestroyed(asteroid, now);
-      if (!playerActive) return;
+      if (!destroyedByPlayer || this.mode !== "playing") return;
       const amount = Math.max(1, Math.round(asteroid.etherReward * this.player.ship.behavior.mining.etherYieldMultiplier));
       if (this.multiplayer.isOnline()) {
         this.multiplayer.reportAsteroidDestroyed({
@@ -587,7 +587,7 @@ export class Game {
     this.repopulateEnemies(dt);
     this.camera.x = lerp(this.camera.x, this.player.pos.x, TUNING.cameraLerp);
     this.camera.y = lerp(this.camera.y, this.player.pos.y, TUNING.cameraLerp);
-    this.camera.zoom = lerp(this.camera.zoom, this.player.currentBranch === "Sniper" ? 0.82 : 1, 0.02);
+    this.camera.zoom = lerp(this.camera.zoom, this.getTargetCameraZoom(), 0.035);
     if (this.player.health <= 0 && this.mode === "playing") this.beginRespawn();
     this.snapshotTimer += dt;
     if (this.snapshotTimer > 0.12) {
@@ -726,6 +726,18 @@ export class Game {
       }
     }
     return best ? { id: best.id, pos: { ...best.pos }, radius: best.radius } : null;
+  }
+
+  private getTargetCameraZoom() {
+    const rect = this.canvas.getBoundingClientRect();
+    const shortestSide = Math.min(rect.width, rect.height);
+    const touchViewport = window.matchMedia?.("(hover: none) and (pointer: coarse)").matches ?? false;
+    let zoom = touchViewport || shortestSide < 700
+      ? (rect.width > rect.height ? 0.6 : 0.54)
+      : rect.width >= 1800 ? 0.68 : rect.width >= 1200 ? 0.72 : 0.76;
+    if (this.player.dockingState === "docked") zoom *= 0.9;
+    if (this.player.currentBranch === "Sniper") zoom *= 0.84;
+    return Math.max(0.46, Math.min(0.78, zoom));
   }
 
   private getDroneCommands(aimWorld: Vec2) {
@@ -906,6 +918,7 @@ export class Game {
     const nextHull = getNextHullTier(this.player.loadout.hullTier) ?? null;
     const claimedStation = this.stations.claimedStation;
     this.onSnapshot({
+      playerName: this.player.customization.name,
       level: this.player.level,
       xp: this.player.xp,
       nextXp: XP_BY_LEVEL[Math.min(this.player.level + 1, XP_BY_LEVEL.length - 1)],

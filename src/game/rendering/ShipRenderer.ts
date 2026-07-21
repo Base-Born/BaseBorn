@@ -7,6 +7,7 @@ type DrawArgs = {
   x: number;
   y: number;
   rotation: number;
+  shipClassId?: string;
   visualProfile: ShipVisualProfile;
   playerCustomization?: Customization;
   animationTime: number;
@@ -27,11 +28,11 @@ export class ShipRenderer {
     this.baseShipSprite.src = "/assets/ships/base-ship-topdown.png";
     this.spacePodSprite = new Image();
     this.spacePodSprite.decoding = "async";
-    this.spacePodSprite.src = "/assets/starter/space-pod.png";
+    this.spacePodSprite.src = "/assets/starter/space-pod.png?v=3";
   }
 
   drawShip(args: DrawArgs) {
-    const { ctx, x, y, rotation, visualProfile: profile, playerCustomization, animationTime } = args;
+    const { ctx, x, y, rotation, shipClassId, visualProfile: profile, playerCustomization, animationTime } = args;
     const baseRadius = 24 * profile.sizeScale;
     const primary = playerCustomization?.shipColor ?? profile.primaryColor;
     const glow = playerCustomization?.glowColor ?? profile.glowColor;
@@ -41,7 +42,7 @@ export class ShipRenderer {
     ctx.rotate(rotation);
     ctx.shadowColor = glow;
     ctx.shadowBlur = 3 + profile.detailLevel * 0.8;
-    if (profile.id.startsWith("starter_pod")) {
+    if (shipClassId === "space_pod" || profile.id.startsWith("starter_pod")) {
       this.drawSpacePod(ctx, baseRadius, glow, animationTime, profile.buildIdentity?.thrusterTier ?? 0);
       ctx.restore();
       return;

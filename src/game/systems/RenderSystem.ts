@@ -84,7 +84,7 @@ export class RenderSystem {
         glowScale: 1,
         layout: remote.shipClassId === "space_pod" ? "pod" : "dual",
       });
-      this.shipRenderer.drawShip({ ctx, x: remote.renderX, y: remote.renderY, rotation: remote.renderAngle, visualProfile, playerCustomization: remote.customization, animationTime: now });
+      this.shipRenderer.drawShip({ ctx, x: remote.renderX, y: remote.renderY, rotation: remote.renderAngle, shipClassId: remote.shipClassId, visualProfile, playerCustomization: remote.customization, animationTime: now });
       this.drawRemotePlayerLabel(remote);
     });    if (!player.destroyed) {
       if (!player.isInsideStation || player.dockingState === "docking" || player.dockingState === "undocking") {
@@ -95,7 +95,7 @@ export class RenderSystem {
         const dockAlpha = player.dockingState === "docking" ? Math.max(0.12, 1 - dockProgress * 0.88) : player.dockingState === "undocking" ? Math.min(1, 0.12 + dockProgress * 0.88) : 1;
         ctx.save();
         ctx.globalAlpha *= dockAlpha;
-        this.shipRenderer.drawShip({ ctx, x: player.pos.x, y: player.pos.y, rotation: player.angle, visualProfile: getPlayerVisualProfile(player), playerCustomization: player.customization, animationTime: performance.now() });
+        this.shipRenderer.drawShip({ ctx, x: player.pos.x, y: player.pos.y, rotation: player.angle, shipClassId: player.currentShipId, visualProfile: getPlayerVisualProfile(player), playerCustomization: player.customization, animationTime: performance.now() });
         ctx.restore();
         if (player.spawnProtected) this.drawSpawnShield(player.pos, player.radius, player.customization.glowColor);
       }

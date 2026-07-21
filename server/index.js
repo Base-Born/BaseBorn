@@ -32,7 +32,9 @@ const starterWreckRepairCost = 12;
 const asteroidChunkSize = 1600;
 const projectileSpeed = 720;
 const projectileLifetimeMs = 1800;
-const asteroidReportDistance = projectileSpeed * projectileLifetimeMs / 1000 + 64;
+// Upgraded spacecraft projectiles can travel farther than the base projectile.
+// Keep reports bounded, but do not reject legitimate long-range asteroid kills.
+const asteroidReportDistance = 2400;
 const asteroidReportWindowMs = 300;
 const maxAsteroidReportsPerWindow = 8;
 const projectileDamage = 14;
@@ -108,7 +110,7 @@ function normalizedDistance(pos){return Math.max(0,Math.min(1,Math.hypot(pos.x/w
 function regionForPosition(pos){const normalized=normalizedDistance(pos);return normalized<=.18?"center":normalized<=.42?"inner":normalized<=.88?"mid":"outer";}
 function pvpEnabledAt(pos){return regionForPosition(pos)!=="outer";}
 function weightedIndex(seed,weights){const total=weights.reduce((sum,weight)=>sum+weight,0);let roll=(seed/4294967296)*total;for(let index=0;index<weights.length;index+=1){roll-=weights[index];if(roll<=0)return index;}return weights.length-1;}
-function authoritativeAsteroidReward(message,pos){const type=etherTypes.has(message.etherType)?message.etherType:null;if(!type)return null;const qualityIndex=etherTypeOrder.indexOf(type);const region=regionForPosition(pos);if(qualityIndex<0||asteroidRegionWeights[region][qualityIndex]<=0)return null;const hash=hashToUint(String(message.asteroidId||""));const sizeIndex=weightedIndex(hash,asteroidSizeWeights);const sizeReward=asteroidSizeRewards[sizeIndex];const quality=asteroidQualityReward[type];return{type,amount:Math.max(1,Math.round(8*sizeReward*quality.ether)),xp:Math.max(1,Math.round(8*sizeReward*quality.xp)),score:Math.max(1,Math.round(10*sizeReward*quality.score))};}
+function authoritativeAsteroidReward(message,pos){const type=etherTypes.has(message.etherType)?message.etherType:null;if(!type)return null;const qualityIndex=etherTypeOrder.indexOf(type);const match=/^asteroid-(-?\d+):(-?\d+)-(\d+)$/.exec(String(message.asteroidId||""));const region=match?regionForPosition({x:(Number(match[1])+.5)*asteroidChunkSize,y:(Number(match[2])+.5)*asteroidChunkSize}):regionForPosition(pos);if(qualityIndex<0||asteroidRegionWeights[region][qualityIndex]<=0)return null;const hash=hashToUint(String(message.asteroidId||""));const sizeIndex=weightedIndex(hash,asteroidSizeWeights);const sizeReward=asteroidSizeRewards[sizeIndex];const quality=asteroidQualityReward[type];return{type,amount:Math.max(1,Math.round(8*sizeReward*quality.ether)),xp:Math.max(1,Math.round(8*sizeReward*quality.xp)),score:Math.max(1,Math.round(10*sizeReward*quality.score))};}
 function cleanCustomization(value){const source=value&&typeof value==="object"?value:{};const color=(key,fallback)=>/^#[0-9a-f]{6}$/i.test(source[key])?source[key]:fallback;const choice=(key,allowed,fallback)=>allowed.includes(source[key])?source[key]:fallback;return{name:cleanText(source.name,"Nova Pilot",16),shipColor:color("shipColor","#2fbce1"),glowColor:color("glowColor","#4cc9f0"),trailColor:color("trailColor","#4cc9f0"),projectileColor:color("projectileColor","#eef7ff"),wingVariant:choice("wingVariant",["delta","swept","fork"],"delta"),cockpitVariant:choice("cockpitVariant",["needle","dome","split"],"needle"),decalPattern:choice("decalPattern",["none","stripe","chevron"],"chevron"),thrusterStyle:choice("thrusterStyle",["ion","flare","pulse"],"ion"),glowIntensity:finite(source.glowIntensity,0.8,0,2)};}
 function cleanState(value,previous,identity,now=Date.now()){
   const source=value&&typeof value==="object"?value:{};
@@ -297,7 +299,10 @@ function validAsteroidReport(message,player){
   if(!Number.isSafeInteger(chunkX)||!Number.isSafeInteger(chunkY)||!Number.isSafeInteger(index)||index<0||index>64)return false;
   const x=finite(message.x,NaN,-worldLimit,worldLimit),y=finite(message.y,NaN,-worldLimit,worldLimit);
   if(!Number.isFinite(x)||!Number.isFinite(y)||distance(player,{x,y})>asteroidReportDistance)return false;
-  return Math.floor(x/asteroidChunkSize)===chunkX&&Math.floor(y/asteroidChunkSize)===chunkY;
+  // Asteroids drift after deterministic chunk generation. Allow a narrow
+  // boundary margin so a rock crossing its original chunk edge still drops.
+  const driftMargin=220,minX=chunkX*asteroidChunkSize-driftMargin,maxX=(chunkX+1)*asteroidChunkSize+driftMargin,minY=chunkY*asteroidChunkSize-driftMargin,maxY=(chunkY+1)*asteroidChunkSize+driftMargin;
+  return x>=minX&&x<=maxX&&y>=minY&&y<=maxY;
 }
 function createProjectile(room,websocket,angle,now){
   const stats=websocket.playerState.stats||{};

@@ -11,6 +11,7 @@ import "./game/ui/design/theme.css";
 import "./game/ui/design/adaptive.css";
 import "./game/ui/mobile/mobile-controller.css";
 import "./game/ui/build/build-identity.css";
+import "./styles/gameplay-refresh.css";
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

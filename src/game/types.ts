@@ -97,6 +97,7 @@ export type Customization = {
 };
 
 export type GameSnapshot = {
+  playerName: string;
   level: number;
   xp: number;
   nextXp: number;

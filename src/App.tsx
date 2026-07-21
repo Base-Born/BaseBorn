@@ -56,6 +56,7 @@ const buildLaunchCustomization = (shipName: string): Customization => ({
 });
 
 const emptySnapshot: GameSnapshot = {
+  playerName: "Pilot",
   level: 1,
   xp: 0,
   nextXp: 100,
@@ -502,6 +503,13 @@ function GameScreen({
       <StationInteractionPanel
         interaction={snapshot.stationInteraction}
         cargo={snapshot.cargo}
+        pilot={{
+          name: snapshot.playerName,
+          level: snapshot.level,
+          xp: snapshot.xp,
+          nextXp: snapshot.nextXp,
+          score: snapshot.score,
+        }}
         onPrimaryAction={() => game?.performStationPrimaryAction()}
         onAction={(actionId) => game?.performStationAction(actionId)}
         onOpenCommand={() => openCommand("overview")}

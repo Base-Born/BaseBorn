@@ -34,11 +34,12 @@ export class CollisionSystem {
     projectiles: Projectile[],
     level: LevelSystem,
     playerActive = true,
-    onAsteroidDestroyed?: (asteroid: Asteroid) => void,
+    onAsteroidDestroyed?: (asteroid: Asteroid, destroyedByPlayer: boolean) => void,
     onMiningInefficient?: (ratio: number) => void,
   ) {
     let lastMiningWarnAt = -Infinity;
     const rewardedEnemyIds = new Set<string>();
+    const playerDestroyedAsteroidIds = new Set<string>();
     const destroyedDrones = new Set<Drone>();
     const awardEnemyKill = (enemy: Enemy) => {
       if (rewardedEnemyIds.has(enemy.id)) return;
@@ -69,7 +70,10 @@ export class CollisionSystem {
           if (ratio < 0.25) onMiningInefficient(ratio);
         }
         target.takeDamage(getAsteroidDamage(player, target, TUNING.baseDamage * player.ship.behavior.damage * 3.5 * dt));
-        if (target.dead) level.award(player, target.xp, target.score);
+        if (target.dead) {
+          playerDestroyedAsteroidIds.add(target.id);
+          level.award(player, target.xp, target.score);
+        }
       }
     }
 
@@ -90,7 +94,10 @@ export class CollisionSystem {
 
             asteroid.takeDamage(getAsteroidDamage(player, asteroid, projectile.damage));
             projectile.penetration -= 1;
-            if (wasAlive && asteroid.dead) level.award(player, asteroid.xp, asteroid.score);
+            if (wasAlive && asteroid.dead) {
+              playerDestroyedAsteroidIds.add(asteroid.id);
+              level.award(player, asteroid.xp, asteroid.score);
+            }
             break;
           }
         }
@@ -160,7 +167,10 @@ export class CollisionSystem {
             asteroid.takeDamage(getAsteroidDamage(player, asteroid, drone.damage * 0.15 * (dt * 60), 1.15));
             drone.takeDamage(Math.max(0.24, asteroid.miningResistance * 0.18) * (dt * 60));
             if (drone.dead) destroyedDrones.add(drone);
-            if (wasAlive && asteroid.dead) level.award(player, asteroid.xp, asteroid.score);
+            if (wasAlive && asteroid.dead) {
+              playerDestroyedAsteroidIds.add(asteroid.id);
+              level.award(player, asteroid.xp, asteroid.score);
+            }
           }
         }
     }
@@ -181,7 +191,10 @@ export class CollisionSystem {
           }
 
           asteroid.takeDamage(getAsteroidDamage(player, asteroid, impact.ramDamage * effective.bodyDamage.damageMultiplier * getMassMovementModifiers(player.buildIdentity.budgets.mass).collision, 1.25));
-          if (wasAlive && asteroid.dead) level.award(player, asteroid.xp, asteroid.score);
+          if (wasAlive && asteroid.dead) {
+            playerDestroyedAsteroidIds.add(asteroid.id);
+            level.award(player, asteroid.xp, asteroid.score);
+          }
         }
       }
       for (const enemy of enemies) {
@@ -212,7 +225,7 @@ export class CollisionSystem {
 
     for (let i = asteroids.length - 1; i >= 0; i -= 1) {
       if (asteroids[i].dead) {
-        onAsteroidDestroyed?.(asteroids[i]);
+        onAsteroidDestroyed?.(asteroids[i], playerDestroyedAsteroidIds.has(asteroids[i].id));
         asteroids.splice(i, 1);
       }
     }
