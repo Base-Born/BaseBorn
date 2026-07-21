@@ -95,11 +95,17 @@ try {
   await moveClient(alpha,{x:alphaStation.x+120,y:alphaStation.y},{x:claimedStation.x,y:claimedStation.y});
   alpha.socket.send(JSON.stringify({type:"state",state:{x:claimedStation.x,y:claimedStation.y,vx:0,vy:0,angle:0,thrustForward:0,thrustStrafe:0,docked:true,healthRatio:1,level:1,score:0,shipClassId:"base_ship",shipClass:"Base Ship"}}));
   await waitForSnapshot(alpha,(message)=>message.stations.find((station)=>station.id===alphaStation.id)?.dockedPlayerIds.includes(alpha.id));
-  alpha.socket.send(JSON.stringify({type:"station_input",stationId:alphaStation.id,x:1,y:0}));
+  alpha.socket.send(JSON.stringify({type:"station_input",stationId:alphaStation.id,x:1,y:0,aimAngle:Math.PI/2}));
   const drivenSnapshot = await waitForSnapshot(alpha,(message)=>message.stations.some((station)=>station.id===alphaStation.id&&station.x>claimedStation.x+2&&station.driverPlayerId===alpha.id));
   const drivenStation = drivenSnapshot.stations.find((station)=>station.id===alphaStation.id);
   assert(drivenStation.vx>0,"station drive input should produce shared server velocity");
   assert(drivenStation.driveX>0&&drivenStation.driveY===0,"station snapshots should expose active thruster input");
+  assert(Math.abs(drivenStation.turretAngle-Math.PI/2)<.01,"station turret aim should be synchronized independently from the spacecraft body");
+  alpha.socket.send(JSON.stringify({type:"fire",angle:Math.PI/2}));
+  const mountedShotSnapshot=await waitForSnapshot(alpha,(message)=>message.projectiles?.some((projectile)=>projectile.ownerId===alpha.id));
+  const mountedShot=mountedShotSnapshot.projectiles.find((projectile)=>projectile.ownerId===alpha.id);
+  assert(mountedShot.vy>0&&Math.abs(mountedShot.vx)<1,"the docked spacecraft turret should fire toward the cursor angle");
+  assert(mountedShot.y>drivenStation.y+40,"the docked projectile should originate at the mounted turret muzzle");
   alpha.socket.send(JSON.stringify({type:"station_input",stationId:alphaStation.id,x:0,y:0}));
   const idleThrusterSnapshot=await waitForSnapshot(alpha,(message)=>{const station=message.stations.find((entry)=>entry.id===alphaStation.id);return station?.driveX===0&&station?.driveY===0;});
   assert.equal(idleThrusterSnapshot.stations.find((station)=>station.id===alphaStation.id).driveX,0,"station thrusters should turn off when drive input stops");

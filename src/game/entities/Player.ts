@@ -221,7 +221,24 @@ export class Player {
     }
   }
 
-  spawnProjectile(projectiles: Projectile[], angle: number, multiplier: number) {
+  fireMountedWeapon(projectiles: Projectile[], angle: number, origin: Vec2) {
+    const effective = getEffectivePlayerStats(this.stats, this.baseFrameId);
+    const moduleBonuses = this.moduleBonuses;
+    const heatModifiers = getHeatModifiers(this.heat, this.buildIdentity.budgets.heatCapacity);
+    const fireDelay = calculateReloadDelay(TUNING.baseFireDelay, effective.reloadSpeed.reloadMultiplier * moduleBonuses.fireRateMultiplier * heatModifiers.reload);
+    if (this.fireCooldown > 0) return false;
+    this.fireCooldown = fireDelay;
+    this.heat = Math.min(this.buildIdentity.budgets.heatCapacity * 1.35, this.heat + 3.5 + this.stats.bulletDamage * 0.22 + this.stats.reloadSpeed * 0.18);
+    this.spawnProjectile(projectiles, angle, 1, origin);
+    return true;
+  }
+
+  updateMountedWeapon(dt: number) {
+    this.fireCooldown = Math.max(0, this.fireCooldown - dt);
+    this.heat = Math.max(0, this.heat - (18 + this.buildIdentity.budgets.heatCapacity * 0.04) * dt);
+  }
+
+  spawnProjectile(projectiles: Projectile[], angle: number, multiplier: number, origin?: Vec2) {
     const b = this.ship.behavior;
     const effective = getEffectivePlayerStats(this.stats, this.baseFrameId);
     const moduleBonuses = this.moduleBonuses;
@@ -235,8 +252,8 @@ export class Player {
     const speed = projectileStats.speed;
     projectiles.push(new Projectile({
       pos: {
-        x: this.pos.x + Math.cos(angle) * 34,
-        y: this.pos.y + Math.sin(angle) * 34,
+        x: (origin?.x ?? this.pos.x) + Math.cos(angle) * (origin ? 4 : 34),
+        y: (origin?.y ?? this.pos.y) + Math.sin(angle) * (origin ? 4 : 34),
       },
       angle,
       speed,

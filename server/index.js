@@ -35,8 +35,14 @@ const asteroidReportWindowMs = 300;
 const maxAsteroidReportsPerWindow = 8;
 const projectileDamage = 14;
 const stationPilotSpeed = 230;
-const stationPilotResponse = 6.8;
-const stationPilotBrakeResponse = 8.5;
+const stationPilotAcceleration = 610;
+const stationPilotActiveDamping = 0.42;
+const stationPilotIdleDamping = 0.16;
+const stationFacingResponse = 10;
+const stationRadius = 170;
+const stationTurretMountX = 0.52;
+const stationTurretMountY = -0.05;
+const stationTurretBarrelLength = 58;
 const testSpawnRadius = Math.max(0, Math.min(worldLimit - 5000, Number.parseInt(process.env.TEST_SPAWN_RADIUS || "0", 10) || 0));
 const asteroidSizeRewards = [0.75, 1, 1.6, 2.6, 4, 6, 9, 13, 19, 28];
 const asteroidSizeWeights = [22, 20, 18, 14, 10, 7, 4, 2.5, 1.5, 1];
@@ -134,7 +140,7 @@ function createTeam(playerId,name){
 }
 function createStarterStation(spawn,playerId){
   const sx=Math.sign(spawn.x)||1,sy=Math.sign(spawn.y)||1;
-  return{id:crypto.randomUUID(),name:"Derelict Survey Craft",x:spawn.x-sx*920,y:spawn.y-sy*920,vx:0,vy:0,driveX:0,driveY:0,driverPlayerId:null,driveUpdatedAt:0,claimState:"unclaimed",ownerTeamId:null,ownerPlayerId:null,reservedForPlayerId:playerId,level:1,health:360,maxHealth:2200,isMobile:false,mothershipUnlocked:false,dockedPlayerIds:[]};
+  return{id:crypto.randomUUID(),name:"Derelict Survey Craft",x:spawn.x-sx*920,y:spawn.y-sy*920,vx:0,vy:0,driveX:0,driveY:0,driverPlayerId:null,driveUpdatedAt:0,facingAngle:0,turretAngle:-Math.PI/2,turretFiringUntil:0,claimState:"unclaimed",ownerTeamId:null,ownerPlayerId:null,reservedForPlayerId:playerId,level:1,health:360,maxHealth:2200,isMobile:false,mothershipUnlocked:false,dockedPlayerIds:[]};
 }
 function spawnNearStation(station){
   const angle=Math.random()*Math.PI*2;
@@ -147,7 +153,7 @@ function getPublicRoom(){
     const persisted=loadWorldState(worldStatePath);
     const restored=persisted?.worldRevision===worldRevision?persisted:null;
     room={id:publicWorldId,seed:publicWorldSeed,clients:new Set(),stations:new Map(restored?.stations||[]),drops:new Map(),destroyedAsteroids:new Map(restored?.destroyedAsteroids||[]),teams:new Map(restored?.teams||[]),invites:new Map(),projectiles:new Map(),playerRecords:new Map(restored?.playerRecords||[]),dirty:true,persistenceDirty:false};
-    for(const station of room.stations.values()){if(!Array.isArray(station.dockedPlayerIds))station.dockedPlayerIds=[];station.vx=finite(station.vx,0,-stationPilotSpeed,stationPilotSpeed);station.vy=finite(station.vy,0,-stationPilotSpeed,stationPilotSpeed);station.driveX=0;station.driveY=0;station.driverPlayerId=null;station.driveUpdatedAt=0;}
+    for(const station of room.stations.values()){if(!Array.isArray(station.dockedPlayerIds))station.dockedPlayerIds=[];station.vx=finite(station.vx,0,-stationPilotSpeed,stationPilotSpeed);station.vy=finite(station.vy,0,-stationPilotSpeed,stationPilotSpeed);station.driveX=0;station.driveY=0;station.driverPlayerId=null;station.driveUpdatedAt=0;station.facingAngle=finite(station.facingAngle,0,-Math.PI*4,Math.PI*4);station.turretAngle=finite(station.turretAngle,-Math.PI/2,-Math.PI*4,Math.PI*4);station.turretFiringUntil=0;}
     rooms.set(publicWorldId,room);
   }
   return room;
@@ -290,13 +296,21 @@ function validAsteroidReport(message,player){
 function createProjectile(room,websocket,angle,now){
   const stats=websocket.playerState.stats||{};
   const reloadMultiplier=combatStatMultiplier(stats.reloadSpeed,.06,.09);
-  if(websocket.playerState.docked||websocket.playerState.healthRatio<=0||now-(websocket.lastFireAt||0)<120/reloadMultiplier)return null;
+  const dockedStation=[...room.stations.values()].find(station=>station.ownerPlayerId===websocket.identity.id&&station.dockedPlayerIds.includes(websocket.identity.id));
+  if((websocket.playerState.shipClassId==="space_pod"&&!dockedStation)||(websocket.playerState.docked&&!dockedStation)||websocket.playerState.healthRatio<=0||now-(websocket.lastFireAt||0)<120/reloadMultiplier)return null;
   websocket.lastFireAt=now;
   const id=crypto.randomUUID();
   const speed=projectileSpeed*combatStatMultiplier(stats.bulletSpeed,.06,.09);
   const damage=projectileDamage*combatStatMultiplier(stats.bulletDamage,.08,.13);
   const penetration=combatStatMultiplier(stats.bulletPenetration,.12,.18);
-  const projectile={id,ownerId:websocket.identity.id,x:websocket.playerState.x+Math.cos(angle)*34,y:websocket.playerState.y+Math.sin(angle)*34,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,radius:7,damage,penetration,color:websocket.identity.customization.projectileColor,createdAt:now,expiresAt:now+projectileLifetimeMs};
+  let originX=websocket.playerState.x,originY=websocket.playerState.y,barrelOffset=34;
+  if(dockedStation){
+    const rotation=dockedStation.facingAngle||0,localX=stationRadius*stationTurretMountX,localY=stationRadius*stationTurretMountY;
+    originX=dockedStation.x+localX*Math.cos(rotation)-localY*Math.sin(rotation);
+    originY=dockedStation.y+localX*Math.sin(rotation)+localY*Math.cos(rotation);
+    barrelOffset=stationTurretBarrelLength+4;dockedStation.turretAngle=angle;dockedStation.turretFiringUntil=now+90;
+  }
+  const projectile={id,ownerId:websocket.identity.id,x:originX+Math.cos(angle)*barrelOffset,y:originY+Math.sin(angle)*barrelOffset,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,radius:7,damage,penetration,color:websocket.identity.customization.projectileColor,createdAt:now,expiresAt:now+projectileLifetimeMs};
   room.projectiles.set(id,projectile);return projectile;
 }
 function simulateRoom(room,now,dt){
@@ -306,9 +320,11 @@ function simulateRoom(room,now,dt){
     if(now-(station.driveUpdatedAt||0)>180){station.driveX=0;station.driveY=0;station.driverPlayerId=null;}
     const magnitude=Math.hypot(station.driveX||0,station.driveY||0);
     const dx=magnitude>.001?station.driveX/magnitude:0,dy=magnitude>.001?station.driveY/magnitude:0;
-    const response=magnitude>.001?stationPilotResponse:stationPilotBrakeResponse;
-    const blend=1-Math.exp(-response*dt);
-    station.vx+=(dx*stationPilotSpeed-station.vx)*blend;station.vy+=(dy*stationPilotSpeed-station.vy)*blend;
+    const inputPower=Math.min(1,magnitude);
+    station.vx+=dx*stationPilotAcceleration*inputPower*dt;station.vy+=dy*stationPilotAcceleration*inputPower*dt;
+    const damping=Math.pow(inputPower>.001?stationPilotActiveDamping:stationPilotIdleDamping,dt);station.vx*=damping;station.vy*=damping;
+    const speed=Math.hypot(station.vx,station.vy);if(speed>stationPilotSpeed){station.vx=station.vx/speed*stationPilotSpeed;station.vy=station.vy/speed*stationPilotSpeed;}
+    if(inputPower>.001){const targetFacing=Math.atan2(dy,dx)+Math.PI/2,delta=Math.atan2(Math.sin(targetFacing-(station.facingAngle||0)),Math.cos(targetFacing-(station.facingAngle||0)));station.facingAngle=(station.facingAngle||0)+delta*(1-Math.exp(-stationFacingResponse*dt));}
     if(magnitude<=.001&&Math.hypot(station.vx,station.vy)<.5){station.vx=0;station.vy=0;}
     if(Math.hypot(station.vx,station.vy)>.01){station.x=Math.max(-worldLimit+500,Math.min(worldLimit-500,station.x+station.vx*dt));station.y=Math.max(-worldLimit+500,Math.min(worldLimit-500,station.y+station.vy*dt));station.isMobile=true;changed=true;}
     for(const client of room.clients){if(!client.playerState||!station.dockedPlayerIds.includes(client.identity.id))continue;client.playerState.x=station.x;client.playerState.y=station.y;client.playerState.vx=station.vx;client.playerState.vy=station.vy;client.playerState.updatedAt=now;}
@@ -385,9 +401,9 @@ websocketServer.on("connection",(websocket)=>{
       const station=room.stations.get(String(message.stationId||""));const team=teamForPlayer(room,playerId);
       if(!station||!team||station.ownerTeamId!==team.id||station.ownerPlayerId!==playerId||!station.dockedPlayerIds.includes(playerId))return;
       if(station.driverPlayerId&&station.driverPlayerId!==playerId&&now-(station.driveUpdatedAt||0)<=180)return;
-      station.driverPlayerId=playerId;station.driveUpdatedAt=now;station.driveX=finite(message.x,0,-1,1);station.driveY=finite(message.y,0,-1,1);markDirty(room);return;
+      station.driverPlayerId=playerId;station.driveUpdatedAt=now;station.driveX=finite(message.x,0,-1,1);station.driveY=finite(message.y,0,-1,1);station.turretAngle=finite(message.aimAngle,station.turretAngle||0,-Math.PI*4,Math.PI*4);markDirty(room);return;
     }
-    if(message?.type==="fire"){if(websocket.playerState.shipClassId==="space_pod")return;const angle=finite(message.angle,websocket.playerState.angle,-Math.PI*4,Math.PI*4);if(createProjectile(room,websocket,angle,now))markDirty(room);return;}
+    if(message?.type==="fire"){const angle=finite(message.angle,websocket.playerState.angle,-Math.PI*4,Math.PI*4);if(createProjectile(room,websocket,angle,now))markDirty(room);return;}
     if(message?.type==="request_respawn"){
       if(now-websocket.lastRespawnAt<8000)return;
       websocket.lastRespawnAt=now;

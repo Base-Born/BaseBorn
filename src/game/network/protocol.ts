@@ -40,6 +40,9 @@ export type NetworkStationState = {
   driveX?: number;
   driveY?: number;
   driverPlayerId?: string | null;
+  facingAngle?: number;
+  turretAngle?: number;
+  turretFiringUntil?: number;
   claimState: "unclaimed" | "claimed";
   ownerTeamId: string | null;
   ownerPlayerId: string | null;

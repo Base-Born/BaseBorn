@@ -414,7 +414,7 @@ export class Game {
         this.player.health = Math.min(this.player.maxHealth, this.player.maxHealth * Math.max(0, Math.min(1, authoritativeProfile.healthRatio)));
       }
     }
-    this.stations.syncSharedStations(this.multiplayer.getSharedStations());
+    this.stations.syncSharedStations(this.multiplayer.getSharedStations(), this.player);
     const networkTeam = this.multiplayer.getTeams().find((team) => team.id === this.multiplayer.getTeamId()) ?? null;
     this.stations.syncNetworkTeam(networkTeam, this.player);
     const claimedCraft = this.stations.claimedStation;
@@ -470,7 +470,19 @@ export class Game {
       const stationMovement = this.input.movement();
       const piloted = this.stations.pilotClaimedStation(this.player, stationMovement, dt);
       const pilotedStation = this.stations.claimedStation;
-      if (piloted && pilotedStation && this.multiplayer.isOnline()) this.multiplayer.driveStation(pilotedStation.id, stationMovement);
+      const turretAngle = pilotedStation ? this.stations.aimClaimedStationTurret(this.player, aimWorld, dt, pilotedStation) : null;
+      const stationFiring = !this.player.usesDroneControls && (this.input.firing || this.autoFire);
+      this.player.updateMountedWeapon(dt);
+      let firedMountedWeapon = false;
+      if (piloted && pilotedStation && turretAngle !== null && stationFiring) {
+        const muzzle = this.stations.getClaimedStationTurretMuzzle(pilotedStation, turretAngle);
+        firedMountedWeapon = this.player.fireMountedWeapon(this.projectiles, turretAngle, muzzle);
+        if (firedMountedWeapon) pilotedStation.turretFiringUntil = now + 90;
+      }
+      if (piloted && pilotedStation && this.multiplayer.isOnline()) {
+        this.multiplayer.driveStation(pilotedStation.id, stationMovement, turretAngle ?? pilotedStation.turretAngle ?? 0);
+        if (firedMountedWeapon) this.multiplayer.fire(turretAngle ?? 0);
+      }
       if (piloted) this.updateZoneState();
     }
     const playerActive = this.mode === "playing" && !this.player.isInsideStation;

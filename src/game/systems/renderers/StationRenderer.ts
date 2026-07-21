@@ -128,6 +128,7 @@ export class StationRenderer {
     ctx.shadowColor = station.underAttack ? "#ff6b78" : station.claimState === "claimed" ? "rgba(74,220,255,.7)" : "rgba(0,0,0,.9)";
     ctx.shadowBlur = station.claimState === "claimed" ? 12 : 24;
     ctx.drawImage(sprite, spriteOffsetX - drawWidth / 2, spriteOffsetY - drawHeight / 2, drawWidth, drawHeight);
+    if (station.claimState === "claimed") this.renderStarterTurret(ctx, station, stationRotation, options);
 
     if (station.claimState === "claimed") {
       const pulse = 0.5 + Math.sin(options.now * 0.004) * 0.12;
@@ -140,6 +141,61 @@ export class StationRenderer {
     }
     ctx.restore();
     return true;
+  }
+
+  private renderStarterTurret(ctx: CanvasRenderingContext2D, station: Station, stationRotation: number, options: StationRenderOptions) {
+    const mountX = station.radius * STATION_CONFIG.spacecraftTurretMountX;
+    const mountY = station.radius * STATION_CONFIG.spacecraftTurretMountY;
+    const barrelLength = STATION_CONFIG.spacecraftTurretBarrelLength;
+    const relativeAim = (station.turretAngle ?? -Math.PI / 2) - stationRotation;
+    ctx.save();
+    ctx.translate(mountX, mountY);
+    ctx.shadowColor = "rgba(48,220,255,.7)";
+    ctx.shadowBlur = 9;
+    const pedestal = ctx.createRadialGradient(-4, -5, 2, 0, 0, 22);
+    pedestal.addColorStop(0, "#f7fbff");
+    pedestal.addColorStop(0.28, "#9aa8b2");
+    pedestal.addColorStop(0.62, "#313b43");
+    pedestal.addColorStop(1, "#10171d");
+    ctx.fillStyle = pedestal;
+    ctx.strokeStyle = "#70e8ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, 21, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.rotate(relativeAim);
+    const barrel = ctx.createLinearGradient(5, 0, barrelLength, 0);
+    barrel.addColorStop(0, "#222c34");
+    barrel.addColorStop(0.38, "#e9f0f4");
+    barrel.addColorStop(0.72, "#8b9aa5");
+    barrel.addColorStop(1, "#26343e");
+    ctx.fillStyle = barrel;
+    ctx.strokeStyle = "#111a20";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(4, -8, barrelLength, 16, 5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#0f1920";
+    ctx.strokeStyle = "#72e9ff";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(barrelLength + 3, 0, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    if ((station.turretFiringUntil ?? 0) > options.now) {
+      ctx.shadowColor = "#8df3ff";
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = "rgba(220,252,255,.96)";
+      ctx.beginPath();
+      ctx.moveTo(barrelLength + 8, -7);
+      ctx.lineTo(barrelLength + 27, 0);
+      ctx.lineTo(barrelLength + 8, 7);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   private renderStationShield(ctx: CanvasRenderingContext2D, station: Station, profile: StationVisualProfile, options: StationRenderOptions) {

@@ -23,7 +23,7 @@ import type { StationSubsystemId, StationSubsystemStateKind, StationSubsystemSta
 import { Enemy } from "../entities/Enemy";
 import type { Player } from "../entities/Player";
 import { createId } from "../id";
-import { distance, normalize, randomRange } from "../math";
+import { distance, lerp, normalize, randomRange } from "../math";
 import type { Vec2 } from "../types";
 import type { NetworkStationState, NetworkTeam } from "../network/protocol";
 import { ETHER_QUALITY_ORDER, ETHER_VALUE_WEIGHTS } from "../data/resourceBalance";
@@ -57,24 +57,41 @@ export class StationSystem {
     this.placeStarterStationNearPlayer(player);
   }
 
-  syncSharedStations(states: NetworkStationState[]) {
+  syncSharedStations(states: NetworkStationState[], player?: Player) {
     if (!states.length) return;
     const existing = new Map(this.stations.map((station) => [station.id, station]));
     this.stations = states.map((state, index) => {
-      const station = existing.get(state.id) ?? this.createBrokenStation({ x: state.x, y: state.y }, index);
+      const existingStation = existing.get(state.id);
+      const station = existingStation ?? this.createBrokenStation({ x: state.x, y: state.y }, index);
       const isFreshSnapshot = this.lastNetworkStationStates.get(state.id) !== state;
       this.lastNetworkStationStates.set(state.id, state);
       station.id = state.id;
       station.name = state.name;
       if (isFreshSnapshot) {
-        station.pos = { x: state.x, y: state.y };
-        station.vel = { x: state.vx ?? station.vel.x, y: state.vy ?? station.vel.y };
+        const target = { x: state.x, y: state.y };
+        const positionError = distance(station.pos, target);
+        const locallyDriven = Boolean(player && state.driverPlayerId === player.id);
+        const correction = locallyDriven ? STATION_CONFIG.stationNetworkCorrection * 0.45 : STATION_CONFIG.stationNetworkCorrection;
+        station.pos = !existingStation || positionError > 700
+          ? target
+          : { x: lerp(station.pos.x, target.x, correction), y: lerp(station.pos.y, target.y, correction) };
+        const velocityCorrection = locallyDriven ? 0.12 : 0.28;
+        station.vel = {
+          x: lerp(station.vel.x, state.vx ?? station.vel.x, velocityCorrection),
+          y: lerp(station.vel.y, state.vy ?? station.vel.y, velocityCorrection),
+        };
       }
       const driveX = state.driverPlayerId ? state.driveX ?? 0 : 0;
       const driveY = state.driverPlayerId ? state.driveY ?? 0 : 0;
       const drivePower = Math.hypot(driveX, driveY);
-      station.driveInput = drivePower > 0.001 ? { x: driveX / drivePower, y: driveY / drivePower } : { x: 0, y: 0 };
-      if (drivePower > 0.001) station.facingAngle = Math.atan2(driveY, driveX) + Math.PI / 2;
+      const driveScale = drivePower > 1 ? 1 / drivePower : 1;
+      station.driveInput = drivePower > 0.001 ? { x: driveX * driveScale, y: driveY * driveScale } : { x: 0, y: 0 };
+      if (Number.isFinite(state.facingAngle)) station.facingAngle = lerpAngle(station.facingAngle ?? state.facingAngle as number, state.facingAngle as number, 0.34);
+      else if (drivePower > 0.001) station.facingAngle = Math.atan2(driveY, driveX) + Math.PI / 2;
+      if (Number.isFinite(state.turretAngle)) station.turretAngle = lerpAngle(station.turretAngle ?? state.turretAngle as number, state.turretAngle as number, 0.42);
+      if ((state.turretFiringUntil ?? 0) > Date.now()) {
+        station.turretFiringUntil = performance.now() + Math.min(120, (state.turretFiringUntil as number) - Date.now());
+      }
       station.claimState = state.claimState;
       station.ownerTeamId = state.ownerTeamId;
       station.ownerPlayerId = state.ownerPlayerId;
@@ -281,14 +298,16 @@ export class StationSystem {
     const magnitude = Math.hypot(move.x, move.y);
     const direction = magnitude > 0.001 ? { x: move.x / magnitude, y: move.y / magnitude } : { x: 0, y: 0 };
     const maxSpeed = getStationPilotMaxSpeed(station);
-    const response = magnitude > 0.001 ? STATION_CONFIG.stationPilotResponse : STATION_CONFIG.stationPilotBrakeResponse;
-    const blend = 1 - Math.exp(-response * Math.min(dt, 0.1));
-    station.vel.x += (direction.x * maxSpeed - station.vel.x) * blend;
-    station.vel.y += (direction.y * maxSpeed - station.vel.y) * blend;
-    if (magnitude <= 0.001 && Math.hypot(station.vel.x, station.vel.y) < 0.5) station.vel = { x: 0, y: 0 };
+    const inputPower = Math.min(1, magnitude);
+    station.vel.x += direction.x * STATION_CONFIG.stationPilotAcceleration * inputPower * Math.min(dt, 0.05);
+    station.vel.y += direction.y * STATION_CONFIG.stationPilotAcceleration * inputPower * Math.min(dt, 0.05);
     clampStationVelocity(station, maxSpeed);
-    station.driveInput = direction;
-    if (magnitude > 0.001) station.facingAngle = Math.atan2(direction.y, direction.x) + Math.PI / 2;
+    station.driveInput = { x: direction.x * inputPower, y: direction.y * inputPower };
+    if (magnitude > 0.001) {
+      const targetFacing = Math.atan2(direction.y, direction.x) + Math.PI / 2;
+      const facingBlend = 1 - Math.exp(-STATION_CONFIG.stationFacingResponse * Math.min(dt, 0.1));
+      station.facingAngle = lerpAngle(station.facingAngle ?? targetFacing, targetFacing, facingBlend);
+    }
     player.pos = this.getDockedPlayerPosition(player, station) ?? { ...station.pos };
     player.vel = { x: 0, y: 0 };
     player.thrustWorld = direction;
@@ -298,6 +317,26 @@ export class StationSystem {
     station.lastActiveAt = performance.now();
     station.localRelocationReason = `Command drive online. WASD moves the station at up to ${Math.round(maxSpeed)} u/s.`;
     return true;
+  }
+
+  aimClaimedStationTurret(player: Player, aimWorld: Vec2, dt: number, station = this.claimedStation) {
+    if (!station || !canPilotStation(station, player)) return null;
+    const targetAngle = Math.atan2(aimWorld.y - station.pos.y, aimWorld.x - station.pos.x);
+    const blend = 1 - Math.exp(-STATION_CONFIG.stationTurretResponse * Math.min(dt, 0.1));
+    station.turretAngle = lerpAngle(station.turretAngle ?? targetAngle, targetAngle, blend);
+    return station.turretAngle;
+  }
+
+  getClaimedStationTurretMuzzle(station: Station, angle = station.turretAngle ?? 0) {
+    const rotation = station.facingAngle ?? 0;
+    const localX = station.radius * STATION_CONFIG.spacecraftTurretMountX;
+    const localY = station.radius * STATION_CONFIG.spacecraftTurretMountY;
+    const mountX = station.pos.x + localX * Math.cos(rotation) - localY * Math.sin(rotation);
+    const mountY = station.pos.y + localX * Math.sin(rotation) + localY * Math.cos(rotation);
+    return {
+      x: mountX + Math.cos(angle) * STATION_CONFIG.spacecraftTurretBarrelLength,
+      y: mountY + Math.sin(angle) * STATION_CONFIG.spacecraftTurretBarrelLength,
+    };
   }
 
   relocateClaimedStationNearPlayer(player: Player, station = this.claimedStation) {
@@ -922,6 +961,8 @@ export class StationSystem {
       vel: { x: 0, y: 0 },
       driveInput: { x: 0, y: 0 },
       facingAngle: 0,
+      turretAngle: -Math.PI / 2,
+      turretFiringUntil: 0,
       radius: STATION_CONFIG.baseRadius,
       ownerTeamId: null,
       ownerPlayerId: null,
@@ -1044,6 +1085,10 @@ export class StationSystem {
       return;
     }
     if (!station.vel) station.vel = { x: 0, y: 0 };
+    const inputPower = Math.min(1, Math.hypot(station.driveInput?.x ?? 0, station.driveInput?.y ?? 0));
+    const damping = Math.pow(inputPower > 0.001 ? STATION_CONFIG.stationPilotActiveDamping : STATION_CONFIG.stationPilotIdleDamping, Math.min(dt, 0.1));
+    station.vel.x *= damping;
+    station.vel.y *= damping;
     const speed = Math.hypot(station.vel.x, station.vel.y);
     if (speed <= 0.01) {
       station.vel = { x: 0, y: 0 };
@@ -1057,10 +1102,6 @@ export class StationSystem {
       x: station.pos.x + station.vel.x * dt,
       y: station.pos.y + station.vel.y * dt,
     }, station.radius + 250);
-    const drag = isStationPhasedForHyperdrive(station) ? 0.08 : STATION_CONFIG.stationPilotDrag;
-    const dragFactor = Math.max(0, 1 - drag * dt);
-    station.vel.x *= dragFactor;
-    station.vel.y *= dragFactor;
   }
 
   private isRepairStageComplete(station: Station, stageId: RepairStageId) {
@@ -1342,6 +1383,11 @@ export function getStationPhysicalRadius(station: Station) {
 
 export function isStationPhasedForHyperdrive(station: Station) {
   return station.hyperdrive.isPhasedDuringWarp || station.hyperdrive.hyperdriveState === "warping";
+}
+
+function lerpAngle(current: number, target: number, amount: number) {
+  const delta = Math.atan2(Math.sin(target - current), Math.cos(target - current));
+  return current + delta * Math.max(0, Math.min(1, amount));
 }
 
 export function isHyperdriveFuelEther(etherType: EtherType) {

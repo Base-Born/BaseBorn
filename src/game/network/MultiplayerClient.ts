@@ -26,7 +26,7 @@ export class MultiplayerClient {
   private destroyed = false;
   private lastSentAt = 0;
   private lastStationDriveAt = 0;
-  private lastStationDrive = { stationId: "", x: 0, y: 0 };
+  private lastStationDrive = { stationId: "", x: 0, y: 0, aimAngle: 0 };
   private localState: LocalState | null = null;
   private remotes = new Map<string, RemotePlayerState>();
   private stations: NetworkStationState[] = [];
@@ -116,14 +116,15 @@ export class MultiplayerClient {
 
   requestRespawn() { this.send({ type: "request_respawn" }); }
   fire(angle: number) { this.send({ type: "fire", angle }); }
-  driveStation(stationId: string, movement: { x: number; y: number }, now = performance.now()) {
+  driveStation(stationId: string, movement: { x: number; y: number }, aimAngle: number, now = performance.now()) {
     const x = clamp(movement.x, -1, 1);
     const y = clamp(movement.y, -1, 1);
-    const changed = stationId !== this.lastStationDrive.stationId || Math.abs(x - this.lastStationDrive.x) > 0.01 || Math.abs(y - this.lastStationDrive.y) > 0.01;
+    const aimDelta = Math.abs(Math.atan2(Math.sin(aimAngle - this.lastStationDrive.aimAngle), Math.cos(aimAngle - this.lastStationDrive.aimAngle)));
+    const changed = stationId !== this.lastStationDrive.stationId || Math.abs(x - this.lastStationDrive.x) > 0.01 || Math.abs(y - this.lastStationDrive.y) > 0.01 || aimDelta > 0.01;
     if (!changed && now - this.lastStationDriveAt < 50) return;
     this.lastStationDriveAt = now;
-    this.lastStationDrive = { stationId, x, y };
-    this.send({ type: "station_input", stationId, x, y });
+    this.lastStationDrive = { stationId, x, y, aimAngle };
+    this.send({ type: "station_input", stationId, x, y, aimAngle });
   }
   dropCargo(etherType: EtherType, amount: number) { this.send({ type: "drop_cargo", etherType, amount }); }
   requestLootPickup(dropId: string, amount: number) { this.send({ type: "pickup_drop", dropId, amount }); }

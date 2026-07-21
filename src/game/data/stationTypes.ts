@@ -156,6 +156,8 @@ export interface Station {
   vel: Vec2;
   driveInput?: Vec2;
   facingAngle?: number;
+  turretAngle?: number;
+  turretFiringUntil?: number;
   radius: number;
   ownerTeamId: string | null;
   ownerPlayerId: string | null;
