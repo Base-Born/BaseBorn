@@ -1,4 +1,5 @@
 import type { EtherType } from "../data/etherTypes";
+import type { StatKey } from "../data/stats";
 import type { Customization } from "../types";
 
 export type MultiplayerStatus = "offline" | "connecting" | "online" | "reconnecting" | "error";
@@ -16,6 +17,8 @@ export type NetworkPlayerState = {
   healthRatio: number;
   level: number;
   score: number;
+  xp?: number;
+  stats?: Record<StatKey, number>;
   shipClassId: string;
   shipClass: string;
   docked: boolean;
@@ -46,6 +49,16 @@ export type NetworkStationState = {
   isMobile: boolean;
   mothershipUnlocked: boolean;
   dockedPlayerIds: string[];
+};
+export type NetworkPlayerProfile = {
+  xp: number;
+  level: number;
+  score: number;
+  healthRatio: number;
+  shipClassId: string;
+  shipClass: string;
+  stats: Record<StatKey, number>;
+  inventory?: Partial<Record<EtherType, number>>;
 };
 export type NetworkEtherDropState = {
   id: string;

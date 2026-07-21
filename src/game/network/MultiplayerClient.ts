@@ -7,6 +7,7 @@ import type {
   NetworkDestroyedAsteroid,
   NetworkEtherDropState,
   NetworkPlayerState,
+  NetworkPlayerProfile,
   NetworkProjectileState,
   NetworkStationState,
   NetworkTeam,
@@ -38,6 +39,7 @@ export class MultiplayerClient {
   private respawnSpawn: { x: number; y: number } | null = null;
   private teamSpawn: TeamSpawn | null = null;
   private authoritativeHealthRatio: number | null = null;
+  private authoritativeProfile: NetworkPlayerProfile | null = null;
   private status: MultiplayerStatus = "offline";
   private message = "Offline";
   private actionError = "";
@@ -96,6 +98,7 @@ export class MultiplayerClient {
   consumeRespawnSpawn() { const spawn = this.respawnSpawn; this.respawnSpawn = null; return spawn; }
   consumeTeamSpawn() { const spawn = this.teamSpawn; this.teamSpawn = null; return spawn; }
   consumeAuthoritativeHealthRatio() { const ratio = this.authoritativeHealthRatio; this.authoritativeHealthRatio = null; return ratio; }
+  consumeAuthoritativeProfile() { const profile = this.authoritativeProfile; this.authoritativeProfile = null; return profile; }
 
   getSnapshot(): MultiplayerSnapshot {
     return {
@@ -172,10 +175,12 @@ export class MultiplayerClient {
       amount?: number;
       message?: string;
       healthRatio?: number;
+      profile?: NetworkPlayerProfile;
     };
     try { message = JSON.parse(String(raw)); } catch { return; }
     if (message.type === "welcome" && message.playerId) {
       this.playerId = message.playerId;
+      if (message.profile) this.authoritativeProfile = message.profile;
       if (!this.joinedWorld && message.worldId && Number.isFinite(message.worldSeed) && Number.isFinite(message.spawn?.x) && Number.isFinite(message.spawn?.y)) {
         this.joinedWorld = true;
         this.onWorldJoined?.({ id: message.worldId, seed: message.worldSeed as number, spawn: { x: message.spawn?.x as number, y: message.spawn?.y as number } });
@@ -203,6 +208,10 @@ export class MultiplayerClient {
     }
     if (message.type === "player_damaged" && Number.isFinite(message.healthRatio)) {
       this.authoritativeHealthRatio = clamp(message.healthRatio as number, 0, 1);
+      return;
+    }
+    if (message.type === "progression_update" && message.profile) {
+      this.authoritativeProfile = message.profile;
       return;
     }
     if (message.type !== "snapshot" || !Array.isArray(message.players)) return;

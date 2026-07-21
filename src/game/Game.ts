@@ -25,7 +25,7 @@ import { EtherDropSystem } from "./systems/EtherDropSystem";
 import { StationSystem } from "./systems/StationSystem";
 import { ShipOwnershipSystem } from "./systems/ShipOwnershipSystem";
 import { spendStationFuel } from "./systems/StationFuelSystem";
-import { addEtherToCombinedCargo, dropLowestQualityCargoFromStorage, getNextCargoDropPreview } from "./systems/CargoSystem";
+import { addEtherToCombinedCargo, dropLowestQualityCargoFromStorage, getNextCargoDropPreview, syncCargoUsed } from "./systems/CargoSystem";
 import { ObjectiveSystem } from "./systems/ObjectiveSystem";
 import { completeRespawn, startRespawnCountdown, type PlayerDeathState } from "./systems/RespawnSystem";
 import { clearPlayerCargo, getDeathCargoDropSummary } from "./systems/DeathDropSystem";
@@ -391,6 +391,8 @@ export class Game {
       healthRatio: this.player.maxHealth > 0 ? Math.max(0, this.player.health / this.player.maxHealth) : 0,
       level: this.player.level,
       score: this.player.score,
+      xp: this.player.xp,
+      stats: { ...this.player.stats },
       shipClassId: this.player.currentShipId,
       shipClass: this.player.currentShipId === "space_pod" ? "Survey Pod" : this.player.ship.name,
       // Keep the server-side cradle occupied for the full lock/release animation.
@@ -402,6 +404,24 @@ export class Game {
 
     const multiplayerSnapshot = this.multiplayer.getSnapshot();
     if (multiplayerSnapshot.playerId && this.player.id !== multiplayerSnapshot.playerId) this.player.id = multiplayerSnapshot.playerId;
+    const authoritativeProfile = this.multiplayer.consumeAuthoritativeProfile();
+    if (authoritativeProfile) {
+      this.player.xp = Math.max(0, authoritativeProfile.xp);
+      this.player.level = Math.max(1, authoritativeProfile.level);
+      this.player.score = Math.max(0, authoritativeProfile.score);
+      this.player.stats = { ...this.player.stats, ...authoritativeProfile.stats };
+      if (authoritativeProfile.shipClassId && authoritativeProfile.shipClassId !== this.player.currentShipId) {
+        try { this.player.setClass(authoritativeProfile.shipClassId); } catch { /* Ignore stale class ids from older world revisions. */ }
+      }
+      this.player.recalculate();
+      if (authoritativeProfile.inventory) {
+        for (const type of Object.keys(this.player.cargo.ether) as EtherType[]) {
+          this.player.cargo.ether[type] = Math.max(0, Math.floor(authoritativeProfile.inventory[type] ?? 0));
+        }
+        syncCargoUsed(this.player.cargo);
+        this.player.health = Math.min(this.player.maxHealth, this.player.maxHealth * Math.max(0, Math.min(1, authoritativeProfile.healthRatio)));
+      }
+    }
     this.stations.syncSharedStations(this.multiplayer.getSharedStations());
     const networkTeam = this.multiplayer.getTeams().find((team) => team.id === this.multiplayer.getTeamId()) ?? null;
     this.stations.syncNetworkTeam(networkTeam, this.player);

@@ -52,13 +52,18 @@ The Railway-ready Node.js service provides one persistent public world with:
 
 - Player presence and interpolation
 - Validated movement
-- Shared projectiles and PvP damage
+- Shared projectiles with server-owned fire rate, projectile speed, damage, and PvP damage
+- PvE-only protection in the outer belt, matching the HUD's safe-zone status
 - Shared asteroid destruction and five-minute respawns
+- Server-calculated asteroid rarity rewards, XP, score, and level progression
 - Shared Ether drops and server-owned cargo balances
 - Derelict-spacecraft claim contention
 - Team creation, joining, invitations, leadership, and shared ownership
 - Leaderboard synchronization
+- Reconnect restoration for XP, level, score, ship class, stat allocation, health, and cargo
 - Optional file-backed world persistence through `WORLD_STATE_PATH`
+
+The service also validates same-origin WebSocket upgrades, limits message bursts, disables unused browser permissions, prevents framing, and exposes build/persistence readiness through `/health`.
 
 This rework uses world revision `pod-start-v1`. Older persisted worlds are not loaded into the new starting sequence, preventing previous station-era player and ownership state from leaking into the pod tutorial.
 
@@ -105,6 +110,7 @@ npm run test:multiplayer
 npm run test:load
 npm run test:persistence
 npm test
+npm audit --omit=dev --audit-level=high
 ```
 
 ## Railway deployment
@@ -120,6 +126,28 @@ The repository is configured to build the Vite client and serve it with the mult
 
 Pushing to the GitHub branch connected to Railway triggers deployment when automatic deployments are enabled in Railway.
 
+For persistent progression on Railway, mount a volume at `/data` and configure:
+
+```text
+WORLD_STATE_PATH=/data/baseborn-world.json
+```
+
+## Playable MVP completion status
+
+| Area | Release requirement | Status |
+|---|---|---|
+| Opening loop | Spawn, mine, collect, claim, dock, deposit, repair | Complete |
+| Flight | Pointer aim, WASD/touch movement, directional thrusters | Complete |
+| Progression | XP, levels, stat allocation, evolution paths | Complete |
+| Multiplayer | One shared map, presence, teams, leaderboard, shared loot | Complete |
+| Combat | Shared projectiles, server damage, stat-scaled weapons, respawn | Complete |
+| Safety | Outer PvE belt and inner PvP risk zones | Complete |
+| Continuity | Session identity and server-backed player/cargo restoration | Complete |
+| Devices | Desktop, ultrawide, tablet, phone landscape, portrait fallback, PWA | Complete |
+| Operations | Railway health check, persistence option, load tests, CI | Complete |
+
+The audit and release acceptance criteria are documented in [`docs/FINALIZATION_PLAN.md`](docs/FINALIZATION_PLAN.md).
+
 ## Project structure
 
 ```text
@@ -132,6 +160,6 @@ server/                     Static production server, WebSocket world, and persi
 scripts/                    Multiplayer, load, and persistence smoke tests
 ```
 
-## Current scope
+## Release scope
 
-This milestone completes the pod-first opening loop and preserves the deeper repair and upgrade systems inside the claimed spacecraft. The next planned design phase can add new onboard upgrades and define how several team spacecraft physically connect into a larger station.
+This repository now targets a playable single-process multiplayer MVP: one persistent public world, up to 64 connected pilots per instance, pod-first onboarding, progression, combat, teams, shared resources, and a claimed spacecraft hub. New enemy families, additional evolution branches, multi-region orchestration, and physical team-craft fusion are post-MVP content expansions.

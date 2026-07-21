@@ -17,6 +17,8 @@ const worldRevision = "pod-start-v1";
 const startedAt = Date.now();
 const worldStatePath = process.env.WORLD_STATE_PATH || "";
 const etherTypes = new Set(["rawEther", "refinedEther", "chargedEther", "radiantEther", "primalEther", "coreEther"]);
+const etherTypeOrder = ["rawEther", "refinedEther", "chargedEther", "radiantEther", "primalEther", "coreEther"];
+const statKeys = ["autonomousRepair", "maxHealth", "maxShield", "bodyDamage", "movementSpeed", "bulletSpeed", "bulletDamage", "reloadSpeed"];
 const worldLimit = 200000;
 const snapshotIntervalMs = 50;
 const simulationIntervalMs = 25;
@@ -34,22 +36,33 @@ const projectileDamage = 14;
 const stationPilotSpeed = 230;
 const stationPilotResponse = 6.8;
 const stationPilotBrakeResponse = 8.5;
+const testSpawnRadius = Math.max(0, Math.min(worldLimit - 5000, Number.parseInt(process.env.TEST_SPAWN_RADIUS || "0", 10) || 0));
+const asteroidSizeRewards = [0.75, 1, 1.6, 2.6, 4, 6, 9, 13, 19, 28];
+const asteroidSizeWeights = [22, 20, 18, 14, 10, 7, 4, 2.5, 1.5, 1];
+const asteroidQualityReward = {rawEther:{xp:1,ether:1,score:1},refinedEther:{xp:2.5,ether:2.25,score:2},chargedEther:{xp:6,ether:5,score:5},radiantEther:{xp:14,ether:11,score:12},primalEther:{xp:35,ether:26,score:30},coreEther:{xp:90,ether:65,score:80}};
+const asteroidRegionWeights = {
+  outer:[85,13,2,0,0,0],
+  mid:[35,35,22,7,1,0],
+  inner:[10,24,34,24,7,1],
+  center:[0,5,20,40,28,7],
+};
 const contentTypes = { ".css":"text/css; charset=utf-8", ".html":"text/html; charset=utf-8", ".ico":"image/x-icon", ".js":"text/javascript; charset=utf-8", ".json":"application/json; charset=utf-8", ".map":"application/json; charset=utf-8", ".png":"image/png", ".svg":"image/svg+xml", ".webp":"image/webp", ".woff2":"font/woff2" };
 
+function securityHeaders() { return { "Content-Security-Policy":"default-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'", "Cross-Origin-Opener-Policy":"same-origin", "Permissions-Policy":"camera=(), microphone=(), geolocation=(), payment=()", "Referrer-Policy":"same-origin", "X-Content-Type-Options":"nosniff", "X-Frame-Options":"DENY" }; }
 function sendJson(response, status, body) {
-  response.writeHead(status, { "Content-Type":"application/json; charset=utf-8", "Cache-Control":"no-store" });
+  response.writeHead(status, { ...securityHeaders(), "Content-Type":"application/json; charset=utf-8", "Cache-Control":"no-store" });
   response.end(JSON.stringify(body));
 }
 function roomPopulation() { let players=0; for (const room of rooms.values()) players += room.clients.size; return players; }
 function serveFile(response, filePath) {
   const extension=extname(filePath).toLowerCase();
-  response.writeHead(200, { "Content-Type":contentTypes[extension]||"application/octet-stream", "Cache-Control":filePath.includes(`${join("assets", "")}`)?"public, max-age=31536000, immutable":"no-cache", "X-Content-Type-Options":"nosniff", "Referrer-Policy":"same-origin" });
+  response.writeHead(200, { ...securityHeaders(), "Content-Type":contentTypes[extension]||"application/octet-stream", "Cache-Control":filePath.includes(`${join("assets", "")}`)?"public, max-age=31536000, immutable":"no-cache" });
   createReadStream(filePath).pipe(response);
 }
 
 const server=createServer((request,response)=>{
   const url=new URL(request.url||"/",`http://${request.headers.host||"localhost"}`);
-  if(url.pathname==="/health"){sendJson(response,200,{status:"ok",uptimeSeconds:Math.floor((Date.now()-startedAt)/1000),players:roomPopulation(),rooms:rooms.size});return;}
+  if(url.pathname==="/health"){sendJson(response,200,{status:"ok",revision:worldRevision,uptimeSeconds:Math.floor((Date.now()-startedAt)/1000),players:roomPopulation(),rooms:rooms.size,buildReady:existsSync(dist),persistence:Boolean(worldStatePath)});return;}
   if(url.pathname==="/api/status"){sendJson(response,200,{game:"Baseborn.io",multiplayer:true,players:roomPopulation(),rooms:rooms.size,maxPlayersPerRoom});return;}
   if(!existsSync(dist)){sendJson(response,503,{error:"Production build not found. Run npm run build before npm start."});return;}
   let decodedPath; try { decodedPath=decodeURIComponent(url.pathname); } catch { sendJson(response,400,{error:"Invalid URL"}); return; }
@@ -71,6 +84,18 @@ server.on("upgrade",(request,socket,head)=>{
 
 function cleanText(value,fallback,maxLength){if(typeof value!=="string")return fallback;const clean=value.replace(/[<>\u0000-\u001f]/g,"").trim().slice(0,maxLength);return clean||fallback;}
 function finite(value,fallback,min,max){return typeof value==="number"&&Number.isFinite(value)?Math.max(min,Math.min(max,value)):fallback;}
+function getXPRequiredForLevel(level){if(level<=10)return Math.floor(45+level*18);if(level<=30)return Math.floor(180+Math.pow(level-10,1.45)*55);if(level<=60)return Math.floor(900+Math.pow(level-30,1.55)*95);if(level<=90)return Math.floor(3200+Math.pow(level-60,1.65)*160);return Math.floor(9500+Math.pow(level-90,1.85)*420);}
+const xpByLevel=Array.from({length:103},()=>0);for(let level=2;level<xpByLevel.length;level+=1)xpByLevel[level]=xpByLevel[level-1]+getXPRequiredForLevel(level-1);
+function levelForXP(xp){let level=1;while(level<100&&xp>=xpByLevel[level+1])level+=1;return level;}
+function cleanStats(value,previous,level){const source=value&&typeof value==="object"?value:{};const next={};for(const key of statKeys)next[key]=Math.round(finite(source[key],previous?.[key]||0,0,20));const spent=Object.values(next).reduce((sum,amount)=>sum+amount,0);return spent<=Math.max(0,level-1)?next:{...(previous||Object.fromEntries(statKeys.map(key=>[key,0])))};}
+function combatStatMultiplier(rank,normalStep,hyperStep){const value=Math.max(0,Math.min(20,Math.floor(rank||0)));return 1+Math.min(10,value)*normalStep+Math.max(0,value-10)*hyperStep;}
+function cleanShipId(value,fallback){const id=cleanText(value,fallback,64);return /^[a-z0-9_]+$/.test(id)?id:fallback;}
+function hashToUint(value){let hash=2166136261;for(let index=0;index<value.length;index+=1){hash^=value.charCodeAt(index);hash=Math.imul(hash,16777619);}return hash>>>0;}
+function normalizedDistance(pos){return Math.max(0,Math.min(1,Math.hypot(pos.x/worldLimit,pos.y/worldLimit)/Math.sqrt(2)));}
+function regionForPosition(pos){const normalized=normalizedDistance(pos);return normalized<=.18?"center":normalized<=.42?"inner":normalized<=.88?"mid":"outer";}
+function pvpEnabledAt(pos){return regionForPosition(pos)!=="outer";}
+function weightedIndex(seed,weights){const total=weights.reduce((sum,weight)=>sum+weight,0);let roll=(seed/4294967296)*total;for(let index=0;index<weights.length;index+=1){roll-=weights[index];if(roll<=0)return index;}return weights.length-1;}
+function authoritativeAsteroidReward(message,pos){const type=etherTypes.has(message.etherType)?message.etherType:null;if(!type)return null;const qualityIndex=etherTypeOrder.indexOf(type);const region=regionForPosition(pos);if(qualityIndex<0||asteroidRegionWeights[region][qualityIndex]<=0)return null;const hash=hashToUint(String(message.asteroidId||""));const sizeIndex=weightedIndex(hash,asteroidSizeWeights);const sizeReward=asteroidSizeRewards[sizeIndex];const quality=asteroidQualityReward[type];return{type,amount:Math.max(1,Math.round(8*sizeReward*quality.ether)),xp:Math.max(1,Math.round(8*sizeReward*quality.xp)),score:Math.max(1,Math.round(10*sizeReward*quality.score))};}
 function cleanCustomization(value){const source=value&&typeof value==="object"?value:{};const color=(key,fallback)=>/^#[0-9a-f]{6}$/i.test(source[key])?source[key]:fallback;const choice=(key,allowed,fallback)=>allowed.includes(source[key])?source[key]:fallback;return{name:cleanText(source.name,"Nova Pilot",16),shipColor:color("shipColor","#2fbce1"),glowColor:color("glowColor","#4cc9f0"),trailColor:color("trailColor","#4cc9f0"),projectileColor:color("projectileColor","#eef7ff"),wingVariant:choice("wingVariant",["delta","swept","fork"],"delta"),cockpitVariant:choice("cockpitVariant",["needle","dome","split"],"needle"),decalPattern:choice("decalPattern",["none","stripe","chevron"],"chevron"),thrusterStyle:choice("thrusterStyle",["ion","flare","pulse"],"ion"),glowIntensity:finite(source.glowIntensity,0.8,0,2)};}
 function cleanState(value,previous,identity,now=Date.now()){
   const source=value&&typeof value==="object"?value:{};
@@ -81,13 +106,14 @@ function cleanState(value,previous,identity,now=Date.now()){
     const dx=x-previous.x,dy=y-previous.y,magnitude=Math.hypot(dx,dy),allowed=maxMovementSpeed*elapsed+80;
     if(magnitude>allowed){x=previous.x+dx/magnitude*allowed;y=previous.y+dy/magnitude*allowed;}
   }
+  const xp=previous?.xp??xpByLevel[Math.max(1,Math.min(100,previous?.level||1))];
   const score=previous?.score??0;
-  const level=previous?.level??1;
-  return{id:identity.id,name:identity.customization.name,customization:identity.customization,x,y,vx:finite(source.vx,0,-maxMovementSpeed,maxMovementSpeed),vy:finite(source.vy,0,-maxMovementSpeed,maxMovementSpeed),thrustForward:finite(source.thrustForward,0,-1,1),thrustStrafe:finite(source.thrustStrafe,0,-1,1),angle:finite(source.angle,0,-Math.PI*4,Math.PI*4),healthRatio:previous?.healthRatio??1,level,score,shipClassId:cleanText(source.shipClassId,previous?.shipClassId||"space_pod",64),shipClass:cleanText(source.shipClass,previous?.shipClass||"Survey Pod",48),docked:previous?.docked??false,updatedAt:now};
+  const level=levelForXP(xp);
+  return{id:identity.id,name:identity.customization.name,customization:identity.customization,x,y,vx:finite(source.vx,0,-maxMovementSpeed,maxMovementSpeed),vy:finite(source.vy,0,-maxMovementSpeed,maxMovementSpeed),thrustForward:finite(source.thrustForward,0,-1,1),thrustStrafe:finite(source.thrustStrafe,0,-1,1),angle:finite(source.angle,0,-Math.PI*4,Math.PI*4),healthRatio:previous?.healthRatio??1,xp,level,score,stats:cleanStats(source.stats,previous?.stats,level),shipClassId:cleanShipId(source.shipClassId,previous?.shipClassId||"space_pod"),shipClass:cleanText(source.shipClass,previous?.shipClass||"Survey Pod",48),docked:previous?.docked??false,updatedAt:now};
 }
 function teleportState(previous,identity,position,now=Date.now()){
   const next=cleanState({...previous,...position,vx:0,vy:0,thrustForward:0,thrustStrafe:0},null,identity,now);
-  if(previous){next.score=previous.score;next.level=previous.level;next.shipClassId=previous.shipClassId;next.shipClass=previous.shipClass;}
+  if(previous){next.xp=previous.xp;next.score=previous.score;next.level=previous.level;next.stats={...previous.stats};next.shipClassId=previous.shipClassId;next.shipClass=previous.shipClass;}
   return next;
 }
 function distance(a,b){return Math.hypot((a?.x||0)-(b?.x||0),(a?.y||0)-(b?.y||0));}
@@ -96,7 +122,7 @@ function randomSpawn(room){
   const occupied=[...room.clients].map(client=>client.playerState).filter(Boolean);
   for(let attempt=0;attempt<16;attempt+=1){
     const [sx,sy]=corners[Math.floor(Math.random()*corners.length)];
-    const spawn={x:sx*(180000+Math.random()*14400),y:sy*(180000+Math.random()*14400)};
+    const spawn=testSpawnRadius?{x:sx*(testSpawnRadius+Math.random()*1200),y:sy*(testSpawnRadius+Math.random()*1200)}:{x:sx*(180000+Math.random()*14400),y:sy*(180000+Math.random()*14400)};
     if(occupied.every(player=>distance(player,spawn)>12000))return spawn;
   }
   const [sx,sy]=corners[Math.floor(Math.random()*corners.length)];
@@ -159,6 +185,9 @@ function persistRoom(room){
   room.persistenceDirty=false;
 }
 function sendError(websocket,message){if(websocket.readyState===WebSocket.OPEN)websocket.send(JSON.stringify({type:"action_error",message}));}
+function inventorySnapshot(websocket){return Object.fromEntries(etherTypeOrder.map(type=>[type,inventoryFor(websocket).get(type)||0]));}
+function playerProfile(websocket,includeInventory=false){const state=websocket.playerState;return{xp:state?.xp||0,level:state?.level||1,score:state?.score||0,healthRatio:state?.healthRatio??1,shipClassId:state?.shipClassId||"space_pod",shipClass:state?.shipClass||"Survey Pod",stats:{...(state?.stats||{})},...(includeInventory?{inventory:inventorySnapshot(websocket)}:{})};}
+function sendProgress(websocket){if(websocket?.readyState===WebSocket.OPEN)websocket.send(JSON.stringify({type:"progression_update",profile:playerProfile(websocket)}));}
 function removeFromTeam(room,playerId){
   const team=teamForPlayer(room,playerId);if(!team)return true;
   if(team.stationId&&team.leaderPlayerId===playerId&&team.memberIds.length>1)return false;
@@ -258,10 +287,14 @@ function validAsteroidReport(message,player){
   return Math.floor(x/asteroidChunkSize)===chunkX&&Math.floor(y/asteroidChunkSize)===chunkY;
 }
 function createProjectile(room,websocket,angle,now){
-  if(websocket.playerState.docked||websocket.playerState.healthRatio<=0||now-(websocket.lastFireAt||0)<120)return null;
+  const stats=websocket.playerState.stats||{};
+  const reloadMultiplier=combatStatMultiplier(stats.reloadSpeed,.06,.09);
+  if(websocket.playerState.docked||websocket.playerState.healthRatio<=0||now-(websocket.lastFireAt||0)<120/reloadMultiplier)return null;
   websocket.lastFireAt=now;
   const id=crypto.randomUUID();
-  const projectile={id,ownerId:websocket.identity.id,x:websocket.playerState.x+Math.cos(angle)*34,y:websocket.playerState.y+Math.sin(angle)*34,vx:Math.cos(angle)*projectileSpeed,vy:Math.sin(angle)*projectileSpeed,radius:7,color:websocket.identity.customization.projectileColor,createdAt:now,expiresAt:now+projectileLifetimeMs};
+  const speed=projectileSpeed*combatStatMultiplier(stats.bulletSpeed,.06,.09);
+  const damage=projectileDamage*combatStatMultiplier(stats.bulletDamage,.08,.13);
+  const projectile={id,ownerId:websocket.identity.id,x:websocket.playerState.x+Math.cos(angle)*34,y:websocket.playerState.y+Math.sin(angle)*34,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,radius:7,damage,color:websocket.identity.customization.projectileColor,createdAt:now,expiresAt:now+projectileLifetimeMs};
   room.projectiles.set(id,projectile);return projectile;
 }
 function simulateRoom(room,now,dt){
@@ -287,11 +320,12 @@ function simulateRoom(room,now,dt){
     for(const target of room.clients){
       if(!target.playerState||target.identity.id===projectile.ownerId||target.playerState.docked||target.playerState.healthRatio<=0)continue;
       const targetTeam=teamForPlayer(room,target.identity.id);if(ownerTeam&&targetTeam?.id===ownerTeam.id)continue;
+      if(!owner?.playerState||!pvpEnabledAt(owner.playerState)||!pvpEnabledAt(target.playerState))continue;
       if(distance(projectile,target.playerState)>26+projectile.radius)continue;
-      target.playerState.healthRatio=Math.max(0,target.playerState.healthRatio-projectileDamage/120);
+      target.playerState.healthRatio=Math.max(0,target.playerState.healthRatio-(projectile.damage||projectileDamage)/120);
       room.projectiles.delete(id);changed=true;
       if(target.readyState===WebSocket.OPEN)target.send(JSON.stringify({type:"player_damaged",healthRatio:target.playerState.healthRatio,sourcePlayerId:projectile.ownerId}));
-      if(target.playerState.healthRatio<=0&&owner?.playerState){owner.playerState.score+=500;owner.playerState.level=Math.min(100,Math.max(owner.playerState.level,1+Math.floor(owner.playerState.score/1200)));}
+      if(target.playerState.healthRatio<=0&&owner?.playerState){owner.playerState.xp+=500;owner.playerState.score+=500;owner.playerState.level=levelForXP(owner.playerState.xp);sendProgress(owner);}
       break;
     }
   }
@@ -299,10 +333,12 @@ function simulateRoom(room,now,dt){
 }
 
 websocketServer.on("connection",(websocket)=>{
-  websocket.isAlive=true;websocket.lastStateAt=0;websocket.asteroidReportTimes=[];websocket.lastFireAt=0;websocket.lastRespawnAt=0;websocket.inventory=new Map();
+  websocket.isAlive=true;websocket.lastStateAt=0;websocket.asteroidReportTimes=[];websocket.lastFireAt=0;websocket.lastRespawnAt=0;websocket.inventory=new Map();websocket.messageWindowStartedAt=Date.now();websocket.messageCount=0;
   websocket.on("pong",()=>{websocket.isAlive=true;});
   websocket.on("message",(raw)=>{
     const now=Date.now();
+    if(now-websocket.messageWindowStartedAt>=1000){websocket.messageWindowStartedAt=now;websocket.messageCount=0;}
+    websocket.messageCount+=1;if(websocket.messageCount>160){websocket.close(1008,"Message rate exceeded");return;}
     let message;try{message=JSON.parse(raw.toString());}catch{return;}
     if(!websocket.roomId){
       if(message?.type!=="join")return;
@@ -322,7 +358,7 @@ websocketServer.on("connection",(websocket)=>{
       if(!teamForPlayer(room,playerId))createPersonalTeam(room,websocket);
       const hasStation=[...room.stations.values()].some(station=>station.reservedForPlayerId===playerId||station.ownerPlayerId===playerId);
       if(!hasStation){const station=createStarterStation(spawn,websocket.identity.id);room.stations.set(station.id,station);}
-      websocket.send(JSON.stringify({type:"welcome",playerId:websocket.identity.id,room:"public",worldId:room.id,worldSeed:room.seed,spawn,serverTime:now}));
+      websocket.send(JSON.stringify({type:"welcome",playerId:websocket.identity.id,room:"public",worldId:room.id,worldSeed:room.seed,spawn,serverTime:now,profile:playerProfile(websocket,true)}));
       websocket.lastStateAt=0;markDirty(room);return;
     }
     const room=rooms.get(websocket.roomId);if(!room)return;
@@ -367,15 +403,17 @@ websocketServer.on("connection",(websocket)=>{
       websocket.asteroidReportTimes.push(now);
       const pos={x:finite(message.x,websocket.playerState.x,-worldLimit,worldLimit),y:finite(message.y,websocket.playerState.y,-worldLimit,worldLimit)};
       if(distance(pos,websocket.playerState)>2400)return;
+      const reward=authoritativeAsteroidReward(message,pos);if(!reward)return;
       const respawnMs=300000;
       room.destroyedAsteroids.set(asteroidId,now+respawnMs);
-      const type=etherTypes.has(message.etherType)?message.etherType:"rawEther";
-      let remaining=Math.round(finite(message.amount,1,1,500));
-      websocket.playerState.score=Math.min(2_000_000_000,websocket.playerState.score+remaining*5);
-      websocket.playerState.level=Math.min(100,1+Math.floor(Math.sqrt(websocket.playerState.score/180)));
+      const type=reward.type;
+      let remaining=reward.amount;
+      websocket.playerState.xp=Math.min(Number.MAX_SAFE_INTEGER,websocket.playerState.xp+reward.xp);
+      websocket.playerState.score=Math.min(2_000_000_000,websocket.playerState.score+reward.score);
+      websocket.playerState.level=levelForXP(websocket.playerState.xp);
       const shards=Math.min(12,Math.max(2,Math.ceil(Math.sqrt(remaining))));
       for(let i=0;i<shards&&remaining>0;i+=1){const amount=i===shards-1?remaining:Math.max(1,Math.round(remaining/(shards-i)));remaining-=amount;makeDrop(room,{type,amount,x:pos.x+(Math.random()-.5)*80,y:pos.y+(Math.random()-.5)*80,ownerId:playerId});}
-      markDirty(room);return;
+      sendProgress(websocket);markDirty(room);return;
     }
     if(message?.type==="claim_station"){
       const station=room.stations.get(String(message.stationId||""));const team=teamForPlayer(room,playerId);

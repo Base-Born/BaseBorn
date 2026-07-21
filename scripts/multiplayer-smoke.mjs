@@ -4,7 +4,7 @@ import { WebSocket } from "ws";
 
 const port = 3199;
 const base = `http://127.0.0.1:${port}`;
-const server = spawn(process.execPath, ["server/index.js"], { cwd: process.cwd(), env: { ...process.env, PORT: String(port), HOST: "127.0.0.1" }, stdio: ["ignore", "pipe", "pipe"] });
+const server = spawn(process.execPath, ["server/index.js"], { cwd: process.cwd(), env: { ...process.env, PORT: String(port), HOST: "127.0.0.1", TEST_SPAWN_RADIUS: "80000" }, stdio: ["ignore", "pipe", "pipe"] });
 let stderr = "";
 server.stderr.on("data", (chunk) => { stderr += chunk; });
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -65,10 +65,20 @@ try {
   const asteroidRespawn=asteroidSnapshot.destroyedAsteroids.find((entry)=>entry.id===asteroidId);
   assert(asteroidRespawn.until-Date.now()>295000,"server must enforce the five-minute asteroid respawn");
   assert(asteroidSnapshot.drops.length>=1,"accepted asteroid destruction must create Ether drops");
+  const firstRewardTotal=asteroidSnapshot.drops.reduce((sum,drop)=>sum+drop.amount,0);
+  assert(firstRewardTotal>1,"the server should calculate asteroid rewards instead of trusting the reported amount");
+  const progressionAward=await waitForMessage(alpha,(message)=>message.type==="progression_update"&&message.profile?.xp>0);
+  assert(progressionAward.profile.score>0&&progressionAward.profile.level>=1,"server-authoritative mining progression should be returned to the pilot");
+  await wait(400);
+  const pickupDrop=asteroidSnapshot.drops[0];
+  alpha.socket.send(JSON.stringify({type:"pickup_drop",dropId:pickupDrop.id,amount:pickupDrop.amount}));
+  await waitForMessage(alpha,(message)=>message.type==="loot_collected"&&message.dropId===pickupDrop.id);
   const secondAsteroidId=`asteroid-${asteroidChunkX}:${asteroidChunkY}-1`;
   alpha.socket.send(JSON.stringify({type:"asteroid_destroyed",asteroidId:secondAsteroidId,x:alpha.welcome.spawn.x,y:alpha.welcome.spawn.y,etherType:"rawEther",amount:1,respawnMs:30000}));
   const multiAsteroidSnapshot=await waitForSnapshot(alpha,(message)=>message.destroyedAsteroids?.some((entry)=>entry.id===secondAsteroidId));
   assert(multiAsteroidSnapshot.drops.length>=2,"asteroid reports in the same burst must each create Ether drops");
+  const secondRewardTotal=multiAsteroidSnapshot.drops.filter((drop)=>drop.id!==pickupDrop.id).reduce((sum,drop)=>sum+drop.amount,0);
+  assert(secondRewardTotal<500,"the server must ignore a client-proposed oversized asteroid reward");
   const initialTeamSnapshot = await waitForSnapshot(alpha, (message) => message.teams.some((team) => team.memberIds.includes(alpha.id)));
   const alphaTeam = initialTeamSnapshot.teams.find((team) => team.memberIds.includes(alpha.id));
   const alphaStation = initialTeamSnapshot.stations
@@ -101,7 +111,8 @@ try {
   const invite = inviteSnapshot.invites.find((entry) => entry.teamId===alphaTeam.id);
   beta.socket.send(JSON.stringify({ type:"accept_invite", inviteId:invite.id, spawnAtBase:true }));
   const teamSpawn = await waitForMessage(beta, (message) => message.type === "team_spawn");
-  const stationBase = claimedSnapshot.stations.find((station) => station.id===alphaStation.id);
+  const spawnSnapshot = await waitForSnapshot(beta, (message) => message.stations.some((station) => station.id===teamSpawn.stationId));
+  const stationBase = spawnSnapshot.stations.find((station) => station.id===teamSpawn.stationId);
   assert.equal(stationBase.name, "Alpha's Craft");
   assert(distance(teamSpawn.spawn, stationBase) <= 1600);
   await waitForSnapshot(beta, (message) => message.teamId===alphaTeam.id&&message.teams.some((team) => team.id===alphaTeam.id&&team.memberIds.includes(alpha.id)&&team.memberIds.includes(beta.id)));
@@ -127,6 +138,8 @@ try {
   alpha.socket.close();await wait(120);
   const alphaResumed=await connect("Alpha", "ignored-room", alpha.sessionId);
   assert.equal(alphaResumed.id,alpha.id,"browser session should retain player identity");
+  assert(alphaResumed.welcome.profile?.xp>0,"reconnect should restore authoritative XP");
+  assert(alphaResumed.welcome.profile?.inventory?.rawEther>0,"reconnect should restore server-owned cargo");
   const resumedSnapshot=await waitForSnapshot(alphaResumed,(message)=>message.players.length===2);
   assert.equal(resumedSnapshot.stations.length,stationsBeforeReconnect,"reconnect must not create another starter station");
   alphaResumed.socket.close(); beta.socket.close();
