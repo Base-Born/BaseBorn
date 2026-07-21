@@ -167,6 +167,8 @@ try {
   assert.equal(alphaResumed.id,alpha.id,"browser session should retain player identity");
   assert(alphaResumed.welcome.profile?.xp>0,"reconnect should restore authoritative XP");
   assert(Number.isFinite(alphaResumed.welcome.profile?.inventory?.rawEther),"reconnect should restore the server-owned cargo ledger, including an empty balance");
+  assert.equal(alphaResumed.welcome.profile?.shipClassId,"space_pod","reconnect must always release the Survey Pod instead of restoring a miniature spacecraft");
+  assert.equal(alphaResumed.welcome.profile?.shipClass,"Survey Pod","reconnect must restore the Survey Pod profile");
   const resumedSnapshot=await waitForSnapshot(alphaResumed,(message)=>message.players.length===2);
   assert.equal(resumedSnapshot.stations.length,stationsBeforeReconnect,"reconnect must not create another starter station");
   alphaResumed.socket.close(); beta.socket.close();

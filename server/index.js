@@ -393,6 +393,11 @@ websocketServer.on("connection",(websocket)=>{
       const spawn=record?{x:record.state.x,y:record.state.y}:randomSpawn(room);
       const restoredLevel=record?levelForXP(record.state?.xp??xpByLevel[Math.max(1,Math.min(100,record.state?.level||1))]):1;
       websocket.playerState=record?{...record.state,level:restoredLevel,stats:cleanStats(record.state?.stats,null,restoredLevel),name:customization.name,customization,updatedAt:now}:cleanState({...message.state,x:spawn.x,y:spawn.y},null,websocket.identity);
+      // A network session can never resume inside a cradle: disconnect cleanup
+      // releases it. Normalize legacy records that persisted the integrated
+      // spacecraft class so every fresh/reconnected session starts as the pod.
+      websocket.playerState.docked=false;websocket.playerState.shipClassId="space_pod";websocket.playerState.shipClass="Survey Pod";
+      for(const station of room.stations.values()){station.dockedPlayerIds=station.dockedPlayerIds.filter(id=>id!==playerId);if(station.driverPlayerId===playerId){station.driverPlayerId=null;station.driveX=0;station.driveY=0;station.driveUpdatedAt=0;}}
       websocket.inventory=new Map(record?.inventory||[]);
       room.clients.add(websocket);
       if(!teamForPlayer(room,playerId))createPersonalTeam(room,websocket);
@@ -526,7 +531,7 @@ websocketServer.on("connection",(websocket)=>{
     const room=rooms.get(websocket.roomId);if(!room)return;
     room.clients.delete(websocket);
     const playerId=websocket.identity?.id;const team=teamForPlayer(room,playerId);
-    if(playerId&&!websocket.superseded)room.playerRecords.set(playerId,{state:websocket.playerState,inventory:[...inventoryFor(websocket)]});
+    if(playerId&&!websocket.superseded)room.playerRecords.set(playerId,{state:{...websocket.playerState,docked:false,shipClassId:"space_pod",shipClass:"Survey Pod"},inventory:[...inventoryFor(websocket)]});
     for(const station of room.stations.values()){station.dockedPlayerIds=station.dockedPlayerIds.filter(id=>id!==playerId);if(station.driverPlayerId===playerId){station.driverPlayerId=null;station.driveX=0;station.driveY=0;station.driveUpdatedAt=0;}}
     for(const [id,invite] of room.invites)if(invite.targetPlayerId===playerId||invite.invitedByPlayerId===playerId)room.invites.delete(id);
     markDirty(room);
