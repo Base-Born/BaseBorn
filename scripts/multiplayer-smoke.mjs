@@ -171,6 +171,8 @@ try {
   assert.equal(alphaResumed.welcome.profile?.shipClass,"Survey Pod","reconnect must restore the Survey Pod profile");
   const resumedSnapshot=await waitForSnapshot(alphaResumed,(message)=>message.players.length===2);
   assert.equal(resumedSnapshot.stations.length,stationsBeforeReconnect,"reconnect must not create another starter station");
+  const resumedCraft=resumedSnapshot.stations.find((station)=>station.ownerPlayerId===alpha.id||station.reservedForPlayerId===alpha.id);
+  assert(resumedCraft&&distance(alphaResumed.welcome.spawn,resumedCraft)<=430,"a returning Survey Pod must spawn visibly beside its existing spacecraft");
   alphaResumed.socket.close(); beta.socket.close();
   console.log("Multiplayer smoke test passed: validation, five-minute shared asteroid respawns, station driving, projectiles/damage, anti-mint cargo, reconnects, teams, claims, and leadership.");
 } finally {

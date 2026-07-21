@@ -155,6 +155,10 @@ function spawnNearStation(station){
   const distanceFromBase=1100+Math.random()*500;
   return{x:station.x+Math.cos(angle)*distanceFromBase,y:station.y+Math.sin(angle)*distanceFromBase};
 }
+function spawnBesideSpacecraft(station){
+  const angle=-Math.PI/4,distanceFromCraft=starterWreckDistance;
+  return{x:station.x-Math.cos(angle)*distanceFromCraft,y:station.y-Math.sin(angle)*distanceFromCraft};
+}
 function getPublicRoom(){
   let room=rooms.get(publicWorldId);
   if(!room){
@@ -390,9 +394,11 @@ websocketServer.on("connection",(websocket)=>{
       if(duplicate){duplicate.superseded=true;duplicate.close(4001,"Session resumed elsewhere");room.clients.delete(duplicate);}
       const record=room.playerRecords.get(playerId);
       websocket.roomId=room.id;websocket.identity={id:playerId,customization};
-      const spawn=record?{x:record.state.x,y:record.state.y}:randomSpawn(room);
+      const existingTeam=teamForPlayer(room,playerId);
+      const linkedStation=[...room.stations.values()].find(station=>station.reservedForPlayerId===playerId||station.ownerPlayerId===playerId)||(existingTeam?.stationId?room.stations.get(existingTeam.stationId):null);
+      const spawn=linkedStation?spawnBesideSpacecraft(linkedStation):record?{x:record.state.x,y:record.state.y}:randomSpawn(room);
       const restoredLevel=record?levelForXP(record.state?.xp??xpByLevel[Math.max(1,Math.min(100,record.state?.level||1))]):1;
-      websocket.playerState=record?{...record.state,level:restoredLevel,stats:cleanStats(record.state?.stats,null,restoredLevel),name:customization.name,customization,updatedAt:now}:cleanState({...message.state,x:spawn.x,y:spawn.y},null,websocket.identity);
+      websocket.playerState=record?{...record.state,x:spawn.x,y:spawn.y,vx:0,vy:0,level:restoredLevel,stats:cleanStats(record.state?.stats,null,restoredLevel),name:customization.name,customization,updatedAt:now}:cleanState({...message.state,x:spawn.x,y:spawn.y},null,websocket.identity);
       // A network session can never resume inside a cradle: disconnect cleanup
       // releases it. Normalize legacy records that persisted the integrated
       // spacecraft class so every fresh/reconnected session starts as the pod.
