@@ -16,6 +16,7 @@ type DrawArgs = {
 export class ShipRenderer {
   private readonly spacecraftSprite: HTMLImageElement | null;
   private readonly spacePodSprite: HTMLImageElement | null;
+  private spacecraftSpriteWithTransparency: HTMLCanvasElement | null = null;
 
   constructor() {
     if (typeof Image === "undefined") {
@@ -25,6 +26,7 @@ export class ShipRenderer {
     }
     this.spacecraftSprite = new Image();
     this.spacecraftSprite.decoding = "async";
+    this.spacecraftSprite.addEventListener("load", () => this.prepareTransparentSpacecraftSprite());
     this.spacecraftSprite.src = "/assets/starter/claimed-spacecraft-no-gun.png?v=4";
     this.spacePodSprite = new Image();
     this.spacePodSprite.decoding = "async";
@@ -57,6 +59,51 @@ export class ShipRenderer {
     this.drawBuildIdentity(ctx, profile, baseRadius, animationTime);
     this.drawWeaponMounts(ctx, profile, baseRadius, accent);
     ctx.restore();
+  }
+
+  private prepareTransparentSpacecraftSprite() {
+    if (!this.spacecraftSprite?.naturalWidth || typeof document === "undefined") return;
+    const canvas = document.createElement("canvas");
+    canvas.width = this.spacecraftSprite.naturalWidth;
+    canvas.height = this.spacecraftSprite.naturalHeight;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return;
+    context.drawImage(this.spacecraftSprite, 0, 0);
+    const image = context.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = image.data;
+    const visited = new Uint8Array(canvas.width * canvas.height);
+    const queue = new Int32Array(canvas.width * canvas.height);
+    let head = 0;
+    let tail = 0;
+    const addBackgroundPixel = (x: number, y: number) => {
+      if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) return;
+      const pixelIndex = y * canvas.width + x;
+      if (visited[pixelIndex]) return;
+      const channelIndex = pixelIndex * 4;
+      if (pixels[channelIndex] > 18 || pixels[channelIndex + 1] > 18 || pixels[channelIndex + 2] > 18) return;
+      visited[pixelIndex] = 1;
+      queue[tail++] = pixelIndex;
+    };
+    for (let x = 0; x < canvas.width; x += 1) {
+      addBackgroundPixel(x, 0);
+      addBackgroundPixel(x, canvas.height - 1);
+    }
+    for (let y = 1; y < canvas.height - 1; y += 1) {
+      addBackgroundPixel(0, y);
+      addBackgroundPixel(canvas.width - 1, y);
+    }
+    while (head < tail) {
+      const pixelIndex = queue[head++];
+      pixels[pixelIndex * 4 + 3] = 0;
+      const x = pixelIndex % canvas.width;
+      const y = Math.floor(pixelIndex / canvas.width);
+      addBackgroundPixel(x - 1, y);
+      addBackgroundPixel(x + 1, y);
+      addBackgroundPixel(x, y - 1);
+      addBackgroundPixel(x, y + 1);
+    }
+    context.putImageData(image, 0, 0);
+    this.spacecraftSpriteWithTransparency = canvas;
   }
 
   private drawSpacePod(ctx: CanvasRenderingContext2D, r: number, glow: string, animationTime: number, thrusterTier: number) {
@@ -135,7 +182,7 @@ export class ShipRenderer {
     ctx.lineCap = "round";
 
     const reactorPulse = .72 + Math.sin(animationTime * .0022) * .18;
-    const spriteReady = Boolean(this.spacecraftSprite?.complete && this.spacecraftSprite.naturalWidth > 0);
+    const spriteReady = Boolean(this.spacecraftSpriteWithTransparency);
 
     // A low, breathing reactor wash reaches the nearby armor without turning
     // the whole silhouette into a neon glow.
@@ -151,14 +198,14 @@ export class ShipRenderer {
     ctx.fill();
     ctx.restore();
 
-    if (spriteReady && this.spacecraftSprite) {
+    if (spriteReady && this.spacecraftSpriteWithTransparency) {
       const spriteSize = r * 4.7;
       ctx.save();
       ctx.shadowColor = "rgba(0,0,0,.92)";
       ctx.shadowBlur = r * .3;
       // Source artwork faces upward; gameplay forward is positive X.
       ctx.rotate(Math.PI / 2);
-      ctx.drawImage(this.spacecraftSprite, -spriteSize / 2, -spriteSize / 2, spriteSize, spriteSize);
+      ctx.drawImage(this.spacecraftSpriteWithTransparency, -spriteSize / 2, -spriteSize / 2, spriteSize, spriteSize);
       ctx.restore();
       this.drawBaseShipSpriteLighting(ctx, r, profile.glowColor, animationTime);
       ctx.restore();
