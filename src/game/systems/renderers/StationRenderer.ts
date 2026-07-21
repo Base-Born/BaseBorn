@@ -183,15 +183,6 @@ export class StationRenderer {
       this.renderStarterTurret(ctx, station, stationRotation, options, drawWidth, drawHeight, spriteOffsetX, spriteOffsetY);
     }
 
-    if (station.claimState === "claimed") {
-      const pulse = 0.5 + Math.sin(options.now * 0.004) * 0.12;
-      ctx.globalAlpha = pulse;
-      ctx.strokeStyle = station.underAttack ? "#ff6b78" : "#70e8ff";
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.arc(0, 0, station.radius * 0.93, 0, Math.PI * 2);
-      ctx.stroke();
-    }
     ctx.restore();
     return true;
   }

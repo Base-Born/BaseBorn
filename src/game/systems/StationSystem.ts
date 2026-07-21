@@ -327,11 +327,12 @@ export class StationSystem {
     return true;
   }
 
-  aimClaimedStationTurret(player: Player, aimWorld: Vec2, dt: number, station = this.claimedStation) {
+  aimClaimedStationTurret(player: Player, aimWorld: Vec2, _dt: number, station = this.claimedStation) {
     if (!station || !canPilotStation(station, player)) return null;
     const targetAngle = Math.atan2(aimWorld.y - station.pos.y, aimWorld.x - station.pos.x);
-    const blend = 1 - Math.exp(-STATION_CONFIG.stationTurretResponse * Math.min(dt, 0.1));
-    station.turretAngle = lerpAngle(station.turretAngle ?? targetAngle, targetAngle, blend);
+    // Weapon aim is independent from hull steering and should remain locked to
+    // the cursor. Smoothing here made the mounted gun visibly trail the mouse.
+    station.turretAngle = targetAngle;
     return station.turretAngle;
   }
 
