@@ -223,6 +223,11 @@ export class StationSystem {
     if (!pad) return false;
     const padPosition = this.getLandingPadPosition(station, pad);
     if (distance(player.pos, padPosition) > STATION_CONFIG.dockRadius) return false;
+    // The free-flying body is always the pod. Restore the recovered
+    // spacecraft's installed combat class only while integrating with it.
+    if (player.currentShipId === "space_pod") {
+      try { player.setClass(station.turretClassId || "base_ship"); } catch { player.setClass("base_ship"); }
+    }
     station.landingPads.forEach((entry) => {
       if (entry.occupiedByPlayerId === player.id) entry.occupiedByPlayerId = null;
     });
@@ -280,9 +285,11 @@ export class StationSystem {
       player.dockingState = "docked";
       return;
     }
+    if (station && player.currentShipId !== "space_pod") station.turretClassId = player.currentShipId;
     if (pad) pad.occupiedByPlayerId = null;
     player.dockedStationId = null;
     player.dockingState = "free";
+    player.setClass("space_pod");
     player.vel = { x: 0, y: 0 };
     player.angularVelocity = 0;
     player.thrustWorld = { x: 0, y: 0 };

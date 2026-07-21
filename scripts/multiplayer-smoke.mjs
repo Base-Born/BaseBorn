@@ -122,8 +122,9 @@ try {
   const idleThrusterSnapshot=await waitForSnapshot(alpha,(message)=>{const station=message.stations.find((entry)=>entry.id===alphaStation.id);return station?.driveX===0&&station?.driveY===0;});
   assert.equal(idleThrusterSnapshot.stations.find((station)=>station.id===alphaStation.id).driveX,0,"station thrusters should turn off when drive input stops");
   alpha.socket.send(JSON.stringify({type:"state",state:{x:drivenStation.x,y:drivenStation.y,vx:0,vy:0,angle:0,thrustForward:0,thrustStrafe:0,docked:false,healthRatio:1,level:1,score:0,shipClassId:"base_ship",shipClass:"Base Ship"}}));
-  const undockedSnapshot = await waitForSnapshot(alpha,(message)=>{const station=message.stations.find((entry)=>entry.id===alphaStation.id);return station?.claimState==="claimed"&&message.players.some((player)=>player.id===alpha.id&&!player.docked)&&!station.dockedPlayerIds.includes(alpha.id);});
+  const undockedSnapshot = await waitForSnapshot(alpha,(message)=>{const station=message.stations.find((entry)=>entry.id===alphaStation.id);return station?.claimState==="claimed"&&message.players.some((player)=>player.id===alpha.id&&!player.docked&&player.shipClassId==="space_pod")&&!station.dockedPlayerIds.includes(alpha.id);});
   const undockedPlayer = undockedSnapshot.players.find((player)=>player.id===alpha.id);
+  assert.equal(undockedPlayer.shipClass,"Survey Pod","undocking must return control to the Survey Pod instead of duplicating the recovered spacecraft");
   const undockedStation=undockedSnapshot.stations.find((station)=>station.id===alphaStation.id);
   assert(distance(undockedPlayer,undockedStation)<=60,"undocking should release the ship at its current cradle instead of ejecting it sideways");
   alpha.socket.send(JSON.stringify({type:"request_respawn"}));
@@ -153,10 +154,10 @@ try {
   const alphaState=beforeCombat.players.find((player)=>player.id===alpha.id);
   const betaNear={x:alphaState.x+300,y:alphaState.y};
   await moveClient(beta,teamSpawn.spawn,betaNear);
-  alpha.socket.send(JSON.stringify({type:"fire",angle:0}));
-  const projectileSnapshot=await waitForSnapshot(beta,(message)=>message.projectiles?.some((projectile)=>projectile.ownerId===alpha.id));
-  assert.equal(projectileSnapshot.projectiles.find((projectile)=>projectile.ownerId===alpha.id).penetration,1,"shared projectiles should expose server-owned penetration durability");
-  await waitForMessage(beta,(message)=>message.type==="player_damaged"&&message.sourcePlayerId===alpha.id);
+  beta.socket.send(JSON.stringify({type:"fire",angle:Math.PI}));
+  const projectileSnapshot=await waitForSnapshot(alpha,(message)=>message.projectiles?.some((projectile)=>projectile.ownerId===beta.id));
+  assert.equal(projectileSnapshot.projectiles.find((projectile)=>projectile.ownerId===beta.id).penetration,1,"shared projectiles should expose server-owned penetration durability");
+  await waitForMessage(alpha,(message)=>message.type==="player_damaged"&&message.sourcePlayerId===beta.id);
   const status = await fetch(`${base}/api/status`).then((response) => response.json());
   assert.equal(status.multiplayer, true);
   assert.equal(status.players, 2);

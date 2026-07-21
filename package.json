@@ -21,9 +21,10 @@
     "start:local": "npm run build && node server/index.js",
     "test:multiplayer": "node scripts/multiplayer-smoke.mjs",
     "test:movement": "node scripts/movement-smoke.mjs",
+    "test:docking": "node scripts/docking-smoke.mjs",
     "test:load": "node scripts/multiplayer-load.mjs",
     "test:persistence": "node scripts/persistence-smoke.mjs",
-    "test": "npm run typecheck && npm run test:movement && npm run test:multiplayer && npm run test:load && npm run test:persistence"
+    "test": "npm run typecheck && npm run test:movement && npm run test:docking && npm run test:multiplayer && npm run test:load && npm run test:persistence"
   },
   "dependencies": {
     "@types/react": "^19.2.17",

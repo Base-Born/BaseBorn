@@ -412,6 +412,8 @@ websocketServer.on("connection",(websocket)=>{
       const canDock=requestedDock&&(alreadyDocked||nearestStation.dockedPlayerIds.length<6);
       for(const station of room.stations.values())station.dockedPlayerIds=station.dockedPlayerIds.filter(id=>id!==playerId);
       if(canDock)nearestStation.dockedPlayerIds.push(playerId);
+      if(canDock&&next.shipClassId==="space_pod"){next.shipClassId=nearestStation.turretClassId||"base_ship";next.shipClass="Base Ship";}
+      else if(alreadyDocked&&!canDock){next.shipClassId="space_pod";next.shipClass="Survey Pod";}
       next.docked=canDock;websocket.playerState=next;markDirty(room);return;
     }
     if(message?.type==="station_input"){
