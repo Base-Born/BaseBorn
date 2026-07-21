@@ -552,7 +552,7 @@ function GameScreen({
           onClose={() => setTreeOpen(false)}
         />
       )}
-      {snapshot.mode === "respawning" && <DeathScreen snapshot={snapshot} />}
+      {snapshot.mode === "respawning" && <DeathScreen snapshot={snapshot} onRespawn={() => game?.respawnPlayer()} />}
       {snapshot.mode === "gameover" && (
         <div className="gameOver">
           <h2>Ship destroyed</h2>

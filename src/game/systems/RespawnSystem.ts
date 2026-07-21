@@ -5,13 +5,9 @@ import { findSafeCornerSpawnPoint } from "./SpawnSystem";
 import { MAP_CONFIG } from "../data/mapConfig";
 import type { Vec2 } from "../types";
 
-export const RESPAWN_DELAY_MS = 120_000;
-
 export type PlayerDeathState = {
   isDestroyed: boolean;
   destroyedAt: number;
-  respawnAvailableAt: number;
-  respawnDelayMs: number;
   respawnLocation: "station" | "outer_safe_zone";
   oldLevel: number;
   newLevel: number;
@@ -44,14 +40,12 @@ export function getStationRespawnPoint(station: Station, player: Player): Vec2 {
   };
 }
 
-export function startRespawnCountdown(player: Player, station: Station | null, cargoDropped: number, now = performance.now()): PlayerDeathState {
+export function createPlayerDeathState(player: Player, station: Station | null, cargoDropped: number, now = performance.now()): PlayerDeathState {
   const stationLock = getStationRespawnLockReason(player, station);
   const stationRespawnAvailable = !stationLock;
   return {
     isDestroyed: true,
     destroyedAt: now,
-    respawnAvailableAt: now + RESPAWN_DELAY_MS,
-    respawnDelayMs: RESPAWN_DELAY_MS,
     respawnLocation: stationRespawnAvailable ? "station" : "outer_safe_zone",
     oldLevel: player.level,
     newLevel: calculateRespawnLevelAfterDeath(player.level),

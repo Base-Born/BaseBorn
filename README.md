@@ -83,6 +83,7 @@ This rework uses world revision `pod-start-v1`. Older persisted worlds are not l
 | `Y` | Open the spacecraft evolution tree |
 | `E` | Toggle auto-fire |
 | `Q` | Toggle auto-throttle |
+| Respawn button | Return near your active spacecraft, or to a safe outer-zone spawn if no valid craft remains |
 
 Mobile controls provide separate movement and aim sticks, fire and interaction actions, and adaptive HUD layouts.
 

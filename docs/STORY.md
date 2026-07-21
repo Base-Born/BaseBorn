@@ -338,7 +338,7 @@ Your level is reduced.
 
 Your ship is damaged.
 
-You must wait before respawning.
+You decide when to launch again by pressing Respawn.
 
 If your station is still alive, you return there.
 

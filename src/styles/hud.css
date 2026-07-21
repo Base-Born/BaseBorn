@@ -969,6 +969,33 @@
   font-weight: 800;
 }
 
+.deathScreen__respawn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 180px;
+  min-height: 48px;
+  margin-top: 12px;
+  border: 1px solid rgba(76, 201, 240, 0.68);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1689c8, #275ee8);
+  color: #fff;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 10px 32px rgba(33, 135, 225, 0.3);
+  touch-action: manipulation;
+}
+
+.deathScreen__respawn:hover,
+.deathScreen__respawn:focus-visible {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
 @media (max-width: 860px) {
   .leftHudStack {
     top: 142px;

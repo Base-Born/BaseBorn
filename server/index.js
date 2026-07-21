@@ -381,7 +381,19 @@ websocketServer.on("connection",(websocket)=>{
       station.driverPlayerId=playerId;station.driveUpdatedAt=now;station.driveX=finite(message.x,0,-1,1);station.driveY=finite(message.y,0,-1,1);markDirty(room);return;
     }
     if(message?.type==="fire"){if(websocket.playerState.shipClassId==="space_pod")return;const angle=finite(message.angle,websocket.playerState.angle,-Math.PI*4,Math.PI*4);if(createProjectile(room,websocket,angle,now))markDirty(room);return;}
-    if(message?.type==="request_respawn"){if(websocket.playerState.healthRatio>0&&now-websocket.lastRespawnAt<8000)return;websocket.lastRespawnAt=now;const respawn=randomSpawn(room);websocket.playerState=teleportState(websocket.playerState,websocket.identity,respawn,now);websocket.playerState.healthRatio=1;websocket.send(JSON.stringify({type:"respawn",respawn}));markDirty(room);return;}
+    if(message?.type==="request_respawn"){
+      if(now-websocket.lastRespawnAt<8000)return;
+      websocket.lastRespawnAt=now;
+      const team=teamForPlayer(room,websocket.identity.id);
+      const station=team?.stationId?room.stations.get(team.stationId):null;
+      const canUseStation=station?.claimState==="claimed"&&station.health>0;
+      const respawn=canUseStation?spawnNearStation(station):randomSpawn(room);
+      for(const entry of room.stations.values())entry.dockedPlayerIds=entry.dockedPlayerIds.filter(id=>id!==websocket.identity.id);
+      websocket.playerState=teleportState(websocket.playerState,websocket.identity,respawn,now);
+      websocket.playerState.healthRatio=1;
+      websocket.send(JSON.stringify({type:"respawn",respawn,stationId:canUseStation?station.id:null}));
+      markDirty(room);return;
+    }
     if(message?.type==="drop_cargo"){
       const type=etherTypes.has(message.etherType)?message.etherType:null;
       const requested=Math.round(finite(message.amount,0,1,100000));

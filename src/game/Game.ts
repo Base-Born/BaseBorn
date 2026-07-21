@@ -27,7 +27,7 @@ import { ShipOwnershipSystem } from "./systems/ShipOwnershipSystem";
 import { spendStationFuel } from "./systems/StationFuelSystem";
 import { addEtherToCombinedCargo, dropLowestQualityCargoFromStorage, getNextCargoDropPreview, syncCargoUsed } from "./systems/CargoSystem";
 import { ObjectiveSystem } from "./systems/ObjectiveSystem";
-import { completeRespawn, startRespawnCountdown, type PlayerDeathState } from "./systems/RespawnSystem";
+import { completeRespawn, createPlayerDeathState, getStationRespawnLockReason, type PlayerDeathState } from "./systems/RespawnSystem";
 import { clearPlayerCargo, getDeathCargoDropSummary } from "./systems/DeathDropSystem";
 import { getStationDirectionIndicator, getStationHealthWarning } from "./systems/StationSystem";
 import { createStationInteractionSnapshot } from "./systems/StationInteractionSystem";
@@ -178,8 +178,21 @@ export class Game {
 
   forceDestroyPlayer() {
     this.player.damage(this.player.maxHealth + 999, true);
-    this.beginRespawnCountdown();
+    this.beginRespawn();
     this.autoFire = false;
+    this.emitSnapshot();
+  }
+
+  respawnPlayer() {
+    if (this.mode !== "respawning" || !this.deathState) return;
+    this.updateRespawnState();
+    const station = this.stations.claimedStation;
+    completeRespawn(this.player, station, this.deathState);
+    if (this.multiplayer.isOnline()) this.multiplayer.requestRespawn();
+    this.deathState = null;
+    this.mode = "playing";
+    this.camera.x = this.player.pos.x;
+    this.camera.y = this.player.pos.y;
     this.emitSnapshot();
   }
 
@@ -438,7 +451,7 @@ export class Game {
     const authoritativeHealthRatio = this.multiplayer.consumeAuthoritativeHealthRatio();
     if (authoritativeHealthRatio !== null) {
       this.player.health = Math.min(this.player.health, this.player.maxHealth * authoritativeHealthRatio);
-      if (authoritativeHealthRatio <= 0 && this.mode === "playing") this.beginRespawnCountdown();
+      if (authoritativeHealthRatio <= 0 && this.mode === "playing") this.beginRespawn();
     }
     const respawnSpawn = this.multiplayer.consumeRespawnSpawn();
     if (respawnSpawn && this.mode === "playing") {
@@ -464,7 +477,7 @@ export class Game {
       this.emitSnapshot();
       return;
     }
-    if (this.mode === "respawning") this.updateRespawnCountdown();
+    if (this.mode === "respawning") this.updateRespawnState();
     const canvasRect = this.canvas.getBoundingClientRect();
     this.input.pointerWorld = {
       x: this.camera.x + (this.input.pointer.x - canvasRect.width / 2) / this.camera.zoom,
@@ -554,7 +567,7 @@ export class Game {
     this.camera.x = lerp(this.camera.x, this.player.pos.x, TUNING.cameraLerp);
     this.camera.y = lerp(this.camera.y, this.player.pos.y, TUNING.cameraLerp);
     this.camera.zoom = lerp(this.camera.zoom, this.player.currentBranch === "Sniper" ? 0.82 : 1, 0.02);
-    if (this.player.health <= 0 && this.mode === "playing") this.beginRespawnCountdown();
+    if (this.player.health <= 0 && this.mode === "playing") this.beginRespawn();
     this.snapshotTimer += dt;
     if (this.snapshotTimer > 0.12) {
       this.snapshotTimer = 0;
@@ -649,7 +662,7 @@ export class Game {
     this.zoneNotificationUntil = performance.now() + 2800;
   }
 
-  private beginRespawnCountdown() {
+  private beginRespawn() {
     if (this.deathState) return;
     const cargoSummary = getDeathCargoDropSummary(this.player);
     const now = performance.now();
@@ -658,25 +671,21 @@ export class Game {
       else this.etherDrops.spawnCargoDrop(this.player.pos, stack.type, stack.amount, this.player.id, now);
     }
     clearPlayerCargo(this.player);
-    this.deathState = startRespawnCountdown(this.player, this.stations.claimedStation, cargoSummary.totalDropped, performance.now());
+    this.deathState = createPlayerDeathState(this.player, this.stations.claimedStation, cargoSummary.totalDropped, performance.now());
     this.mode = "respawning";
     this.autoFire = false;
     this.autoThrottle = false;
   }
 
-  private updateRespawnCountdown() {
+  private updateRespawnState() {
     if (!this.deathState) return;
     const station = this.stations.claimedStation;
-    if (this.deathState.stationRespawnAvailable && !station) {
+    const stationLock = getStationRespawnLockReason(this.player, station);
+    if (this.deathState.stationRespawnAvailable && stationLock) {
       this.deathState.stationRespawnAvailable = false;
       this.deathState.respawnLocation = "outer_safe_zone";
-      this.deathState.reasonIfRespawnBlocked = "Respawn point destroyed.";
+      this.deathState.reasonIfRespawnBlocked = stationLock;
     }
-    if (performance.now() < this.deathState.respawnAvailableAt) return;
-    completeRespawn(this.player, station, this.deathState);
-    if (!station && this.multiplayer.isOnline()) this.multiplayer.requestRespawn();
-    this.deathState = null;
-    this.mode = "playing";
   }
 
   private closestMiningAsteroid() {

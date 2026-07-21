@@ -106,6 +106,11 @@ try {
   const undockedSnapshot = await waitForSnapshot(alpha,(message)=>message.players.some((player)=>player.id===alpha.id&&!player.docked)&&!message.stations.find((station)=>station.id===alphaStation.id)?.dockedPlayerIds.includes(alpha.id));
   const undockedPlayer = undockedSnapshot.players.find((player)=>player.id===alpha.id);
   assert(distance(undockedPlayer,drivenStation)<=60,"undocking should release the ship at its cradle instead of ejecting it sideways");
+  alpha.socket.send(JSON.stringify({type:"request_respawn"}));
+  const manualRespawn=await waitForMessage(alpha,(message)=>message.type==="respawn");
+  const respawnStation=undockedSnapshot.stations.find((station)=>station.id===alphaStation.id);
+  assert.equal(manualRespawn.stationId,alphaStation.id,"manual respawn should use the team's active spacecraft");
+  assert(distance(manualRespawn.respawn,respawnStation)<=1600,"manual respawn should return the pilot near the active spacecraft");
   alpha.socket.send(JSON.stringify({ type:"invite_player", playerId:beta.id }));
   const inviteSnapshot = await waitForSnapshot(beta, (message) => message.invites.some((invite) => invite.teamId===alphaTeam.id));
   const invite = inviteSnapshot.invites.find((entry) => entry.teamId===alphaTeam.id);

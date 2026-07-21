@@ -1041,13 +1041,12 @@ The station acts as the player’s respawn point.
 
 Base rules:
 
-* Respawn delay: two minutes
+* Respawning is player-controlled through an immediate Respawn button
 * Respawning causes loss of 70% of ship levels
 * If the station is destroyed, the player loses everything connected to that station
 
 Possible upgrade improvements:
 
-* Reduced respawn delay
 * Reduced level loss
 * Preserved cargo percentage
 * Emergency reserve ship
