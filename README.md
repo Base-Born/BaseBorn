@@ -4,6 +4,27 @@ BaseBorn is a real-time multiplayer space-survival game for desktop and mobile b
 
 [Play the Railway build](https://baseborn.up.railway.app) · [Game story](docs/STORY.md) · [Release checklist](docs/FINALIZATION_PLAN.md)
 
+## OpenAI Build Week submission
+
+- **Source repository:** [github.com/Base-Born/BaseBorn](https://github.com/Base-Born/BaseBorn)
+- **Playable deployment:** [baseborn.up.railway.app](https://baseborn.up.railway.app)
+- **Development approach:** Human-directed, AI-assisted game development with OpenAI Codex and GPT-5.6
+
+### How Codex and GPT-5.6 were used
+
+BaseBorn was created through an iterative collaboration between its human creator and **OpenAI Codex powered by GPT-5.6**. The creator defined the game concept, supplied the story and visual references, selected the mechanics, tested multiplayer builds, and directed each redesign. Codex and GPT-5.6 helped turn that direction into a working, deployable game by:
+
+- Auditing and restructuring the React, TypeScript, Canvas 2D, Node.js, and WebSocket codebase
+- Implementing the Survey Pod tutorial, spacecraft recovery, mining, Ether drops, cargo, progression, weapon evolution, teams, leaderboard, and respawn flow
+- Building and debugging server-authoritative multiplayer synchronization for players, projectiles, asteroids, loot, docking, ownership, and persistence
+- Refining movement physics, controller and touch input, directional thrusters, aiming, collision damage, health regeneration, and responsive camera behavior
+- Reworking the interface for desktop, ultrawide, tablet, and mobile displays, including PWA installation support
+- Diagnosing Railway build and runtime issues and preparing the production build, health check, and deployment configuration
+- Creating automated movement, multiplayer, load, and persistence checks; reviewing browser output; and fixing regressions found during play-testing
+- Maintaining the README, story, upgrade reference, release checklist, and final repository audit for submission
+
+Codex was used as an engineering and design collaborator throughout development, while the product direction and final decisions remained human-led. BaseBorn does not require an LLM at runtime; Codex and GPT-5.6 were used to build, debug, test, document, and prepare the project for submission.
+
 ## The playable loop
 
 1. Spawn in a silver Survey Pod beside your reserved derelict spacecraft.
